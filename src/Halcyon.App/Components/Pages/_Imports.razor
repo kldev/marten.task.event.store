@@ -1,0 +1,4 @@
+@* Every page needs a signed-in agent (ADR-0005); the sign-in, the public form and the error pages opt out with
+   [AllowAnonymous]. Deliberately not a fallback policy: that would also close Blazor's own endpoints (_blazor) to the
+   anonymous public form. *@
+@attribute [Authorize]

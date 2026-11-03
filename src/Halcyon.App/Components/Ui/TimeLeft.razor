@@ -1,0 +1,61 @@
+@* Time left until the deadline (ADR-0004): on time / due soon (warning) / overdue (alert) / resolved. Re-renders
+   with the layout's clock, so a warning turns into an alert by itself. *@
+@switch (State)
+{
+    case DeadlineState.None:
+        @if (ResolvedLate)
+        {
+            <span class="badge bg-red-50 text-red-800 ring-1 ring-red-200" data-testid="@TestId" data-state="done-late">
+                <Icon Name="check" Class="size-3.5" /> Zrealizowane po terminie
+            </span>
+        }
+        else
+        {
+            <span class="badge bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200" data-testid="@TestId" data-state="done">
+                <Icon Name="check" Class="size-3.5" /> Zrealizowane
+            </span>
+        }
+        break;
+    case DeadlineState.Overdue:
+        <span class="time-overdue inline-flex items-center gap-1 text-sm" data-testid="@TestId" data-state="overdue"
+              title="Termin: @LocalTime.Format(Deadline)">
+            <Icon Name="alarm" Class="size-3.5" /> @TimeLeftText.Format(Deadline, CurrentTime)
+        </span>
+        break;
+    case DeadlineState.DueSoon:
+        <span class="time-duesoon inline-flex items-center gap-1 text-sm" data-testid="@TestId" data-state="duesoon"
+              title="Termin: @LocalTime.Format(Deadline)">
+            <Icon Name="clock" Class="size-3.5" /> zostało @TimeLeftText.Format(Deadline, CurrentTime)
+        </span>
+        break;
+    default:
+        <span class="time-ontime inline-flex items-center gap-1 text-sm" data-testid="@TestId" data-state="ontime"
+              title="Termin: @LocalTime.Format(Deadline)">
+            @TimeLeftText.Format(Deadline, CurrentTime)
+        </span>
+        break;
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public DateTimeOffset Deadline { get; set; }
+
+    [Parameter, EditorRequired]
+    public TicketStatus Status { get; set; }
+
+    [Parameter]
+    public bool ResolvedLate { get; set; }
+
+    [Parameter]
+    public string TestId { get; set; } = "time-left";
+
+    [CascadingParameter(Name = "Now")]
+    public DateTimeOffset? Now { get; set; }
+
+    [Inject]
+    private TimeProvider Time { get; set; } = null!;
+
+    private DateTimeOffset CurrentTime => Now ?? Time.GetUtcNow();
+
+    private DeadlineState State => Deadlines.Evaluate(Status, Deadline, CurrentTime);
+}

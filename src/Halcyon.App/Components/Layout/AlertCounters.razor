@@ -1,0 +1,51 @@
+@* Two different alerts on every page (ADR-0004): "running out" (< 1 h, amber, clock) and "overdue" (red, alarm). *@
+@implements IDisposable
+@inject TicketQueries Queries
+@inject CurrentAgent CurrentAgent
+@inject TicketChanges Changes
+
+<div class="flex flex-wrap items-center gap-2" data-testid="alert-counters">
+    <a href="wszystkie?termin=po-terminie" data-testid="counter-overdue" data-count="@counts.Overdue"
+       class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold @(counts.Overdue > 0 ? "bg-red-700 text-white" : "bg-ink-100 text-ink-500")">
+        <Icon Name="alarm" />
+        <span>Po terminie: @counts.Overdue</span>
+    </a>
+    <a href="wszystkie?termin=konczy-sie" data-testid="counter-duesoon" data-count="@counts.DueSoon"
+       class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold @(counts.DueSoon > 0 ? "bg-amber-100 text-amber-900 ring-1 ring-amber-300" : "bg-ink-100 text-ink-500")">
+        <Icon Name="clock" />
+        <span>Kończy się czas: @counts.DueSoon</span>
+    </a>
+    <span class="hidden text-xs text-ink-500 md:inline" data-testid="counter-pool">W puli: @counts.Pool · Moje: @counts.Mine</span>
+</div>
+
+@code {
+    [Parameter]
+    public DateTimeOffset Now { get; set; }
+
+    private AlertCounts counts = new(0, 0, 0, 0);
+    private Guid? agentId;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            agentId ??= (await CurrentAgent.GetAsync()).Id;
+        }
+        catch (DomainException)
+        {
+            agentId = null;
+        }
+        counts = await Queries.CountsAsync(agentId);
+    }
+
+    protected override void OnInitialized() => Changes.Changed += RefreshAsync;
+
+    /// <summary>A page that changed tickets asks for fresh numbers.</summary>
+    private async Task RefreshAsync()
+    {
+        counts = await Queries.CountsAsync(agentId);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Changes.Changed -= RefreshAsync;
+}

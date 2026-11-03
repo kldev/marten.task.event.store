@@ -1,0 +1,10 @@
+.env
+.instructions/
+bin/
+obj/
+*.user
+.vs/
+.idea/
+TestResults/
+node_modules/
+playwright-traces/

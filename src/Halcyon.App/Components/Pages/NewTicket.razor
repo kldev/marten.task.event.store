@@ -1,0 +1,46 @@
+@page "/nowe"
+@inject ReportTicket Report
+@inject AgentDirectory Directory
+@inject CurrentAgent CurrentAgent
+@inject NavigationManager Navigation
+@inject TicketChanges Changes
+
+<PageTitle>Nowe zgłoszenie · Halcyon</PageTitle>
+
+<div class="space-y-5">
+    <div>
+        <h1>Nowe zgłoszenie</h1>
+        <p class="mt-1 text-sm text-ink-500">
+            Zarejestruj sprawę w imieniu zgłaszającego. Priorytet podaje zgłaszający; termin liczy się od daty zgłoszenia.
+        </p>
+    </div>
+    <div class="card p-6">
+        @if (people is null)
+        {
+            <p class="text-sm text-ink-500">Wczytywanie…</p>
+        }
+        else
+        {
+            <ReportForm ForAgent="true" People="people" OnSubmit="SaveAsync" SubmitText="Dodaj do puli" FormName="agent-report" Prefill="prefill" />
+        }
+    </div>
+</div>
+
+@code {
+    private IReadOnlyList<PersonRow>? people;
+    private ReportPrefill? prefill;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(new Uri(Navigation.Uri).Query);
+        prefill = ReportPrefill.FromQuery(query.ToDictionary(q => q.Key, q => q.Value.ToString()));
+        people = await Directory.PeopleAsync();
+    }
+
+    private async Task SaveAsync(ReportTicketCommand command)
+    {
+        var reported = await Report.ByAgentAsync(await CurrentAgent.GetAsync(), command);
+        await Changes.NotifyAsync();
+        Navigation.NavigateTo($"zgloszenia/{reported.TicketId}?nowe=1");
+    }
+}

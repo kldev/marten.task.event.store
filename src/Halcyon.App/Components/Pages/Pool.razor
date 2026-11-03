@@ -1,0 +1,12 @@
+@page "/"
+@page "/pula"
+
+<PageTitle>Pula · Halcyon</PageTitle>
+
+<div class="space-y-5">
+    <div>
+        <h1>Pula zgłoszeń</h1>
+        <p class="mt-1 text-sm text-ink-500">Zgłoszenia czekające na agenta. Najpilniejsze na górze.</p>
+    </div>
+    <TicketListView Scope="TicketScope.Pool" EmptyText="Pula jest pusta - wszystkie zgłoszenia mają agenta." />
+</div>

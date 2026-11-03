@@ -1,0 +1,13 @@
+@* A numbered heading of a form step. *@
+<div class="mb-3 flex items-center gap-2.5">
+    <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-halcyon-700 text-xs font-semibold text-white">@Number</span>
+    <h2 class="text-base">@Text</h2>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public int Number { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = "";
+}

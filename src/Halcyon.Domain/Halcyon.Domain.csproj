@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The rules of the product, in plain C#: no Marten, no ASP.NET (ADR-0003). -->
+  <PropertyGroup>
+    <RootNamespace>Halcyon.Domain</RootNamespace>
+  </PropertyGroup>
+</Project>

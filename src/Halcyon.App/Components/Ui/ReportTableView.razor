@@ -1,0 +1,125 @@
+@* A report on the page (spec 008): the export buttons over the same table the files have. *@
+@using Halcyon.App.Features.Reports
+@using System.Globalization
+
+<div class="space-y-3">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm text-ink-600" data-testid="report-summary">
+            @Table.FilterText · <strong data-testid="report-count">@Table.Count</strong> @Table.RowNoun
+        </p>
+        <div class="flex flex-wrap gap-2" data-testid="report-exports">
+            <a class="btn btn-secondary btn-sm" href="@ExportUrl(ExportFormat.Xlsx)" data-testid="export-xlsx" data-enhance-nav="false" download>
+                <Icon Name="file-spreadsheet" /> Excel (XLSX)
+            </a>
+            <a class="btn btn-secondary btn-sm" href="@ExportUrl(ExportFormat.Pdf)" data-testid="export-pdf" data-enhance-nav="false" download>
+                <Icon Name="file" /> PDF
+            </a>
+            <a class="btn btn-ghost btn-sm" href="@ExportUrl(ExportFormat.Csv)" data-testid="export-csv" data-enhance-nav="false" download>
+                <Icon Name="download" /> CSV
+            </a>
+        </div>
+    </div>
+
+    @if (Table.Rows.Count == 0)
+    {
+        <div class="card flex flex-col items-center gap-2 px-6 py-12 text-center" data-testid="empty">
+            <Icon Name="inbox" Class="size-8 text-ink-300" />
+            <p class="text-sm text-ink-600">Brak zgłoszeń dla wybranych filtrów.</p>
+        </div>
+    }
+    else
+    {
+        <div class="card overflow-x-auto">
+            <table class="min-w-full divide-y divide-ink-100 text-sm" data-testid="report-table">
+                <thead class="bg-ink-50/60">
+                    @if (Table.Columns.Any(c => c.Group is not null))
+                    {
+                        @* Two rows: the group (a period) over its columns; ungrouped columns span both rows. *@
+                        <tr>
+                            @foreach (var (group, columns) in Runs)
+                            {
+                                @if (group is null)
+                                {
+                                    @foreach (var column in columns)
+                                    {
+                                        <th rowspan="2" class="table-head align-bottom whitespace-nowrap @Align(column)">@column.Header</th>
+                                    }
+                                }
+                                else
+                                {
+                                    <th colspan="@columns.Count" class="table-head border-l border-ink-200 text-center whitespace-nowrap" data-testid="report-group">@group</th>
+                                }
+                            }
+                        </tr>
+                        <tr>
+                            @foreach (var (group, columns) in Runs.Where(r => r.Group is not null))
+                            {
+                                @for (var i = 0; i < columns.Count; i++)
+                                {
+                                    <th class="table-head whitespace-nowrap @Align(columns[i]) @(i == 0 ? "border-l border-ink-200" : "")">@(columns[i].Short ?? columns[i].Header)</th>
+                                }
+                            }
+                        </tr>
+                    }
+                    else
+                    {
+                        <tr>
+                            @foreach (var column in Table.Columns)
+                            {
+                                <th class="table-head whitespace-nowrap @Align(column)">@column.Header</th>
+                            }
+                        </tr>
+                    }
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    @foreach (var row in Table.Rows)
+                    {
+                        <tr data-testid="report-row" class="@(row.IsTotal ? "bg-ink-50 font-semibold" : "")">
+                            @for (var c = 0; c < Table.Columns.Count; c++)
+                            {
+                                var column = Table.Columns[c];
+                                var value = row.Cells[c];
+                                <td class="cell whitespace-nowrap @(column.Kind == ReportColumnKind.Number ? "text-right tabular-nums" : "")" data-column="@column.Key">
+                                    @if (c == 0 && row.TicketId is { } id)
+                                    {
+                                        <a href="zgloszenia/@id" class="font-mono text-halcyon-700 hover:underline">@value</a>
+                                    }
+                                    else
+                                    {
+                                        @ReportFormat.Display(column, value)
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ReportTable Table { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public Func<ExportFormat, string> ExportUrl { get; set; } = null!;
+
+    private static string Align(ReportColumn column) => column.Kind == ReportColumnKind.Number ? "text-right" : "";
+
+    /// <summary>Neighbouring columns of one group, in order; a null group is a run of plain columns.</summary>
+    private List<(string? Group, List<ReportColumn> Columns)> Runs
+    {
+        get
+        {
+            var runs = new List<(string? Group, List<ReportColumn> Columns)>();
+            foreach (var column in Table.Columns)
+                if (runs.Count > 0 && runs[^1].Group == column.Group)
+                    runs[^1].Columns.Add(column);
+                else
+                    runs.Add((column.Group, [column]));
+            return runs;
+        }
+    }
+
+}

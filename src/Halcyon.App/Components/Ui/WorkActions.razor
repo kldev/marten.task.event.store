@@ -1,0 +1,155 @@
+@* What the assignee can do with their ticket (spec 003): resolve, return to the pool, hand over to another agent. *@
+<div class="inline-flex flex-wrap items-center justify-end gap-2" data-testid="work-actions">
+    <button type="button" class="btn btn-primary btn-sm" data-testid="resolve" disabled="@busy" @onclick="ResolveAsync">
+        <Icon Name="check" Class="size-3.5" /> Zrealizowane
+    </button>
+    <button type="button" class="btn btn-secondary btn-sm" data-testid="open-return" disabled="@busy" @onclick="() => Open(Mode.Return)">
+        <Icon Name="undo" Class="size-3.5" /> Oddaj do puli
+    </button>
+    <button type="button" class="btn btn-secondary btn-sm" data-testid="open-handover" disabled="@busy" @onclick="OpenHandOverAsync">
+        <Icon Name="hand" Class="size-3.5" /> Przekaż
+    </button>
+</div>
+
+@if (mode != Mode.None)
+{
+    <div class="fixed inset-0 z-40 flex items-center justify-center bg-ink-950/40 p-4" role="dialog" aria-modal="true"
+         aria-labelledby="work-dialog-title" data-testid="work-dialog" @onkeydown="OnKeyDown">
+        <div class="card w-full max-w-md space-y-4 p-5 text-left">
+            <h2 id="work-dialog-title">@(mode == Mode.HandOver ? "Przekaż zgłoszenie" : "Oddaj zgłoszenie do puli")</h2>
+            <p class="text-sm text-ink-600"><span class="font-mono">@Ticket.Number</span> · @Ticket.Title</p>
+            @if (mode == Mode.HandOver)
+            {
+                <div>
+                    <label class="label" for="handover-to">Do agenta</label>
+                    <select id="handover-to" class="input" data-testid="handover-to" @bind="targetId">
+                        <option value="">- wybierz -</option>
+                        @foreach (var agent in agents.Where(a => a.Id != Me))
+                        {
+                            <option value="@agent.Id">@agent.FullName (w realizacji: @agent.InProgress)</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div>
+                <label class="label" for="work-reason">Powód <span class="font-normal text-ink-400">(opcjonalnie)</span></label>
+                <textarea id="work-reason" class="input min-h-20" maxlength="@TicketLimits.ReasonMax" data-testid="work-reason" @bind="reason"></textarea>
+            </div>
+            <p class="text-xs text-ink-500">Termin realizacji się nie zmienia.</p>
+            <Notice Message="@dialogError" />
+            <div class="flex justify-end gap-2">
+                <button type="button" class="btn btn-ghost" data-testid="work-cancel" @onclick="Close">Anuluj</button>
+                <button type="button" class="btn btn-primary" data-testid="work-confirm" disabled="@busy" @onclick="ConfirmAsync">
+                    @(mode == Mode.HandOver ? "Przekaż" : "Oddaj do puli")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public TicketView Ticket { get; set; } = null!;
+
+    /// <summary>Called after a change (with a message to show) or after a refusal (with the refusal).</summary>
+    [Parameter]
+    public EventCallback<(bool Ok, string Message)> Done { get; set; }
+
+    [Inject] private CurrentAgent CurrentAgent { get; set; } = null!;
+    [Inject] private ResolveTicket Resolve { get; set; } = null!;
+    [Inject] private ReturnTicketToPool Return { get; set; } = null!;
+    [Inject] private HandOverTicket HandOver { get; set; } = null!;
+    [Inject] private AgentDirectory Directory { get; set; } = null!;
+
+    private enum Mode { None, Return, HandOver }
+
+    private Mode mode;
+    private bool busy;
+    private string? reason;
+    private string? targetId;
+    private string? dialogError;
+    private Guid Me;
+    private IReadOnlyList<AgentRow> agents = [];
+
+    private void Open(Mode next)
+    {
+        mode = next;
+        reason = null;
+        targetId = null;
+        dialogError = null;
+    }
+
+    private async Task OpenHandOverAsync()
+    {
+        Me = (await CurrentAgent.GetAsync()).Id;
+        agents = await Directory.AgentsAsync();
+        Open(Mode.HandOver);
+    }
+
+    private void Close() => mode = Mode.None;
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+            Close();
+    }
+
+    private async Task ResolveAsync()
+    {
+        await RunAsync(async me =>
+        {
+            var resolved = await Resolve.ExecuteAsync(Ticket.Id, me);
+            return resolved is { Late: true }
+                ? $"Zgłoszenie {Ticket.Number} zrealizowane (po terminie)."
+                : $"Zgłoszenie {Ticket.Number} zrealizowane.";
+        });
+    }
+
+    private async Task ConfirmAsync()
+    {
+        dialogError = null;
+        if (mode == Mode.HandOver && !Guid.TryParse(targetId, out _))
+        {
+            dialogError = "Wybierz agenta, któremu przekazujesz zgłoszenie.";
+            return;
+        }
+
+        var currentMode = mode;
+        var ok = await RunAsync(async me =>
+        {
+            if (currentMode == Mode.HandOver)
+            {
+                var handed = await HandOver.ExecuteAsync(Ticket.Id, me, Guid.Parse(targetId!), reason);
+                return $"Zgłoszenie {Ticket.Number} przekazane do: {handed?.To.FullName}.";
+            }
+            await Return.ExecuteAsync(Ticket.Id, me, reason);
+            return $"Zgłoszenie {Ticket.Number} wróciło do puli.";
+        }, inDialog: true);
+        if (ok)
+            Close();
+    }
+
+    private async Task<bool> RunAsync(Func<Domain.People.AgentRef, Task<string>> action, bool inDialog = false)
+    {
+        busy = true;
+        try
+        {
+            var me = await CurrentAgent.GetAsync();
+            var message = await action(me);
+            await Done.InvokeAsync((true, message));
+            return true;
+        }
+        catch (DomainException exception)
+        {
+            if (inDialog)
+                dialogError = exception.Message;
+            else
+                await Done.InvokeAsync((false, exception.Message));
+            return false;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

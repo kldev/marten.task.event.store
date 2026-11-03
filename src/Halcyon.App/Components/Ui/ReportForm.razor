@@ -1,0 +1,335 @@
+@* The report form for both ways in (spec 002): an agent (with the report date picker) or the requester on the public
+   page (the date is the moment of sending). The domain has the last word; its refusal is shown above the button. *@
+@using System.ComponentModel.DataAnnotations
+@using Halcyon.App.Features.Tickets
+
+<EditForm Model="model" OnValidSubmit="SubmitAsync" FormName="@FormName" class="space-y-6" data-testid="report-form">
+    <DataAnnotationsValidator />
+
+    <div class="grid gap-8 lg:grid-cols-5">
+        <div class="space-y-8 lg:col-span-3">
+            <section>
+                <StepTitle Number="1" Text="Czego dotyczy sprawa?" />
+                <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3" role="radiogroup" aria-label="Kategoria">
+                    @foreach (var category in CategoryCatalog.Default.Categories)
+                    {
+                        var look = CategoryLook.For(category.Key);
+                        var chosen = model.CategoryKey == category.Key;
+                        <label class="group flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition @(chosen ? $"{look.Chosen} ring-1 shadow-sm" : "border-ink-200 bg-white hover:-translate-y-0.5 hover:border-ink-300 hover:shadow-sm")"
+                               data-testid="category-@category.Key">
+                            <input type="radio" class="sr-only" name="@(FormName)-category" value="@category.Key"
+                                   checked="@chosen" @onchange="() => ChooseCategory(category.Key)" />
+                            <span class="flex size-10 shrink-0 items-center justify-center rounded-lg @look.Bubble">
+                                <Icon Name="@look.Icon" Class="size-5" />
+                            </span>
+                            <span class="min-w-0">
+                                <span class="block text-sm leading-snug font-semibold text-ink-900">@category.Name</span>
+                                <span class="mt-0.5 block truncate text-xs text-ink-500">@CategoryLook.Hint(category)</span>
+                            </span>
+                        </label>
+                    }
+                </div>
+                <ValidationMessage For="() => model.CategoryKey" />
+            </section>
+
+            <section>
+                <StepTitle Number="2" Text="Doprecyzuj" />
+                @if (SelectedCategory is { } selected)
+                {
+                    var look = CategoryLook.For(selected.Key);
+                    <div class="space-y-4" role="radiogroup" aria-label="Podkategoria" data-testid="subcategories">
+                        @foreach (var group in selected.ActiveSubcategories.GroupBy(s => s.Group))
+                        {
+                            <div>
+                                @if (group.Key is not null)
+                                {
+                                    <p class="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-ink-500 uppercase">
+                                        <Icon Name="map-pin" Class="size-3.5" /> @group.Key
+                                    </p>
+                                }
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach (var sub in group)
+                                    {
+                                        var chosen = model.SubcategoryKey == sub.Key;
+                                        <label class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition @(chosen ? $"{look.Chosen} ring-1 font-medium text-ink-900" : "border-ink-200 bg-white text-ink-700 hover:border-ink-300 hover:bg-ink-50")"
+                                               data-testid="subcategory-@sub.Key">
+                                            <input type="radio" class="sr-only" name="@(FormName)-subcategory" value="@sub.Key"
+                                                   checked="@chosen" @onchange="() => model.SubcategoryKey = sub.Key" />
+                                            <Icon Name="@CategoryLook.SubcategoryIcon(sub.Key)" Class="size-4 opacity-70" />
+                                            @sub.Name
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="rounded-xl border border-dashed border-ink-200 px-4 py-5 text-center text-sm text-ink-500" data-testid="subcategory-empty">
+                        Najpierw wybierz kategorię - pokażemy pasujące tematy.
+                    </p>
+                }
+                <ValidationMessage For="() => model.SubcategoryKey" />
+                @if (SelectedFields.Count > 0)
+                {
+                    <div class="mt-5 rounded-xl border border-ink-200 bg-ink-50/60 p-4" data-testid="report-fields-section">
+                        <p class="mb-3 flex items-center gap-1.5 text-sm font-semibold text-ink-800">
+                            <Icon Name="file-spreadsheet" Class="size-4 text-ink-500" /> Dane do raportu
+                            <span class="font-normal text-ink-500">(pola z * są wymagane, resztę można uzupełnić później)</span>
+                        </p>
+                        <ReportFieldInputs Definitions="SelectedFields" Values="fieldValues" IdPrefix="@($"{FormName}-field")" />
+                    </div>
+                }
+            </section>
+
+            <section class="space-y-4">
+                <StepTitle Number="3" Text="Opisz sprawę" />
+                <div>
+                    <label class="label" for="title">Tytuł</label>
+                    <InputText id="title" class="input" @bind-Value="model.Title" maxlength="@TicketLimits.TitleMax"
+                               placeholder="Krótko, np. „Nie działa drukarka na 2 piętrze”" data-testid="title" />
+                    <ValidationMessage For="() => model.Title" />
+                </div>
+                <div>
+                    <label class="label" for="description">Opis</label>
+                    <InputTextArea id="description" class="input min-h-32" @bind-Value="model.Description"
+                                   maxlength="@TicketLimits.DescriptionMax"
+                                   placeholder="Co się stało, od kiedy, czego potrzebujesz?" data-testid="description" />
+                    <ValidationMessage For="() => model.Description" />
+                </div>
+                <div>
+                    <p class="label flex items-center gap-1.5"><Icon Name="paperclip" Class="size-4 text-ink-500" /> Załączniki <span class="font-normal text-ink-500">(opcjonalnie)</span></p>
+                    <AttachmentPicker @ref="picker" Files="files" Hint="@AttachmentHint" />
+                </div>
+            </section>
+
+            <fieldset>
+                <legend class="contents"><StepTitle Number="4" Text="Jak pilne?" /></legend>
+                <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                    @foreach (var priority in Enum.GetValues<Priority>())
+                    {
+                        var chosen = model.Priority == priority;
+                        var look = CategoryLook.For(priority);
+                        <label class="flex cursor-pointer items-center gap-2.5 rounded-xl border p-2.5 text-sm transition @(chosen ? $"{look.Chosen} ring-1 shadow-sm" : "border-ink-200 bg-white hover:border-ink-300")"
+                               data-testid="priority-@priority">
+                            <input type="radio" class="sr-only" name="@(FormName)-priority" value="@priority"
+                                   checked="@chosen" @onchange="() => model.Priority = priority" />
+                            <span class="flex size-8 shrink-0 items-center justify-center rounded-lg @look.Bubble">
+                                <Icon Name="@look.Icon" Class="size-4" />
+                            </span>
+                            <span>
+                                <span class="block font-semibold text-ink-900">@PriorityNames.Name(priority)</span>
+                                <span class="block text-xs text-ink-500">@PriorityNames.SlaText(priority)</span>
+                            </span>
+                        </label>
+                    }
+                </div>
+                <ValidationMessage For="() => model.Priority" />
+            </fieldset>
+        </div>
+
+        <div class="space-y-6 lg:col-span-2">
+            <section class="rounded-xl border border-ink-200 bg-ink-50/60 p-4">
+                <StepTitle Number="5" Text="Kto zgłasza?" />
+                @if (ForAgent)
+                {
+                    <div class="mb-4">
+                        <label class="label" for="reported-at">Data i godzina zgłoszenia</label>
+                        <DateTimePicker Id="reported-at" TestId="reported-at" @bind-Value="model.ReportedAt"
+                                        Max="MaxReportedAt" Min="MinReportedAt" />
+                        <ValidationMessage For="() => model.ReportedAt" />
+                        <p class="mt-1 text-xs text-ink-500">Można cofnąć do 30 dni, nie w przyszłość.</p>
+                    </div>
+                }
+
+                <RequesterPicker People="People" @bind-PersonId="model.RequesterPersonId" @bind-Incognito="model.Incognito" />
+            </section>
+
+            @if (Deadline is { } deadline)
+            {
+                <div class="flex items-center gap-3 rounded-xl border border-halcyon-200 bg-halcyon-50 px-4 py-3 text-sm" data-testid="deadline-preview">
+                    <span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-halcyon-700 shadow-sm">
+                        <Icon Name="clock" Class="size-5" />
+                    </span>
+                    <span>
+                        <span class="block text-xs text-ink-600">Termin realizacji</span>
+                        <strong class="font-mono text-ink-900" data-testid="deadline-preview-value">@LocalTime.Format(deadline)</strong>
+                        <span class="ml-1"><TimeLeft Deadline="deadline" Status="TicketStatus.InPool" /></span>
+                    </span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <Notice Message="@error" />
+
+    <div class="flex justify-end border-t border-ink-100 pt-5">
+        <button type="submit" class="btn btn-primary px-5 py-2.5" disabled="@busy" data-testid="submit">
+            <Icon Name="send" /> @SubmitText
+        </button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter]
+    public bool ForAgent { get; set; }
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<PersonRow> People { get; set; } = [];
+
+    /// <summary>
+    /// Called with the filled command; a <see cref="DomainException"/> is shown to the user. An EventCallback, so the
+    /// page that owns the form re-renders afterwards (a plain Func left the public page's confirmation unseen).
+    /// </summary>
+    [Parameter, EditorRequired]
+    public EventCallback<ReportTicketCommand> OnSubmit { get; set; }
+
+    [Parameter]
+    public string SubmitText { get; set; } = "Wyślij zgłoszenie";
+
+    [Parameter]
+    public string FormName { get; set; } = "report";
+
+    /// <summary>A request prepared elsewhere (spec 008: recruitment orders a campaign from marketing).</summary>
+    [Parameter]
+    public ReportPrefill? Prefill { get; set; }
+
+    [Inject]
+    private TimeProvider Time { get; set; } = null!;
+
+    private ReportModel model = new();
+    private readonly List<PendingFile> files = [];
+    private AttachmentPicker? picker;
+
+    /// <summary>What to attach, said for the chosen team.</summary>
+    private string AttachmentHint =>
+        model.CategoryKey switch
+        {
+            "it" => "Np. zrzut ekranu z błędem aplikacji albo plik z logiem",
+            "marketing" => "Np. brief, logo, zdjęcia, materiały do kampanii",
+            "legal" => "Np. projekt umowy, korespondencja, pismo",
+            "hr-abroad" or "hr-poland" => "Np. skan dokumentu, zaświadczenie, formularz",
+            "recruitment" => "Np. opis stanowiska, zamówienie klienta, CV kandydata",
+            "finance" => "Np. skan faktury, rachunek, potwierdzenie przelewu",
+            "legalization" => "Np. skan paszportu, wizy, umowy najmu, decyzji urzędu",
+            _ => "Zrzuty ekranu, dokumenty, materiały",
+        };
+    private string? error;
+    private bool busy;
+
+    private Category? SelectedCategory => CategoryCatalog.Default.FindCategory(model.CategoryKey);
+
+    private IReadOnlyList<FieldDefinition> SelectedFields =>
+        CategoryCatalog.Default.FindSubcategory(model.SubcategoryKey)?.Subcategory.ReportFields ?? [];
+
+    /// <summary>Kept across subcategories (the same key means the same thing); only the chosen one's are sent.</summary>
+    private Dictionary<string, string?> fieldValues = [];
+
+    private DateTimeOffset MaxReportedAt => Time.GetUtcNow();
+    private DateTimeOffset MinReportedAt => Time.GetUtcNow() - TicketLimits.MaxBackdating;
+
+    private DateTimeOffset? Deadline =>
+        model.Priority is { } priority
+            ? Sla.DeadlineFor(ForAgent ? model.ReportedAt ?? Time.GetUtcNow() : Time.GetUtcNow(), priority)
+            : null;
+
+    protected override void OnInitialized()
+    {
+        if (ForAgent)
+        {
+            var now = Time.GetUtcNow();
+            model.ReportedAt = new DateTimeOffset(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, now.Offset);
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Prefill is not { } prefill || prefilled)
+            return;
+        prefilled = true;
+        if (CategoryCatalog.Default.FindSubcategory(prefill.SubcategoryKey) is { } found && found.Subcategory.Active)
+        {
+            model.CategoryKey = found.Category.Key;
+            model.SubcategoryKey = found.Subcategory.Key;
+        }
+        model.Title = prefill.Title;
+        model.Description = prefill.Description;
+        model.RequesterPersonId = prefill.RequesterPersonId;
+        foreach (var (key, value) in prefill.Fields)
+            fieldValues[key] = value;
+    }
+
+    private bool prefilled;
+
+    private void ChooseCategory(string key)
+    {
+        if (model.CategoryKey == key)
+            return;
+        model.CategoryKey = key;
+        // A new category never keeps a subcategory of the old one.
+        model.SubcategoryKey = null;
+    }
+
+    private async Task SubmitAsync()
+    {
+        error = null;
+        busy = true;
+        try
+        {
+            await OnSubmit.InvokeAsync(
+                new ReportTicketCommand(
+                    model.Title,
+                    model.Description,
+                    model.CategoryKey,
+                    model.SubcategoryKey,
+                    model.Priority,
+                    ForAgent ? model.ReportedAt : null,
+                    model.RequesterPersonId,
+                    model.Incognito,
+                    files.ToList(),
+                    SelectedFields.ToDictionary(f => f.Key, f => fieldValues.GetValueOrDefault(f.Key))
+                )
+            );
+            model = new ReportModel();
+            fieldValues = [];
+            files.Clear();
+            picker?.Reset();
+            OnInitialized();
+        }
+        catch (DomainException exception)
+        {
+            error = exception.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private sealed class ReportModel
+    {
+        [Required(ErrorMessage = "Podaj tytuł.")]
+        [MaxLength(TicketLimits.TitleMax, ErrorMessage = "Tytuł jest za długi.")]
+        public string? Title { get; set; }
+
+        [Required(ErrorMessage = "Opisz sprawę.")]
+        [MaxLength(TicketLimits.DescriptionMax, ErrorMessage = "Opis jest za długi.")]
+        public string? Description { get; set; }
+
+        [Required(ErrorMessage = "Wybierz kategorię.")]
+        public string? CategoryKey { get; set; }
+
+        [Required(ErrorMessage = "Wybierz podkategorię.")]
+        public string? SubcategoryKey { get; set; }
+
+        [Required(ErrorMessage = "Wybierz priorytet.")]
+        public Priority? Priority { get; set; }
+
+        public DateTimeOffset? ReportedAt { get; set; }
+
+        public Guid? RequesterPersonId { get; set; }
+
+        public bool Incognito { get; set; }
+    }
+}

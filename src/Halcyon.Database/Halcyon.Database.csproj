@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Marten store described once for the host and the migrator, its documents, projections, migrations and
+       the seed (ADR-0002, ADR-0006). -->
+  <PropertyGroup>
+    <RootNamespace>Halcyon.Database</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Marten" />
+    <PackageReference Include="Npgsql.DependencyInjection" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Halcyon.Domain/Halcyon.Domain.csproj" />
+  </ItemGroup>
+</Project>

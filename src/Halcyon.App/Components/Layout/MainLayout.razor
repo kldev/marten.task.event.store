@@ -1,0 +1,72 @@
+@* The agents' layout. It owns the clock (ADR-0004): every 30 s "Now" moves on, so time left, warnings and alerts
+   update without a reload, and the header counters ask the database again. *@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject TimeProvider Time
+@using Halcyon.App.Infrastructure
+
+<div class="min-h-screen lg:flex">
+    <aside class="bg-ink-900 text-white lg:fixed lg:inset-y-0 lg:w-60">
+        <div class="flex items-center gap-2 px-5 py-4">
+            <span class="flex size-8 items-center justify-center rounded-lg bg-halcyon-600">
+                <Icon Name="bird" Class="size-5 text-white" />
+            </span>
+            <span class="text-lg font-semibold tracking-tight">Halcyon</span>
+            <span class="ml-auto size-1.5 rounded-full bg-rufous-500 lg:hidden"></span>
+        </div>
+        <nav class="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:overflow-visible" aria-label="Menu główne">
+            <NavLink class="nav-link shrink-0" href="" Match="NavLinkMatch.All" data-testid="nav-pool"><Icon Name="inbox" /> Pula</NavLink>
+            <NavLink class="nav-link shrink-0" href="moje" data-testid="nav-mine"><Icon Name="user" /> Moje zgłoszenia</NavLink>
+            <NavLink class="nav-link shrink-0" href="wszystkie" data-testid="nav-all"><Icon Name="list" /> Wszystkie</NavLink>
+            <NavLink class="nav-link shrink-0" href="nowe" data-testid="nav-new"><Icon Name="plus" /> Nowe zgłoszenie</NavLink>
+            <NavLink class="nav-link shrink-0" href="agenci" data-testid="nav-agents"><Icon Name="users" /> Agenci</NavLink>
+            <NavLink class="nav-link shrink-0" href="osoby" data-testid="nav-people"><Icon Name="contact" /> Osoby</NavLink>
+            <p class="hidden px-3 pt-4 pb-1 text-[11px] font-semibold tracking-wide text-ink-400 uppercase lg:block">Raporty</p>
+            <NavLink class="nav-link shrink-0" href="raporty/kadry-polska" data-testid="nav-report-kadry-polska"><Icon Name="briefcase" /> Kadry Polska</NavLink>
+            <NavLink class="nav-link shrink-0" href="raporty/kadry-zagranica" data-testid="nav-report-kadry-zagranica"><Icon Name="globe" /> Kadry Zagranica</NavLink>
+            <NavLink class="nav-link shrink-0" href="raporty/finanse" data-testid="nav-report-finanse"><Icon Name="banknote" /> Finanse</NavLink>
+            <NavLink class="nav-link shrink-0" href="raporty/rekrutacja" data-testid="nav-report-rekrutacja"><Icon Name="users" /> Rekrutacja</NavLink>
+            <NavLink class="nav-link shrink-0" href="raporty/marketing" data-testid="nav-report-marketing"><Icon Name="megaphone" /> Marketing</NavLink>
+            <NavLink class="nav-link shrink-0" href="raporty/agenci" data-testid="nav-report-agents"><Icon Name="chart-column" /> Praca agentów</NavLink>
+        </nav>
+        <p class="hidden px-5 py-3 font-mono text-[11px] text-ink-500 lg:absolute lg:bottom-0 lg:block" title="@(AppVersion.Commit ?? "commit nieznany")" data-testid="app-version">@AppVersion.Text</p>
+    </aside>
+
+    <div class="flex min-w-0 flex-1 flex-col lg:pl-60">
+        <header class="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-ink-200 bg-white/90 px-4 py-3 backdrop-blur sm:px-6">
+            <AlertCounters Now="now" />
+            <div class="ml-auto flex items-center gap-3">
+                <AuthorizeView>
+                    <span class="hidden text-sm text-ink-600 sm:inline" data-testid="current-agent">@context.User.Identity?.Name</span>
+                </AuthorizeView>
+                <form method="post" action="auth/logout" data-enhance="false">
+                    <button type="submit" class="btn btn-ghost btn-sm" data-testid="logout"><Icon Name="logout" /> Wyloguj</button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+            <CascadingValue Name="Now" Value="now">
+                @Body
+            </CascadingValue>
+        </main>
+    </div>
+</div>
+
+@code {
+    private static readonly TimeSpan Tick = TimeSpan.FromSeconds(30);
+    private DateTimeOffset now;
+    private ITimer? timer;
+
+    protected override void OnInitialized()
+    {
+        now = Time.GetUtcNow();
+        timer = Time.CreateTimer(_ => InvokeAsync(() =>
+        {
+            now = Time.GetUtcNow();
+            StateHasChanged();
+        }), null, Tick, Tick);
+    }
+
+    public void Dispose() => timer?.Dispose();
+}

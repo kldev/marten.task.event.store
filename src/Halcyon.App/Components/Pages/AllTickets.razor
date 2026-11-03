@@ -1,0 +1,25 @@
+@page "/wszystkie"
+
+<PageTitle>Wszystkie zgłoszenia · Halcyon</PageTitle>
+
+<div class="space-y-5">
+    <div>
+        <h1>Wszystkie zgłoszenia</h1>
+        <p class="mt-1 text-sm text-ink-500">Otwarte według terminu, potem zrealizowane.</p>
+    </div>
+    <TicketListView Scope="TicketScope.All" InitialDeadline="InitialDeadline" />
+</div>
+
+@code {
+    /// <summary>From the header counters: ?termin=po-terminie | konczy-sie.</summary>
+    [SupplyParameterFromQuery(Name = "termin")]
+    public string? Termin { get; set; }
+
+    private DeadlineFilter InitialDeadline =>
+        Termin switch
+        {
+            "po-terminie" => DeadlineFilter.Overdue,
+            "konczy-sie" => DeadlineFilter.DueSoon,
+            _ => DeadlineFilter.Any,
+        };
+}

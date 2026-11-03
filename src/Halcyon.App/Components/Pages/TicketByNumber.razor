@@ -1,0 +1,29 @@
+@page "/zgloszenia/numer/{Number}"
+@inject TicketQueries Queries
+@inject NavigationManager Navigation
+
+@* A linked ticket in the report data is stored by its number (spec 008); this finds it and opens its page. *@
+<PageTitle>@Number · Halcyon</PageTitle>
+
+@if (missing)
+{
+    <div class="card p-8 text-center" data-testid="ticket-missing">
+        <h1>Nie ma zgłoszenia @Number</h1>
+        <a href="" class="mt-3 inline-block text-sm text-halcyon-700 hover:underline">Wróć do puli</a>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string Number { get; set; } = "";
+
+    private bool missing;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (await Queries.FindByNumberAsync(Number) is { } id)
+            Navigation.NavigateTo($"zgloszenia/{id}", replace: true);
+        else
+            missing = true;
+    }
+}

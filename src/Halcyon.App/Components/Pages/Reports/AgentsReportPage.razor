@@ -1,0 +1,55 @@
+@page "/raporty/agenci"
+@using Halcyon.App.Features.Reports
+@inject AgentReportQueries Reports
+
+<PageTitle>Raport: praca agentów · Halcyon</PageTitle>
+
+<div class="space-y-5" data-testid="agents-report-page">
+    <div>
+        <p class="text-xs text-ink-500"><a href="raporty" class="hover:underline">Raporty</a> /</p>
+        <h1>Praca agentów</h1>
+        <p class="mt-1 text-sm text-ink-500">
+            Okresy kalendarzowe: tydzień od poniedziałku do niedzieli, cały miesiąc, 3 miesiące (bieżący i dwa poprzednie).
+            Liczone z historii zgłoszeń: kto przejął z puli i kto zrealizował.
+        </p>
+    </div>
+
+    <div>
+        <span class="label text-xs" id="periods-label">Okresy</span>
+        <div class="inline-flex rounded-lg border border-ink-200 bg-white p-0.5" role="radiogroup" aria-labelledby="periods-label" data-testid="filter-periods">
+            @foreach (var (value, text) in Options)
+            {
+                var chosen = periods == value;
+                <button type="button" role="radio" aria-checked="@(chosen ? "true" : "false")"
+                        class="rounded-md px-3 py-1 text-sm transition @(chosen ? "bg-halcyon-700 font-medium text-white shadow-sm" : "text-ink-600 hover:bg-ink-50")"
+                        data-testid="filter-periods-@value.ToString().ToLowerInvariant()" @onclick="() => ChooseAsync(value)">
+                    @text
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (table is not null)
+    {
+        <ReportTableView Table="table" ExportUrl="f => ReportExportEndpoints.AgentsUrlFor(periods, f)" />
+    }
+</div>
+
+@code {
+    private static readonly (AgentPeriods Value, string Text)[] Options =
+    [
+        (AgentPeriods.Current, "Bieżące"),
+        (AgentPeriods.Previous, "Poprzednie pełne"),
+    ];
+
+    private AgentPeriods periods;
+    private ReportTable? table;
+
+    protected override async Task OnInitializedAsync() => table = await Reports.RunAsync(periods);
+
+    private async Task ChooseAsync(AgentPeriods value)
+    {
+        periods = value;
+        table = await Reports.RunAsync(periods);
+    }
+}

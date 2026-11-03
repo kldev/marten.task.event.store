@@ -1,0 +1,439 @@
+@page "/zgloszenia/{Id:guid}"
+@inject TicketQueries Queries
+@inject TakeTicket Take
+@inject ChangeTicketPriority ChangePriority
+@inject CommentOnTicket Comment
+@inject AddTicketAttachments Attach
+@inject UpdateTicketFields UpdateFields
+@inject AssignTicketHandler AssignHandler
+@inject AgentDirectory Directory
+@inject CurrentAgent CurrentAgent
+@inject TicketChanges Changes
+@inject TimeProvider Time
+
+<PageTitle>@(details?.Ticket.Number ?? "Zgłoszenie") · Halcyon</PageTitle>
+
+@if (loaded && details is null)
+{
+    <div class="card p-8 text-center" data-testid="ticket-missing">
+        <h1>Nie ma takiego zgłoszenia</h1>
+        <a href="" class="mt-3 inline-block text-sm text-halcyon-700 hover:underline">Wróć do puli</a>
+    </div>
+}
+else if (details is { } d)
+{
+    var t = d.Ticket;
+    <div class="space-y-5" data-testid="ticket-page" data-ticket="@t.Number">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <p class="font-mono text-xs text-ink-500" data-testid="ticket-number">@t.Number</p>
+                <h1 data-testid="ticket-title">@t.Title</h1>
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <Badges Status="t.Status" />
+                    <Badges Priority="t.Priority" />
+                    <TimeLeft Deadline="t.Deadline" Status="t.Status" ResolvedLate="t.ResolvedLate" />
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                @if (t.Status == TicketStatus.InPool)
+                {
+                    <button type="button" class="btn btn-primary" data-testid="take" @onclick="TakeAsync"><Icon Name="flag" /> Przejmij</button>
+                }
+                else if (t.Status == TicketStatus.InProgress && t.AssigneeId == me)
+                {
+                    <WorkActions Ticket="t" Done="OnWorkDoneAsync" />
+                }
+            </div>
+        </div>
+
+        <Notice Kind="success" Message="@success" />
+        <Notice Message="@error" />
+
+        <div class="grid gap-5 lg:grid-cols-3">
+            <div class="space-y-5 lg:col-span-2">
+                <section class="card p-5">
+                    <h2 class="mb-2">Opis</h2>
+                    <p class="text-sm whitespace-pre-line text-ink-800" data-testid="ticket-description">@t.Description</p>
+                </section>
+
+                <section class="card p-5" data-testid="attachments">
+                    <h2 class="mb-3 flex items-center gap-2"><Icon Name="paperclip" Class="size-4 text-ink-500" /> Załączniki (@t.Attachments.Count)</h2>
+                    @if (t.Attachments.Count > 0)
+                    {
+                        <ul class="mb-4 grid gap-3 sm:grid-cols-2">
+                            @foreach (var a in t.Attachments)
+                            {
+                                var url = AttachmentEndpoints.UrlFor(t.Id, a.Id);
+                                <li class="group overflow-hidden rounded-xl border border-ink-200 bg-white" data-testid="attachment">
+                                    @if (AttachmentRules.IsImage(a.ContentType))
+                                    {
+                                        <a href="@url" target="_blank" rel="noopener" class="block bg-ink-100">
+                                            <img src="@url" alt="@a.FileName" loading="lazy" class="h-36 w-full object-cover transition group-hover:opacity-90" />
+                                        </a>
+                                    }
+                                    <div class="flex items-center gap-3 p-2.5">
+                                        @if (!AttachmentRules.IsImage(a.ContentType))
+                                        {
+                                            <span class="flex size-10 shrink-0 items-center justify-center rounded-md bg-ink-100 text-ink-600">
+                                                <Icon Name="@AttachmentPicker.FileIcon(a.ContentType)" Class="size-5" />
+                                            </span>
+                                        }
+                                        <span class="min-w-0 flex-1">
+                                            <a href="@url" target="_blank" rel="noopener" class="block truncate text-sm font-medium text-ink-800 hover:text-halcyon-700 hover:underline" title="@a.FileName" data-testid="attachment-name">@a.FileName</a>
+                                            <span class="block truncate text-xs text-ink-500">@AttachmentRules.SizeText(a.Size) · @a.AddedBy · @LocalTime.Format(a.At)</span>
+                                        </span>
+                                        <a href="@AttachmentEndpoints.UrlFor(t.Id, a.Id, download: true)" class="btn btn-ghost btn-sm" title="Pobierz" aria-label="Pobierz @a.FileName" data-testid="attachment-download">
+                                            <Icon Name="download" />
+                                        </a>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    <AttachmentPicker @ref="picker" Files="newFiles" Existing="t.Attachments.Count" FilesChanged="StateHasChanged" />
+                    @if (newFiles.Count > 0)
+                    {
+                        <div class="mt-3 flex justify-end">
+                            <button type="button" class="btn btn-secondary" disabled="@attaching" data-testid="attachments-submit" @onclick="AttachAsync">
+                                <Icon Name="paperclip" /> Dodaj @(newFiles.Count == 1 ? "plik" : $"pliki ({newFiles.Count})")
+                            </button>
+                        </div>
+                    }
+                </section>
+
+                <section class="card p-5" data-testid="comments">
+                    <h2 class="mb-3">Komentarze (@d.Timeline.Count(e => e.Kind == TimelineKind.Commented))</h2>
+                    <ul class="mb-4 space-y-3">
+                        @foreach (var c in d.Timeline.Where(e => e.Kind == TimelineKind.Commented))
+                        {
+                            <li class="rounded-lg bg-ink-50 px-3 py-2" data-testid="comment">
+                                <div class="text-xs text-ink-500"><strong class="text-ink-700" data-testid="comment-author">@c.Actor</strong> · @LocalTime.Format(c.At)</div>
+                                <p class="mt-1 text-sm whitespace-pre-line text-ink-800" data-testid="comment-text">@c.Note</p>
+                            </li>
+                        }
+                    </ul>
+                    <label class="label" for="comment">Dodaj komentarz</label>
+                    <textarea id="comment" class="input min-h-20" maxlength="@TicketLimits.CommentMax" data-testid="comment-input" @bind="commentText"></textarea>
+                    <div class="mt-2 flex justify-end">
+                        <button type="button" class="btn btn-secondary" data-testid="comment-submit" @onclick="CommentAsync">
+                            <Icon Name="message" /> Dodaj komentarz
+                        </button>
+                    </div>
+                </section>
+
+                <section class="card p-5" data-testid="timeline">
+                    <h2 class="mb-3">Historia</h2>
+                    <ol class="relative space-y-4 border-l border-ink-200 pl-5">
+                        @foreach (var e in d.Timeline)
+                        {
+                            <li data-testid="timeline-entry" data-kind="@e.Kind">
+                                <span class="absolute -left-1.5 mt-1.5 size-3 rounded-full border-2 border-white bg-halcyon-500"></span>
+                                <div class="text-xs text-ink-500">@LocalTime.Format(e.At) · @e.Actor</div>
+                                <div class="text-sm font-medium text-ink-800">@e.Text</div>
+                                @if (!string.IsNullOrEmpty(e.Note) && e.Kind != TimelineKind.Commented)
+                                {
+                                    <div class="text-sm text-ink-600">„@e.Note”</div>
+                                }
+                            </li>
+                        }
+                    </ol>
+                </section>
+            </div>
+
+            <aside class="space-y-5">
+                <section class="card space-y-3 p-5 text-sm">
+                    <Field Label="Kategoria">@d.CategoryName</Field>
+                    <Field Label="Podkategoria">@d.SubcategoryName</Field>
+                    <Field Label="Zgłaszający" TestId="ticket-requester">@t.RequesterName</Field>
+                    <Field Label="Kanał">@(t.Channel == ReportChannel.SelfService ? "Samodzielnie (strona publiczna)" : $"Agent: {t.RegisteredByName}")</Field>
+                    <Field Label="Data zgłoszenia">@LocalTime.Format(t.ReportedAt)</Field>
+                    <Field Label="Termin" TestId="ticket-deadline">@LocalTime.Format(t.Deadline)</Field>
+                    <Field Label="Realizuje" TestId="ticket-assignee">@(t.AssigneeName ?? "- (w puli)")</Field>
+                    <Field Label="Osoba realizująca" TestId="ticket-handler">@(t.HandlerName ?? "-")</Field>
+                    @if (t.OriginalPriority != t.Priority)
+                    {
+                        <Field Label="Pierwotny priorytet">@PriorityNames.Name(t.OriginalPriority)</Field>
+                    }
+                </section>
+
+                @if (t.Status == TicketStatus.InProgress && t.AssigneeId == me)
+                {
+                    <section class="card space-y-3 p-5 text-sm" data-testid="handler-assign">
+                        <h2 class="flex items-center gap-2"><Icon Name="user-plus" Class="size-4 text-ink-500" /> Osoba realizująca</h2>
+                        <p class="text-xs text-ink-500">
+                            Gdy sam nie możesz tego załatwić (np. system ci nie pozwala), wskaż osobę
+                            @(Department is { } dept ? $"z działu {dept}" : "z listy"), która zajmie się sprawą. Zgłoszenie zostaje u ciebie.
+                        </p>
+                        <select class="input" data-testid="handler-select" @bind="handlerId">
+                            <option value="">- bez osoby realizującej -</option>
+                            @foreach (var person in Candidates)
+                            {
+                                <option value="@person.Id">@person.FirstName @person.LastName (@person.Department)</option>
+                            }
+                        </select>
+                        <input class="input" placeholder="Powód, np. brak uprawnień w systemie kadrowym" maxlength="@TicketLimits.ReasonMax" data-testid="handler-reason" @bind="handlerReason" />
+                        <button type="button" class="btn btn-secondary w-full" data-testid="handler-submit" @onclick="AssignHandlerAsync">Zapisz osobę realizującą</button>
+                    </section>
+                }
+
+                @if (FieldDefinitions.Count > 0)
+                {
+                    <section class="card space-y-3 p-5 text-sm" data-testid="ticket-fields">
+                        <div class="flex items-center justify-between gap-2">
+                            <h2 class="flex items-center gap-2"><Icon Name="file-spreadsheet" Class="size-4 text-ink-500" /> Dane do raportu</h2>
+                            @if (!editingFields)
+                            {
+                                <button type="button" class="btn btn-ghost btn-sm" data-testid="fields-edit" @onclick="StartEditingFields">Uzupełnij</button>
+                            }
+                        </div>
+                        @if (editingFields)
+                        {
+                            <ReportFieldInputs Definitions="FieldDefinitions" Values="fieldValues" IdPrefix="ticket-field" />
+                            <div class="flex justify-end gap-2">
+                                <button type="button" class="btn btn-ghost btn-sm" data-testid="fields-cancel" @onclick="() => editingFields = false">Anuluj</button>
+                                <button type="button" class="btn btn-secondary btn-sm" data-testid="fields-submit" @onclick="SaveFieldsAsync">Zapisz dane</button>
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var field in FieldDefinitions)
+                            {
+                                <Field Label="@field.Label" TestId="@($"ticket-field-{field.Key}")">
+                                    @if (t.Fields.GetValueOrDefault(field.Key) is not { } value)
+                                    {
+                                        @("-")
+                                    }
+                                    else if (field.Kind == FieldKind.TicketNumber)
+                                    {
+                                        <a href="zgloszenia/numer/@value" class="font-mono text-halcyon-700 hover:underline" data-testid="related-ticket-link">@value</a>
+                                    }
+                                    else
+                                    {
+                                        @FieldText(field, value)
+                                    }
+                                </Field>
+                            }
+                        }
+                    </section>
+                }
+
+                @if (t.CategoryKey == "recruitment")
+                {
+                    <section class="card space-y-3 p-5 text-sm" data-testid="campaigns">
+                        <h2 class="flex items-center gap-2"><Icon Name="megaphone" Class="size-4 text-ink-500" /> Kampanie w marketingu</h2>
+                        @if (campaigns.Count == 0)
+                        {
+                            <p class="text-ink-500">Rekrutacja nie zamówiła jeszcze kampanii dla tego zgłoszenia.</p>
+                        }
+                        else
+                        {
+                            <ul class="space-y-2">
+                                @foreach (var c in campaigns)
+                                {
+                                    <li data-testid="campaign">
+                                        <a href="zgloszenia/@c.Id" class="font-medium text-ink-900 hover:text-halcyon-700 hover:underline">@c.Title</a>
+                                        <div class="text-xs text-ink-500">
+                                            @c.Number · @PriorityNames.Status(c.Status)
+                                            @if (c.Fields.GetValueOrDefault("channels") is { } channels)
+                                            {
+                                                <span> · @channels</span>
+                                            }
+                                            @if (c.Fields.GetValueOrDefault("amount") is { } amount && ReportFields.ParseAmount(amount) is { } money)
+                                            {
+                                                <span> · @money.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pl-PL")) @c.Fields.GetValueOrDefault("currency")</span>
+                                            }
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        <a href="@ReportPrefill.CampaignUrlFor(t)" class="btn btn-secondary w-full" data-testid="order-campaign">
+                            <Icon Name="megaphone" /> Zamów kampanię w marketingu
+                        </a>
+                    </section>
+                }
+
+                @if (t.Status != TicketStatus.Done)
+                {
+                    <section class="card space-y-3 p-5" data-testid="priority-change">
+                        <h2>Zmień priorytet</h2>
+                        <select class="input" data-testid="priority-select" @bind="newPriority">
+                            @foreach (var p in Enum.GetValues<Priority>())
+                            {
+                                <option value="@p">@PriorityNames.Name(p) (@PriorityNames.SlaText(p))</option>
+                            }
+                        </select>
+                        <p class="text-xs text-ink-600" data-testid="priority-preview">
+                            Nowy termin: <strong class="font-mono">@LocalTime.Format(Sla.DeadlineFor(t.ReportedAt, newPriority))</strong>
+                            (liczony od daty zgłoszenia)
+                        </p>
+                        <input class="input" placeholder="Powód (opcjonalnie)" maxlength="@TicketLimits.ReasonMax" data-testid="priority-reason" @bind="priorityReason" />
+                        <button type="button" class="btn btn-secondary w-full" data-testid="priority-submit" @onclick="ChangePriorityAsync">Zapisz priorytet</button>
+                    </section>
+                }
+            </aside>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    [SupplyParameterFromQuery(Name = "nowe")]
+    public string? IsNew { get; set; }
+
+    private TicketDetails? details;
+    private bool loaded;
+    private Guid me;
+    private string? success;
+    private string? error;
+    private string? commentText;
+    private Priority newPriority;
+    private string? priorityReason;
+    private readonly List<PendingFile> newFiles = [];
+    private AttachmentPicker? picker;
+    private bool attaching;
+    private bool editingFields;
+    private IReadOnlyList<PersonRow> people = [];
+    private string handlerId = "";
+    private string? handlerReason;
+
+    private string? Department =>
+        details is null ? null : CategoryCatalog.Default.FindCategory(details.Ticket.CategoryKey)?.Department;
+
+    /// <summary>The category's department only, when it has one (HR: people from Kadry).</summary>
+    private IEnumerable<PersonRow> Candidates =>
+        Department is { } dept ? people.Where(p => string.Equals(p.Department, dept, StringComparison.OrdinalIgnoreCase)) : people;
+
+    private Task AssignHandlerAsync() =>
+        RunAsync(async agent =>
+        {
+            var assigned = await AssignHandler.ExecuteAsync(Id, agent, Guid.TryParse(handlerId, out var id) ? id : null, handlerReason);
+            handlerReason = null;
+            return assigned switch
+            {
+                null => "Osoba realizująca bez zmian.",
+                { Person: { } person } => $"Do realizacji: {person.FullName}.",
+                _ => "Usunięto osobę realizującą.",
+            };
+        });
+    private IReadOnlyList<TicketView> campaigns = [];
+    private Dictionary<string, string?> fieldValues = [];
+
+    private IReadOnlyList<FieldDefinition> FieldDefinitions =>
+        details is null
+            ? []
+            : CategoryCatalog.Default.FindSubcategory(details.Ticket.SubcategoryKey)?.Subcategory.ReportFields ?? [];
+
+    private static string FieldText(FieldDefinition field, string value) =>
+        field.Kind switch
+        {
+            FieldKind.Date when DateOnly.TryParseExact(value, ReportFields.DateFormat, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var day) =>
+                day.ToString("dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture),
+            FieldKind.Amount when ReportFields.ParseAmount(value) is { } amount =>
+                amount.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pl-PL")),
+            _ => value,
+        };
+
+    private void StartEditingFields()
+    {
+        fieldValues = FieldDefinitions.ToDictionary(f => f.Key, f => details!.Ticket.Fields.GetValueOrDefault(f.Key));
+        editingFields = true;
+    }
+
+    private Task SaveFieldsAsync() =>
+        RunAsync(async agent =>
+        {
+            var updated = await UpdateFields.ExecuteAsync(Id, agent, fieldValues);
+            editingFields = false;
+            return updated is null ? "Dane bez zmian." : $"Zapisano dane do raportu ({updated.Changes.Count}).";
+        });
+
+    protected override async Task OnParametersSetAsync()
+    {
+        me = (await CurrentAgent.GetAsync()).Id;
+        await LoadAsync();
+        if (IsNew == "1" && details is not null)
+            success = $"Zgłoszenie {details.Ticket.Number} dodane do puli.";
+    }
+
+    private async Task LoadAsync()
+    {
+        details = await Queries.DetailsAsync(Id);
+        loaded = true;
+        handlerId = details?.Ticket.HandlerId?.ToString() ?? "";
+        if (people.Count == 0)
+            people = await Directory.PeopleAsync();
+        campaigns = details is { Ticket.CategoryKey: "recruitment" } ? await Queries.LinkedCampaignsAsync(details.Ticket.Number) : [];
+        if (details is not null)
+            newPriority = details.Ticket.Priority;
+    }
+
+    private async Task RunAsync(Func<Domain.People.AgentRef, Task<string?>> action)
+    {
+        success = error = null;
+        try
+        {
+            success = await action(await CurrentAgent.GetAsync());
+        }
+        catch (DomainException exception)
+        {
+            error = exception.Message;
+        }
+        await LoadAsync();
+        await Changes.NotifyAsync();
+    }
+
+    private Task TakeAsync() =>
+        RunAsync(async agent =>
+        {
+            await Take.ExecuteAsync(Id, agent);
+            return "Przejęto zgłoszenie.";
+        });
+
+    private Task ChangePriorityAsync() =>
+        RunAsync(async agent =>
+        {
+            var changed = await ChangePriority.ExecuteAsync(Id, agent, newPriority, priorityReason);
+            priorityReason = null;
+            return changed is null
+                ? "Priorytet bez zmian."
+                : $"Priorytet zmieniony: {PriorityNames.Name(changed.From)} → {PriorityNames.Name(changed.To)}.";
+        });
+
+    private Task CommentAsync() =>
+        RunAsync(async agent =>
+        {
+            await Comment.ExecuteAsync(Id, agent, commentText);
+            commentText = null;
+            return "Komentarz dodany.";
+        });
+
+    private async Task AttachAsync()
+    {
+        attaching = true;
+        try
+        {
+            await RunAsync(async agent =>
+            {
+                var added = await Attach.ExecuteAsync(Id, agent, newFiles.ToList());
+                newFiles.Clear();
+                picker?.Reset();
+                return added.Count == 1 ? "Załącznik dodany." : $"Dodano załączniki: {added.Count}.";
+            });
+        }
+        finally
+        {
+            attaching = false;
+        }
+    }
+
+    private async Task OnWorkDoneAsync((bool Ok, string Message) result)
+    {
+        success = result.Ok ? result.Message : null;
+        error = result.Ok ? null : result.Message;
+        await LoadAsync();
+        await Changes.NotifyAsync();
+    }
+}

@@ -1,0 +1,107 @@
+@* A list of tickets; the row is tinted by its deadline state and every row links to the ticket page. *@
+@if (Tickets.Count == 0)
+{
+    <div class="card flex flex-col items-center gap-2 px-6 py-12 text-center" data-testid="empty">
+        <Icon Name="inbox" Class="size-8 text-ink-300" />
+        <p class="text-sm text-ink-600">@EmptyText</p>
+    </div>
+}
+else
+{
+    <div class="card overflow-x-auto">
+        <table class="min-w-full divide-y divide-ink-100" data-testid="ticket-table">
+            <thead class="bg-ink-50/60">
+                <tr>
+                    <th class="table-head">Zgłoszenie</th>
+                    <th class="table-head hidden md:table-cell">Kategoria</th>
+                    <th class="table-head">Priorytet</th>
+                    <th class="table-head hidden lg:table-cell">Zgłaszający</th>
+                    @if (ShowAssignee)
+                    {
+                        <th class="table-head hidden md:table-cell">Realizuje</th>
+                    }
+                    <th class="table-head hidden sm:table-cell">Pozostało</th>
+                    @if (Actions is not null)
+                    {
+                        <th class="table-head"><span class="sr-only">Akcje</span></th>
+                    }
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-ink-100">
+                @foreach (var ticket in Tickets)
+                {
+                    var state = ticket.StateAt(CurrentTime);
+                    var (category, subcategory) = CategoryCatalog.Default.NamesFor(ticket.CategoryKey, ticket.SubcategoryKey);
+                    <tr class="@RowClass(state)" data-testid="ticket-row" data-ticket="@ticket.Number" data-state="@state.ToString().ToLowerInvariant()">
+                        <td class="cell">
+                            <a href="zgloszenia/@ticket.Id" class="font-medium text-ink-900 hover:text-halcyon-700 hover:underline" data-testid="ticket-link">@ticket.Title</a>
+                            <div class="mt-0.5 font-mono text-xs text-ink-500">@ticket.Number · @LocalTime.Format(ticket.ReportedAt)</div>
+                            @* On a phone the most important column, time left, sits under the title. *@
+                            <div class="mt-1.5 sm:hidden">
+                                <TimeLeft Deadline="ticket.Deadline" Status="ticket.Status" ResolvedLate="ticket.ResolvedLate" TestId="time-left-compact" />
+                            </div>
+                        </td>
+                        <td class="cell hidden md:table-cell">
+                            <div class="text-ink-800">@category</div>
+                            <div class="text-xs text-ink-500">@subcategory</div>
+                        </td>
+                        <td class="cell"><Badges Priority="ticket.Priority" /></td>
+                        <td class="cell hidden text-ink-700 lg:table-cell">@ticket.RequesterName</td>
+                        @if (ShowAssignee)
+                        {
+                            <td class="cell hidden text-ink-700 md:table-cell" data-testid="assignee">
+                                @if (ticket.AssigneeName is { } name)
+                                {
+                                    @name
+                                    @if (ticket.HandlerName is { } handler)
+                                    {
+                                        <div class="text-xs text-ink-500" data-testid="handler">→ @handler</div>
+                                    }
+                                }
+                                else
+                                {
+                                    <Badges Status="ticket.Status" />
+                                }
+                            </td>
+                        }
+                        <td class="cell hidden sm:table-cell"><TimeLeft Deadline="ticket.Deadline" Status="ticket.Status" ResolvedLate="ticket.ResolvedLate" /></td>
+                        @if (Actions is not null)
+                        {
+                            <td class="cell text-right whitespace-nowrap">@Actions(ticket)</td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<TicketView> Tickets { get; set; } = [];
+
+    [Parameter]
+    public bool ShowAssignee { get; set; }
+
+    [Parameter]
+    public RenderFragment<TicketView>? Actions { get; set; }
+
+    [Parameter]
+    public string EmptyText { get; set; } = "Brak zgłoszeń.";
+
+    [CascadingParameter(Name = "Now")]
+    public DateTimeOffset? Now { get; set; }
+
+    [Inject]
+    private TimeProvider Time { get; set; } = null!;
+
+    private DateTimeOffset CurrentTime => Now ?? Time.GetUtcNow();
+
+    private static string RowClass(DeadlineState state) =>
+        state switch
+        {
+            DeadlineState.Overdue => "row-overdue",
+            DeadlineState.DueSoon => "row-duesoon",
+            _ => "",
+        };
+}

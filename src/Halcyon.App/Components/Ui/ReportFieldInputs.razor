@@ -1,0 +1,95 @@
+@* The report fields of a subcategory (spec 008) as inputs; the values live in the caller's dictionary by field key.
+   The domain checks them on save, this only offers the right control for each kind. *@
+<div class="grid gap-3 sm:grid-cols-2" data-testid="report-fields">
+    @foreach (var field in Definitions)
+    {
+        var id = $"{IdPrefix}-{field.Key}";
+        <div data-testid="report-field-@field.Key">
+            <label class="label" for="@id">
+                @field.Label
+                @if (field.Required)
+                {
+                    <span class="text-rufous-600" aria-hidden="true">*</span>
+                }
+            </label>
+            @switch (field.Kind)
+            {
+                case FieldKind.Date:
+                    <DatePicker Id="@id" TestId="@($"field-{field.Key}")" Value="@Get(field.Key)" ValueChanged="v => Set(field.Key, v)" />
+                    break;
+                case FieldKind.MultiChoice:
+                    var picked = ReportFields.SplitMulti(Get(field.Key));
+                    <div class="flex flex-wrap gap-1.5" role="group" aria-label="@field.Label" id="@id" data-testid="field-@field.Key">
+                        @foreach (var option in field.Options ?? [])
+                        {
+                            var on = picked.Contains(option);
+                            <button type="button" aria-pressed="@(on ? "true" : "false")"
+                                    class="rounded-full border px-2.5 py-1 text-sm transition @(on ? "border-halcyon-500 bg-halcyon-50 font-medium text-halcyon-800 ring-1 ring-halcyon-500" : "border-ink-200 bg-white text-ink-700 hover:border-ink-300")"
+                                    data-testid="field-@(field.Key)-@option" @onclick="() => Toggle(field, option)">
+                                @option
+                            </button>
+                        }
+                    </div>
+                    break;
+                case FieldKind.Choice:
+                    <select id="@id" class="input" data-testid="field-@field.Key" value="@(Get(field.Key) ?? "")"
+                            @onchange="e => Set(field.Key, e.Value?.ToString())">
+                        <option value="">- wybierz -</option>
+                        @if (field.Favorites is { Count: > 0 } favorites)
+                        {
+                            <optgroup label="Najczęściej">
+                                @foreach (var option in favorites)
+                                {
+                                    <option value="@option">@option</option>
+                                }
+                            </optgroup>
+                            <optgroup label="Pozostałe">
+                                @foreach (var option in (field.Options ?? []).Except(favorites))
+                                {
+                                    <option value="@option">@option</option>
+                                }
+                            </optgroup>
+                        }
+                        else
+                        {
+                            @foreach (var option in field.Options ?? [])
+                            {
+                                <option value="@option">@option</option>
+                            }
+                        }
+                    </select>
+                    break;
+                default:
+                    <input id="@id" class="input @(field.Kind is FieldKind.Amount or FieldKind.Iban or FieldKind.Count or FieldKind.TicketNumber ? "font-mono" : "")" type="@(field.Kind == FieldKind.Email ? "email" : "text")"
+                           inputmode="@(field.Kind switch { FieldKind.Amount => "decimal", FieldKind.Count => "numeric", _ => null })"
+                           maxlength="@ReportFields.ValueMax" placeholder="@field.Placeholder" data-testid="field-@field.Key"
+                           value="@Get(field.Key)" @onchange="e => Set(field.Key, e.Value?.ToString())" />
+                    break;
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<FieldDefinition> Definitions { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public Dictionary<string, string?> Values { get; set; } = [];
+
+    [Parameter]
+    public string IdPrefix { get; set; } = "field";
+
+    private string? Get(string key) => Values.GetValueOrDefault(key);
+
+    private void Set(string key, string? value) => Values[key] = value;
+
+    /// <summary>Kept in the list's order, as the domain stores it.</summary>
+    private void Toggle(FieldDefinition field, string option)
+    {
+        var picked = ReportFields.SplitMulti(Get(field.Key)).ToHashSet();
+        if (!picked.Remove(option))
+            picked.Add(option);
+        Values[field.Key] = string.Join(ReportFields.MultiSeparator, (field.Options ?? []).Where(picked.Contains));
+    }
+}

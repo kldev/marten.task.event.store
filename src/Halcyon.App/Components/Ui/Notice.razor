@@ -1,0 +1,17 @@
+@if (!string.IsNullOrEmpty(Message))
+{
+    <div role="@(Kind == "error" ? "alert" : "status")" data-testid="notice-@Kind"
+         class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm @(Kind == "error" ? "bg-red-50 text-red-800 ring-1 ring-red-200" : "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200")">
+        <Icon Name="@(Kind == "error" ? "alarm" : "check")" Class="mt-0.5 size-4 shrink-0" />
+        <span>@Message</span>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? Message { get; set; }
+
+    /// <summary>"error" or "success".</summary>
+    [Parameter]
+    public string Kind { get; set; } = "error";
+}

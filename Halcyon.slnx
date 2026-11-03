@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Halcyon.Domain/Halcyon.Domain.csproj" />
+    <Project Path="src/Halcyon.Database/Halcyon.Database.csproj" />
+    <Project Path="src/Halcyon.App/Halcyon.App.csproj" />
+    <Project Path="src/Halcyon.DbMigrator/Halcyon.DbMigrator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Halcyon.Domain.Tests/Halcyon.Domain.Tests.csproj" />
+    <Project Path="tests/Halcyon.IntegrationTests/Halcyon.IntegrationTests.csproj" />
+    <Project Path="tests/Halcyon.E2E/Halcyon.E2E.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Level 3 (ADR-0007): the real app process in a real browser (Playwright, Chromium), its own database with the seed. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="Microsoft.Playwright" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Halcyon.App/Halcyon.App.csproj" />
+    <ProjectReference Include="../../src/Halcyon.DbMigrator/Halcyon.DbMigrator.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Shouldly" />
+    <Using Include="Microsoft.Playwright" />
+    <Using Static="true" Include="Microsoft.Playwright.Assertions" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- One app and one database for every test: run them one after another so counters and lists stay predictable. -->
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

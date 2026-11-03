@@ -1,0 +1,120 @@
+# Development stack. By default the database and the object storage (RustFS, S3 API, with its bucket): the app runs with `dotnet run` (or from the IDE) against it.
+# With the `app` profile the images are built and run like a release: the migrator applies the schema (and the seed)
+# once, then the app starts with schema changes switched off (ADR-0002). Not for production.
+#
+#   cp .env-sample .env                       # once, then adjust
+#   docker compose up -d                      # database + RustFS (+ bucket init)
+#   docker compose --profile app up -d --build   # database + migrator (with seed) + app on http://localhost:8080
+#   docker compose down                       # stop (data stays in the volume); add -v to drop it
+
+name: halcyon-dev
+
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-halcyon}
+      POSTGRES_USER: ${POSTGRES_USER:-halcyon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      TZ: UTC
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    # PostgreSQL 18+ keeps its data under /var/lib/postgresql/<major>/, so the volume is mounted one level up.
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  # S3-compatible storage for ticket attachments. Host ports 9010/9011: 9000 is often taken by another local S3.
+  rustfs:
+    image: rustfs/rustfs:1.0.0
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY in .env}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY in .env}
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_OBS_LOGGER_LEVEL: warn
+    ports:
+      - "${S3_PORT:-9010}:9000"
+      - "${S3_CONSOLE_PORT:-9011}:9001"
+    volumes:
+      - rustfs-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/health || wget -qO- http://127.0.0.1:9000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
+  # One-shot: creates the attachments bucket (idempotent, retries); the app waits for it to finish.
+  rustfs-init:
+    image: curlimages/curl:8.17.0
+    restart: "no"
+    entrypoint: ["/bin/sh", "/create-bucket.sh"]
+    environment:
+      S3_ENDPOINT: http://rustfs:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      # Must match app - Storage__Bucket.
+      S3_BUCKET: ${S3_BUCKET:-halcyon-attachments}
+      S3_REGION: us-east-1
+    volumes:
+      - ./deploy/rustfs/create-bucket.sh:/create-bucket.sh:ro
+    depends_on:
+      rustfs:
+        condition: service_healthy
+
+  migrator:
+    profiles: [app]
+    build:
+      context: .
+      target: migrator
+    image: halcyon-migrator:dev
+    command: ["seed"]
+    environment:
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-halcyon};Username=${POSTGRES_USER:-halcyon};Password=${POSTGRES_PASSWORD};Gss Encryption Mode=Disable
+      DOTNET_ENVIRONMENT: Production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    profiles: [app]
+    build:
+      context: .
+      target: app
+      args:
+        GIT_SHA: ${GIT_SHA:-}
+    image: halcyon-app:dev
+    restart: unless-stopped
+    environment:
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-halcyon};Username=${POSTGRES_USER:-halcyon};Password=${POSTGRES_PASSWORD};Gss Encryption Mode=Disable
+      Auth__AgentPassword: ${AGENT_PASSWORD:?set AGENT_PASSWORD in .env}
+      # Demo: "Zaloguj się jako domyślny agent" on the sign-in page; empty in .env switches it off.
+      Auth__DefaultAgentEmail: ${DEFAULT_AGENT_EMAIL-anna.nowak@company.io}
+      Database__ApplyChangesOnStartup: "false"
+      Storage__ServiceUrl: http://rustfs:9000
+      Storage__AccessKey: ${S3_ACCESS_KEY}
+      Storage__SecretKey: ${S3_SECRET_KEY}
+      # Must match rustfs-init - S3_BUCKET.
+      Storage__Bucket: ${S3_BUCKET:-halcyon-attachments}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+      rustfs-init:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-data:
+  rustfs-data:

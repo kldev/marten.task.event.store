@@ -1,0 +1,65 @@
+@page "/logowanie"
+@layout PublicLayout
+@attribute [AllowAnonymous]
+@attribute [ExcludeFromInteractiveRouting]
+@inject Microsoft.Extensions.Options.IOptions<Halcyon.App.Auth.AuthOptions> Auth
+
+<PageTitle>Logowanie · Halcyon</PageTitle>
+
+<div class="mt-10 w-full max-w-sm space-y-6">
+    <div class="card space-y-5 p-6">
+        <div class="space-y-1">
+            <h1>Logowanie agenta</h1>
+            <p class="text-sm text-ink-500">Firmowy e-mail i hasło zespołu.</p>
+        </div>
+
+        @if (Error == "invalid")
+        {
+            <Notice Message="Nieprawidłowy e-mail lub hasło." />
+        }
+        else if (Error == "limit")
+        {
+            <Notice Message="Zbyt wiele prób logowania. Spróbuj ponownie za minutę." />
+        }
+
+        @* A plain form: /auth/login checks the password, writes the session cookie and redirects (ADR-0005). *@
+        <form method="post" action="auth/login" class="space-y-4" data-enhance="false" data-testid="signin-form">
+            <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+            <div>
+                <label for="email" class="label">E-mail</label>
+                <input id="email" name="email" type="email" autocomplete="username" required class="input"
+                       placeholder="imie.nazwisko@company.io" data-testid="signin-email" />
+            </div>
+            <div>
+                <label for="password" class="label">Hasło</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required class="input"
+                       data-testid="signin-password" />
+            </div>
+            <button type="submit" class="btn btn-primary w-full" data-testid="signin-submit">Zaloguj</button>
+        </form>
+
+        @if (Auth.Value.HasDefaultAgent)
+        {
+            @* Demo shortcut (Auth:DefaultAgentEmail): one click, nothing to type. *@
+            <form method="post" action="auth/login-default" data-enhance="false" data-testid="signin-default-form">
+                <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+                <button type="submit" class="btn btn-secondary w-full" data-testid="signin-default">
+                    Zaloguj się jako domyślny agent
+                </button>
+                <p class="mt-2 text-center text-xs text-ink-500">@Auth.Value.DefaultAgentEmail</p>
+            </form>
+        }
+    </div>
+
+    <a href="zglos" class="block text-center text-sm text-halcyon-100 hover:text-white" data-testid="public-report-link">
+        Nie jesteś agentem? Zgłoś sprawę bez logowania →
+    </a>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Error { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+}

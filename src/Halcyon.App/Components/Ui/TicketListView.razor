@@ -1,0 +1,161 @@
+@* One list with its filters and actions (spec 003): the pool (take), mine (resolve / return / hand over) or all. *@
+@inject TicketQueries Queries
+@inject TakeTicket Take
+@inject CurrentAgent CurrentAgent
+@inject TicketChanges Changes
+
+<div class="space-y-4">
+    <TicketFilters CategoryKey="@category" SubcategoryKey="@subcategory" Priority="priority" Deadline="deadline"
+                   ShowCompletion="Scope == TicketScope.All" Completion="completion" Search="@search" Changed="OnFiltersAsync" />
+
+    <Notice Kind="success" Message="@success" />
+    <Notice Message="@error" />
+
+    @if (tickets is null)
+    {
+        <p class="text-sm text-ink-500">Wczytywanie…</p>
+    }
+    else
+    {
+        <TicketTable Tickets="tickets" ShowAssignee="Scope == TicketScope.All" EmptyText="@EmptyText" Actions="ActionsFor" />
+        @if (tickets.Count > 0 || page > 0)
+        {
+            <div class="flex flex-wrap items-center justify-between gap-3 text-sm" data-testid="pager">
+                <div class="flex items-center gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm" disabled="@(page == 0)" data-testid="page-prev" @onclick="() => GoToAsync(page - 1)">
+                        <Icon Name="chevron-left" /> Poprzednia
+                    </button>
+                    <span class="text-ink-600" data-testid="page-number">Strona @(page + 1)@(total is { } t ? $" z {Math.Max(1, (t + TicketQueries.PageSize - 1) / TicketQueries.PageSize)}" : "")</span>
+                    <button type="button" class="btn btn-secondary btn-sm" disabled="@(!hasMore)" data-testid="page-next" @onclick="() => GoToAsync(page + 1)">
+                        Następna <Icon Name="chevron-right" />
+                    </button>
+                </div>
+                @if (total is { } count)
+                {
+                    <span class="text-ink-600" data-testid="total">Razem: <strong>@count</strong></span>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-ghost btn-sm" data-testid="count-total" @onclick="CountAsync">Policz wszystkie</button>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public TicketScope Scope { get; set; }
+
+    [Parameter]
+    public DeadlineFilter InitialDeadline { get; set; }
+
+    [Parameter]
+    public string EmptyText { get; set; } = "Brak zgłoszeń.";
+
+    private IReadOnlyList<TicketView>? tickets;
+    private string? category;
+    private string? subcategory;
+    private Priority? priority;
+    private DeadlineFilter deadline;
+    private CompletionFilter completion;
+    private string? search;
+    private int page;
+    private bool hasMore;
+    private int? total;
+    private string? success;
+    private string? error;
+    private Guid agentId;
+
+    private RenderFragment<TicketView>? ActionsFor =>
+        Scope switch
+        {
+            TicketScope.Pool => ticket => @<button type="button" class="btn btn-primary btn-sm" data-testid="take" title="Przejmij"
+                                                    @onclick="() => TakeAsync(ticket)"><Icon Name="flag" Class="size-3.5" /> <span class="sr-only sm:not-sr-only">Przejmij</span></button>,
+            TicketScope.Mine => ticket => @<WorkActions Ticket="ticket" Done="OnWorkDoneAsync" />,
+            _ => null,
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        deadline = InitialDeadline;
+        agentId = (await CurrentAgent.GetAsync()).Id;
+        await LoadAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (tickets is not null && deadline != InitialDeadline)
+        {
+            deadline = InitialDeadline;
+            page = 0;
+            total = null;
+            await LoadAsync();
+        }
+    }
+
+    private TicketFilter Filter => new(Scope, agentId, category, subcategory, priority, deadline, completion, search);
+
+    private async Task LoadAsync()
+    {
+        var result = await Queries.PageAsync(Filter, page);
+        // A page emptied by a change (the last ticket taken) shows the one before it.
+        if (result.Items.Count == 0 && page > 0)
+        {
+            page--;
+            result = await Queries.PageAsync(Filter, page);
+        }
+        tickets = result.Items;
+        hasMore = result.HasMore;
+    }
+
+    private async Task GoToAsync(int target)
+    {
+        page = Math.Max(0, target);
+        await LoadAsync();
+    }
+
+    private async Task CountAsync() => total = await Queries.CountAsync(Filter);
+
+    private async Task OnFiltersAsync(TicketFilterChange f)
+    {
+        (category, subcategory, priority, deadline, completion, search) = (
+            f.Category,
+            f.Subcategory,
+            f.Priority,
+            f.Deadline,
+            f.Completion,
+            f.Search
+        );
+        // A new filter starts from the first page and forgets the old total.
+        page = 0;
+        total = null;
+        await LoadAsync();
+    }
+
+    private async Task TakeAsync(TicketView ticket)
+    {
+        success = error = null;
+        try
+        {
+            await Take.ExecuteAsync(ticket.Id, await CurrentAgent.GetAsync());
+            success = $"Przejęto zgłoszenie {ticket.Number} - jest teraz w „Moje zgłoszenia”.";
+        }
+        catch (DomainException exception)
+        {
+            error = exception.Message;
+        }
+        total = null; // the list changed; a counted total would be stale
+        await LoadAsync();
+        await Changes.NotifyAsync();
+    }
+
+    private async Task OnWorkDoneAsync((bool Ok, string Message) result)
+    {
+        success = result.Ok ? result.Message : null;
+        error = result.Ok ? null : result.Message;
+        total = null; // the list changed; a counted total would be stale
+        await LoadAsync();
+        await Changes.NotifyAsync();
+    }
+}

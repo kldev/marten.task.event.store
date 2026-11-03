@@ -1,0 +1,13 @@
+{
+  "name": "halcyon-styles",
+  "private": true,
+  "description": "Tailwind CSS build of the Blazor front only - no JavaScript bundle. Run through MSBuild (Halcyon.App.csproj).",
+  "scripts": {
+    "build:css": "tailwindcss -i ./Styles/app.css -o ./wwwroot/css/app.css --minify",
+    "watch:css": "tailwindcss -i ./Styles/app.css -o ./wwwroot/css/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.4",
+    "tailwindcss": "4.3.4"
+  }
+}

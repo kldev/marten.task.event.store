@@ -1,0 +1,7 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+  <PropertyGroup>
+    <!-- Tests: no CancellationToken plumbing in every call (xUnit1051), no finalizer ceremony in fixtures (CA1816). -->
+    <NoWarn>$(NoWarn);xUnit1051;CA1816;CA2234;CA1001</NoWarn>
+  </PropertyGroup>
+</Project>

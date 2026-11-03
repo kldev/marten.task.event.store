@@ -1,0 +1,41 @@
+@page "/agenci"
+@inject AgentDirectory Directory
+
+<PageTitle>Agenci · Halcyon</PageTitle>
+
+<div class="space-y-5">
+    <div>
+        <h1>Agenci</h1>
+        <p class="mt-1 text-sm text-ink-500">Zespół obsługujący zgłoszenia i ich bieżące obciążenie.</p>
+    </div>
+
+    @if (agents is null)
+    {
+        <p class="text-sm text-ink-500">Wczytywanie…</p>
+    }
+    else
+    {
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" data-testid="agents">
+            @foreach (var a in agents)
+            {
+                <article class="card flex gap-4 p-4" data-testid="agent-card" data-email="@a.Email">
+                    <span class="flex size-11 shrink-0 items-center justify-center rounded-full bg-halcyon-100 font-semibold text-halcyon-800">
+                        @($"{a.FirstName[0]}{a.LastName[0]}")
+                    </span>
+                    <div class="min-w-0 text-sm">
+                        <h2 class="text-base" data-testid="agent-name">@a.FullName</h2>
+                        <a href="tel:@a.Phone.Replace(" ", "")" class="block text-ink-600 hover:text-halcyon-700" data-testid="agent-phone">@a.Phone</a>
+                        <a href="mailto:@a.Email" class="block truncate text-ink-600 hover:text-halcyon-700" data-testid="agent-email">@a.Email</a>
+                        <p class="mt-1 text-xs text-ink-500" data-testid="agent-load">W realizacji: <strong class="text-ink-800">@a.InProgress</strong></p>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<AgentRow>? agents;
+
+    protected override async Task OnInitializedAsync() => agents = await Directory.AgentsAsync();
+}

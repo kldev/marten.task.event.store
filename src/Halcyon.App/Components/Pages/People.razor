@@ -1,0 +1,48 @@
+@page "/osoby"
+@inject AgentDirectory Directory
+
+<PageTitle>Osoby · Halcyon</PageTitle>
+
+<div class="space-y-5">
+    <div>
+        <h1>Osoby zgłaszające</h1>
+        <p class="mt-1 text-sm text-ink-500">Pracownicy, którzy zgłaszają sprawy. Nie logują się - wybierają siebie z listy.</p>
+    </div>
+
+    @if (people is null)
+    {
+        <p class="text-sm text-ink-500">Wczytywanie…</p>
+    }
+    else
+    {
+        <div class="card overflow-x-auto">
+            <table class="min-w-full divide-y divide-ink-100" data-testid="people">
+                <thead class="bg-ink-50/60">
+                    <tr>
+                        <th class="table-head">Imię i nazwisko</th>
+                        <th class="table-head">Dział</th>
+                        <th class="table-head">E-mail</th>
+                        <th class="table-head">Telefon</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    @foreach (var p in people)
+                    {
+                        <tr data-testid="person-row">
+                            <td class="cell font-medium text-ink-900">@p.FullName</td>
+                            <td class="cell text-ink-700">@p.Department</td>
+                            <td class="cell text-ink-700">@p.Email</td>
+                            <td class="cell text-ink-700">@(p.Phone ?? "-")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<PersonRow>? people;
+
+    protected override async Task OnInitializedAsync() => people = await Directory.PeopleAsync();
+}

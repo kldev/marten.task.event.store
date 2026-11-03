@@ -1,0 +1,120 @@
+@* A calendar day without a time (spec 008): report fields (a posting from / to) and report filters. The same calendar
+   as the date and time picker (spec 006); the value is "yyyy-MM-dd" or null, and it can be cleared. *@
+@using System.Globalization
+
+<div class="relative" data-testid="@TestId">
+    <div class="flex gap-1">
+        <button type="button" id="@Id" class="input flex items-center justify-between gap-2 text-left"
+                aria-haspopup="dialog" aria-expanded="@(open ? "true" : "false")"
+                data-testid="@(TestId)-field" @onclick="Toggle">
+            <span class="@(Selected is null ? "text-ink-400" : "font-mono text-ink-900")" data-testid="@(TestId)-value">
+                @(Selected is { } d ? d.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture) : Placeholder)
+            </span>
+            <Icon Name="calendar" Class="size-4 text-ink-400" />
+        </button>
+        @if (Selected is not null)
+        {
+            <button type="button" class="btn btn-ghost btn-sm" aria-label="Wyczyść datę" data-testid="@(TestId)-clear" @onclick="() => CommitAsync(null)">
+                <Icon Name="x" />
+            </button>
+        }
+    </div>
+
+    @if (open)
+    {
+        <div role="dialog" aria-modal="false" aria-label="Wybór daty" data-testid="@(TestId)-popup"
+             class="card absolute left-0 z-30 mt-2 w-[19rem] p-3 shadow-lg" @onkeydown="OnKeyDown">
+            <div class="mb-2 flex items-center justify-between">
+                <button type="button" class="btn btn-ghost btn-sm" aria-label="Poprzedni miesiąc" data-testid="@(TestId)-prev" @onclick="() => Show(month.Previous)">
+                    <Icon Name="chevron-left" />
+                </button>
+                <span class="text-sm font-semibold text-ink-800" aria-live="polite" data-testid="@(TestId)-month">@month.Title</span>
+                <button type="button" class="btn btn-ghost btn-sm" aria-label="Następny miesiąc" data-testid="@(TestId)-next" @onclick="() => Show(month.Next)">
+                    <Icon Name="chevron-right" />
+                </button>
+            </div>
+            <div role="grid" aria-label="@month.Title" data-testid="@(TestId)-grid">
+                <div role="row" class="grid grid-cols-7 text-center text-[11px] font-semibold text-ink-400 uppercase">
+                    @foreach (var name in CalendarMonth.WeekdayShortNames)
+                    {
+                        <span role="columnheader" class="py-1">@name</span>
+                    }
+                </div>
+                @foreach (var week in month.Weeks)
+                {
+                    <div role="row" class="grid grid-cols-7 gap-0.5">
+                        @foreach (var day in week)
+                        {
+                            var isSelected = Selected == day.Date;
+                            <button type="button" role="gridcell" data-date="@day.Date.ToString("yyyy-MM-dd")"
+                                    aria-selected="@(isSelected ? "true" : "false")"
+                                    class="h-9 rounded-md text-sm tabular-nums transition-colors @(isSelected ? "bg-halcyon-700 font-semibold text-white" : day.InMonth ? "text-ink-800 hover:bg-halcyon-50" : "text-ink-400 hover:bg-ink-100") @(Today == day.Date && !isSelected ? "font-semibold text-rufous-600" : "")"
+                                    @onclick="() => CommitAsync(day.Date)">
+                                @day.Date.Day
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+            <div class="mt-3 flex justify-between">
+                <button type="button" class="btn btn-secondary btn-sm" data-testid="@(TestId)-today" @onclick="() => CommitAsync(Today)">Dziś</button>
+                <button type="button" class="btn btn-ghost btn-sm" @onclick="() => open = false">Zamknij</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private const string Format = "yyyy-MM-dd";
+
+    [Parameter]
+    public string? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> ValueChanged { get; set; }
+
+    [Parameter]
+    public string Id { get; set; } = "date";
+
+    [Parameter]
+    public string TestId { get; set; } = "date";
+
+    [Parameter]
+    public string Placeholder { get; set; } = "dd.mm.rrrr";
+
+    [Inject]
+    private TimeProvider Time { get; set; } = null!;
+
+    private bool open;
+    private CalendarMonth month = CalendarMonth.Build(2000, 1);
+
+    private DateOnly Today => ReportPeriods.Today(Time.GetUtcNow());
+
+    private DateOnly? Selected =>
+        DateOnly.TryParseExact(Value, Format, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : null;
+
+    private void Toggle()
+    {
+        open = !open;
+        if (open)
+        {
+            var shown = Selected ?? Today;
+            month = CalendarMonth.Build(shown.Year, shown.Month);
+        }
+    }
+
+    private void Show((int Year, int Month) target) => month = CalendarMonth.Build(target.Year, target.Month);
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+            open = false;
+    }
+
+    private async Task CommitAsync(DateOnly? day)
+    {
+        open = false;
+        Value = day?.ToString(Format, CultureInfo.InvariantCulture);
+        await ValueChanged.InvokeAsync(Value);
+    }
+}

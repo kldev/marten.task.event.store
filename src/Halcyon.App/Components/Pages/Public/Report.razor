@@ -1,0 +1,54 @@
+@page "/zglos"
+@layout PublicLayout
+@attribute [AllowAnonymous]
+@inject ReportTicket Reporting
+@inject AgentDirectory Directory
+
+<PageTitle>Zgłoś sprawę · Halcyon</PageTitle>
+
+<div class="mt-6 w-full max-w-6xl space-y-4">
+    <div class="card space-y-6 p-6">
+        <div class="flex items-start gap-4">
+            <span class="hidden size-12 shrink-0 items-center justify-center rounded-xl bg-halcyon-700 text-white shadow-sm sm:flex">
+                <Icon Name="send" Class="size-6" />
+            </span>
+            <div class="space-y-1">
+            <h1>Zgłoś sprawę</h1>
+            <p class="text-sm text-ink-500">
+                Wybierz siebie z listy (albo zgłoś incognito), opisz sprawę i nadaj jej priorytet. Zgłoszenie trafi do puli,
+                z której przejmie je jeden z agentów.
+            </p>
+            </div>
+        </div>
+
+        @if (sent is { } number)
+        {
+            <div class="space-y-4" data-testid="public-sent">
+                <Notice Kind="success" Message="@($"Dziękujemy! Zgłoszenie zostało przyjęte. Numer zgłoszenia: {number}.")" />
+                <button type="button" class="btn btn-secondary" data-testid="public-again" @onclick="() => sent = null">Zgłoś kolejną sprawę</button>
+            </div>
+        }
+        else if (people is null)
+        {
+            <p class="text-sm text-ink-500">Wczytywanie…</p>
+        }
+        else
+        {
+            <ReportForm People="people" OnSubmit="SendAsync" FormName="public-report" />
+        }
+    </div>
+    <a href="logowanie" class="block text-center text-sm text-halcyon-100 hover:text-white">Jesteś agentem? Zaloguj się</a>
+</div>
+
+@code {
+    private IReadOnlyList<PersonRow>? people;
+    private string? sent;
+
+    protected override async Task OnInitializedAsync() => people = await Directory.PeopleAsync();
+
+    private async Task SendAsync(ReportTicketCommand command)
+    {
+        var reported = await Reporting.SelfServiceAsync(command);
+        sent = Domain.Tickets.Ticket.NumberOf(reported.TicketId);
+    }
+}

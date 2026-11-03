@@ -1,0 +1,17 @@
+@* For the sign-in page and the requesters' public form: no agent menu, nothing behind the sign-in. *@
+@inherits LayoutComponentBase
+@using Halcyon.App.Infrastructure
+
+<div class="flex min-h-screen flex-col bg-gradient-to-b from-halcyon-900 via-ink-900 to-ink-950">
+    <header class="flex items-center gap-2 px-6 py-5 text-white">
+        <span class="flex size-8 items-center justify-center rounded-lg bg-halcyon-600">
+            <Icon Name="bird" Class="size-5 text-white" />
+        </span>
+        <span class="text-lg font-semibold tracking-tight">Halcyon</span>
+        <span class="ml-2 text-sm text-ink-300">zgłoszenia do IT, działu prawnego, marketingu, finansów, rekrutacji i kadr</span>
+    </header>
+    <main class="flex flex-1 justify-center px-4 pb-12">
+        @Body
+    </main>
+    <footer class="px-6 pb-4 text-right font-mono text-[11px] text-ink-500" title="@(AppVersion.Commit ?? "commit nieznany")" data-testid="app-version">@AppVersion.Text</footer>
+</div>

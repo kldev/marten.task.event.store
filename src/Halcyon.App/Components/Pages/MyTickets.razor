@@ -1,0 +1,11 @@
+@page "/moje"
+
+<PageTitle>Moje zgłoszenia · Halcyon</PageTitle>
+
+<div class="space-y-5">
+    <div>
+        <h1>Moje zgłoszenia</h1>
+        <p class="mt-1 text-sm text-ink-500">Zgłoszenia, które realizujesz. Możesz je zakończyć, oddać do puli albo przekazać.</p>
+    </div>
+    <TicketListView Scope="TicketScope.Mine" EmptyText="Nie masz zgłoszeń w realizacji. Przejmij coś z puli." />
+</div>

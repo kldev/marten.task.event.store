@@ -1,0 +1,140 @@
+@* Filters of a ticket list (spec 003): category → subcategory, priority, deadline (overdue / due soon) and, on the
+   list of all tickets, only open / only resolved (spec 008). *@
+<div class="flex flex-wrap items-end gap-3" data-testid="filters">
+    <div class="min-w-48 flex-1 sm:max-w-xs">
+        <label class="label text-xs" for="f-search">Szukaj</label>
+        <input id="f-search" type="search" class="input py-1.5" placeholder="Tytuł albo numer HAL-…" maxlength="100"
+               data-testid="filter-search" value="@Search" @oninput="OnSearchAsync" />
+    </div>
+    <div>
+        <label class="label text-xs" for="f-category">Kategoria</label>
+        <select id="f-category" class="input py-1.5" data-testid="filter-category" value="@CategoryKey" @onchange="OnCategoryAsync">
+            <option value="">Wszystkie</option>
+            @foreach (var c in CategoryCatalog.Default.Categories)
+            {
+                <option value="@c.Key">@c.Name</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label class="label text-xs" for="f-subcategory">Podkategoria</label>
+        <select id="f-subcategory" class="input py-1.5" data-testid="filter-subcategory" value="@SubcategoryKey"
+                disabled="@(Category is null)" @onchange="OnSubcategoryAsync">
+            <option value="">Wszystkie</option>
+            @if (Category is { } selected)
+            {
+                @foreach (var group in selected.Subcategories.GroupBy(s => s.Group))
+                {
+                    @if (group.Key is null)
+                    {
+                        @foreach (var sub in group)
+                        {
+                            <option value="@sub.Key">@sub.Name</option>
+                        }
+                    }
+                    else
+                    {
+                        <optgroup label="@group.Key">
+                            @foreach (var sub in group)
+                            {
+                                <option value="@sub.Key">@sub.Name</option>
+                            }
+                        </optgroup>
+                    }
+                }
+            }
+        </select>
+    </div>
+    <div>
+        <label class="label text-xs" for="f-priority">Priorytet</label>
+        <select id="f-priority" class="input py-1.5" data-testid="filter-priority" value="@(Priority?.ToString() ?? "")" @onchange="OnPriorityAsync">
+            <option value="">Wszystkie</option>
+            @foreach (var priority in Enum.GetValues<Priority>())
+            {
+                <option value="@priority">@PriorityNames.Name(priority)</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label class="label text-xs" for="f-deadline">Termin</label>
+        <select id="f-deadline" class="input py-1.5" data-testid="filter-deadline" value="@Deadline" @onchange="OnDeadlineAsync">
+            <option value="@DeadlineFilter.Any">Dowolny</option>
+            <option value="@DeadlineFilter.DueSoon">Kończy się czas (&lt; 1 h)</option>
+            <option value="@DeadlineFilter.Overdue">Po terminie</option>
+        </select>
+    </div>
+    @if (ShowCompletion)
+    {
+        <CompletionToggle Value="Completion" ValueChanged="OnCompletionAsync" />
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? CategoryKey { get; set; }
+
+    [Parameter]
+    public string? SubcategoryKey { get; set; }
+
+    [Parameter]
+    public Priority? Priority { get; set; }
+
+    [Parameter]
+    public DeadlineFilter Deadline { get; set; }
+
+    [Parameter]
+    public string? Search { get; set; }
+
+    [Parameter]
+    public bool ShowCompletion { get; set; }
+
+    [Parameter]
+    public CompletionFilter Completion { get; set; }
+
+    [Parameter]
+    public EventCallback<TicketFilterChange> Changed { get; set; }
+
+    private Category? Category => CategoryCatalog.Default.FindCategory(CategoryKey);
+
+    private Task OnCategoryAsync(ChangeEventArgs e)
+    {
+        CategoryKey = Empty(e.Value?.ToString());
+        SubcategoryKey = null;
+        return NotifyAsync();
+    }
+
+    private Task OnSubcategoryAsync(ChangeEventArgs e)
+    {
+        SubcategoryKey = Empty(e.Value?.ToString());
+        return NotifyAsync();
+    }
+
+    private Task OnPriorityAsync(ChangeEventArgs e)
+    {
+        Priority = Enum.TryParse<Priority>(e.Value?.ToString(), out var p) ? p : null;
+        return NotifyAsync();
+    }
+
+    private Task OnDeadlineAsync(ChangeEventArgs e)
+    {
+        Deadline = Enum.TryParse<DeadlineFilter>(e.Value?.ToString(), out var d) ? d : DeadlineFilter.Any;
+        return NotifyAsync();
+    }
+
+    private Task OnSearchAsync(ChangeEventArgs e)
+    {
+        Search = Empty(e.Value?.ToString()?.Trim());
+        return NotifyAsync();
+    }
+
+    private Task OnCompletionAsync(CompletionFilter value)
+    {
+        Completion = value;
+        return NotifyAsync();
+    }
+
+    private Task NotifyAsync() =>
+        Changed.InvokeAsync(new TicketFilterChange(CategoryKey, SubcategoryKey, Priority, Deadline, Completion, Search));
+
+    private static string? Empty(string? value) => string.IsNullOrEmpty(value) ? null : value;
+}
