@@ -1,0 +1,60 @@
+@* When the tickets come in (spec 009): weekday × hour in Warsaw time, one teal ramp from light (few) to dark (many);
+   an empty hour is the page's own gray. *@
+@using static Halcyon.App.Components.Ui.Charts.ChartScale
+
+<div class="overflow-x-auto" data-testid="heatmap">
+    <div class="grid min-w-[36rem] grid-cols-[2.25rem_repeat(24,minmax(0,1fr))] gap-[2px] text-[11px]">
+        <span></span>
+        @for (var h = 0; h < 24; h++)
+        {
+            <span class="text-center text-ink-500 tabular-nums">@(h % 3 == 0 ? h.ToString("00", System.Globalization.CultureInfo.InvariantCulture) : "")</span>
+        }
+        @for (var d = 0; d < 7; d++)
+        {
+            <span class="self-center pr-1 text-ink-600">@Days[d]</span>
+            @for (var h = 0; h < 24; h++)
+            {
+                var value = Values[d][h];
+                <span class="group relative h-6 rounded-[3px] @Step(value)" data-testid="heat-cell" data-day="@d" data-hour="@h" data-value="@value">
+                    <span class="pointer-events-none absolute @(d < 2 ? "top-full mt-1" : "bottom-full mb-1") left-1/2 z-10 hidden -translate-x-1/2 rounded-md border border-ink-200 bg-white px-2 py-1 whitespace-nowrap text-ink-800 shadow-md group-hover:block" role="tooltip">
+                        <strong>@LongDays[d] @h.ToString("00", System.Globalization.CultureInfo.InvariantCulture):00–@((h + 1).ToString("00", System.Globalization.CultureInfo.InvariantCulture)):00</strong> · @Tickets(value)
+                    </span>
+                </span>
+            }
+        }
+    </div>
+    <div class="mt-3 flex items-center gap-2 text-[11px] text-ink-500" aria-hidden="true">
+        <span>mniej</span>
+        @foreach (var step in Steps)
+        {
+            <span class="h-3 w-5 rounded-[3px] @step"></span>
+        }
+        <span>więcej</span>
+        <span class="ml-auto">najwięcej: @Tickets(Max) w godzinie</span>
+    </div>
+</div>
+
+@code {
+    private static readonly string[] Days = ["pon", "wt", "śr", "czw", "pt", "sob", "niedz"];
+    private static readonly string[] LongDays = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"];
+
+    // Written out for Tailwind's scanner: an empty hour, then six steps of the brand ramp.
+    private static readonly string[] Steps =
+    [
+        "bg-ink-50 ring-1 ring-inset ring-ink-100",
+        "bg-halcyon-100",
+        "bg-halcyon-200",
+        "bg-halcyon-300",
+        "bg-halcyon-500",
+        "bg-halcyon-700",
+        "bg-halcyon-900",
+    ];
+
+    /// <summary>[weekday Monday = 0][hour].</summary>
+    [Parameter, EditorRequired] public int[][] Values { get; set; } = [];
+
+    private int Max => Math.Max(1, Values.Max(r => r.Max()));
+
+    private string Step(int value) =>
+        value == 0 ? Steps[0] : Steps[Math.Clamp((int)Math.Ceiling(value * 6.0 / Max), 1, 6)];
+}

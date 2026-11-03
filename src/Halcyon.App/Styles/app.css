@@ -124,4 +124,44 @@
   .row-overdue {
     @apply bg-red-50;
   }
+
+  /* Charts (spec 009): SVG text in the page's ink, and a hover layer by CSS only - a crosshair or a band and the
+     tooltip appear over the bucket under the pointer or the keyboard focus. */
+  .chart-axis {
+    @apply fill-ink-500 text-[11px] tabular-nums;
+  }
+  .chart-value {
+    @apply fill-ink-900 text-xs font-semibold tabular-nums;
+  }
+  .chart-tip-title {
+    @apply fill-ink-900 text-xs font-semibold;
+  }
+  .chart-tip-text {
+    @apply fill-ink-700 text-xs tabular-nums;
+  }
+  .chart-hover {
+    outline: none;
+  }
+  .chart-hover .chart-tip,
+  .chart-hover .chart-cross {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 80ms;
+  }
+  .chart-hover .chart-band {
+    fill: transparent;
+  }
+  .chart-hover:hover .chart-tip,
+  .chart-hover:focus-visible .chart-tip,
+  .chart-hover:hover .chart-cross,
+  .chart-hover:focus-visible .chart-cross {
+    opacity: 1;
+  }
+  .chart-hover:hover .chart-band,
+  .chart-hover:focus-visible .chart-band {
+    @apply fill-ink-900/5;
+  }
+  .chart-tip rect {
+    filter: drop-shadow(0 2px 4px rgb(19 34 38 / 0.12));
+  }
 }

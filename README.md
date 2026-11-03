@@ -60,6 +60,9 @@ straight from the event stream. All screens are real, produced by the e2e run, i
 - **Report data and exports** (ADR-0009). A topic can collect its own fields (a Limosa number, a new employee's PESEL,
   an invoice amount); they are validated in the domain, stored in the ticket's events and turned into HR, finance and
   agents' reports with XLSX (ClosedXML), PDF (QuestPDF) and CSV exports.
+- **Charts without a chart library** (ADR-0010). Flow in and out, the backlog, deadlines kept, SLA use per priority, the
+  queue now, categories, agents and a weekday × hour heatmap, drawn on the server as SVG and HTML from one query on the
+  projection; hover values by CSS alone and the same numbers as a table under each chart.
 - **Paged lists, totals on request.** Pages are read in the database (open by deadline, then resolved), the next page
   is known from one extra row, and the total is a separate `COUNT` behind a button; a search finds a title or a number.
 - **Spec-driven.** Every feature has a spec in `docs/specs/`, and every acceptance criterion names its test.
@@ -78,8 +81,8 @@ straight from the event stream. All screens are real, produced by the e2e run, i
 | **Sign-in**: e-mail and the team password, or one click as the demo agent. | **Phone**: the same pool, with time left under the title. |
 | <img src="docs/screens/11-new-employee-fields.jpg" alt="New employee with report fields" /> | <img src="docs/screens/12-report-hr-abroad.jpg" alt="Kadry Zagranica report" /> |
 | **Report fields**: a new employee in Kadry Polska - name, department, country (favourites first), PESEL checked by its check digit. | **Reports**: Kadry Zagranica with filters (dates, market, topic, open / resolved) and XLSX, PDF and CSV exports. |
-| <img src="docs/screens/13-report-agents.jpg" alt="Agents' work report" /> | |
-| **Agents' work**: taken, resolved and late per agent in the calendar week, month and 3 months. | |
+| <img src="docs/screens/13-report-agents.jpg" alt="Agents' work report" /> | <img src="docs/screens/14-charts.jpg" alt="Charts" /> |
+| **Agents' work**: taken, resolved and late per agent in the calendar week, month and 3 months. | **Charts**: flow in and out, the backlog, deadlines kept, SLA use per priority, the queue now, by category, by agent and a weekday × hour heatmap - drawn on the server, with hover values and a table under each. |
 
 ## Architecture
 

@@ -54,6 +54,7 @@ public static class HalcyonApp
         builder.Services.AddSingleton<AssignTicketHandler>();
         builder.Services.AddSingleton<CategoryReportQueries>();
         builder.Services.AddSingleton<AgentReportQueries>();
+        builder.Services.AddSingleton<ChartQueries>();
         builder.Services.AddSingleton<AttachmentFiles>();
         builder.Services.AddSingleton<AddTicketAttachments>();
         builder.Services.AddSingleton<TicketQueries>();

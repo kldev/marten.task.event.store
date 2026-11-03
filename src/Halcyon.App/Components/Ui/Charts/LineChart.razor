@@ -1,0 +1,105 @@
+@* Lines over time on one value axis (spec 009). Every bucket has a hover column: a crosshair and a tooltip with the
+   exact values, by CSS only (.chart-hover in app.css), so nothing runs in the browser. *@
+@using Halcyon.Domain.Time
+@using static Halcyon.App.Components.Ui.Charts.ChartScale
+
+<svg viewBox="0 0 @W @H" class="h-auto w-full overflow-visible" role="img" aria-label="@Label" data-testid="@TestId">
+    @* Grid and value axis *@
+    @foreach (var tick in Ticks)
+    {
+        var y = Y(tick);
+        <line x1="@ML" x2="@(W - MR)" y1="@F(y)" y2="@F(y)" stroke="@(tick == 0 ? ChartColors.Axis : ChartColors.Grid)" stroke-width="1" />
+        <g><text x="@(ML - 8)" y="@F(y + 4)" text-anchor="end" class="chart-axis">@N(tick)</text></g>
+    }
+    @for (var i = 0; i < Count; i++)
+    {
+        if (ShowLabel(i, Count))
+        {
+            <g><text x="@F(X(i))" y="@(H - 6)" text-anchor="middle" class="chart-axis">@Buckets[i].Label</text></g>
+        }
+    }
+
+    @* Marks *@
+    @foreach (var series in Series)
+    {
+        if (Area)
+        {
+            <path d="@AreaPath(series)" fill="@series.Color" fill-opacity="0.1" />
+        }
+        <polyline points="@Points(series)" fill="none" stroke="@series.Color" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+        var last = series.Values[^1];
+        <circle cx="@F(X(Count - 1))" cy="@F(Y(last))" r="4" fill="@series.Color" stroke="@ChartColors.Surface" stroke-width="2" />
+        <g><text x="@F(X(Count - 1) + 8)" y="@F(EndLabelY(series))" class="chart-value">@N(last)</text></g>
+    }
+
+    @* Hover layer, last so it is on top *@
+    @for (var i = 0; i < Count; i++)
+    {
+        var index = i;
+        var lines = Series.Select(s => $"{s.Name}: {N(s.Values[index])}").ToList();
+        var tipWidth = Math.Max(TextWidth(Buckets[index].LongLabel), lines.Max(TextWidth) + 14) + 20;
+        var tipHeight = 26 + 18 * lines.Count;
+        var tipX = X(index) > W / 2.0 ? X(index) - 12 - tipWidth : X(index) + 12;
+        <g class="chart-hover" tabindex="0" data-testid="@($"{TestId}-bucket")">
+            <rect x="@F(X(index) - Band / 2)" y="@MT" width="@F(Band)" height="@F(PlotHeight)" fill="transparent" />
+            <line class="chart-cross" x1="@F(X(index))" x2="@F(X(index))" y1="@MT" y2="@F(MT + PlotHeight)" stroke="@ChartColors.Axis" stroke-width="1" />
+            <g class="chart-tip">
+                <rect x="@F(tipX)" y="@MT" width="@F(tipWidth)" height="@tipHeight" rx="6" fill="@ChartColors.Surface" stroke="@ChartColors.Axis" />
+                <g><text x="@F(tipX + 10)" y="@(MT + 18)" class="chart-tip-title">@Buckets[index].LongLabel</text></g>
+                @for (var s = 0; s < Series.Count; s++)
+                {
+                    var rowY = MT + 18 + 18 * (s + 1);
+                    <rect x="@F(tipX + 10)" y="@(rowY - 4)" width="10" height="2" rx="1" fill="@Series[s].Color" />
+                    <g><text x="@F(tipX + 26)" y="@rowY" class="chart-tip-text">@lines[s]</text></g>
+                }
+            </g>
+        </g>
+    }
+</svg>
+
+@code {
+    private const int H = 230;
+    private const int ML = 40;
+    private const int MR = 44;
+    private const int MT = 10;
+    private const int MB = 26;
+
+    [Parameter, EditorRequired] public IReadOnlyList<ChartBucket> Buckets { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyList<ChartSeries> Series { get; set; } = [];
+    [Parameter] public bool Area { get; set; }
+    [Parameter] public string Label { get; set; } = "";
+
+    /// <summary>The width of the drawing in px of text: about the card's width, so 12 px text stays about 12 px.</summary>
+    [Parameter] public int W { get; set; } = 520;
+    [Parameter] public string TestId { get; set; } = "line-chart";
+
+    private int Count => Buckets.Count;
+    private double PlotWidth => W - ML - MR;
+    private double PlotHeight => H - MT - MB;
+    private double Band => Count <= 1 ? PlotWidth : PlotWidth / (Count - 1);
+    private (int Max, int Step) Scale => Nice(Series.SelectMany(s => s.Values).DefaultIfEmpty(0).Max());
+    private IEnumerable<int> Ticks => Enumerable.Range(0, Scale.Max / Scale.Step + 1).Select(i => i * Scale.Step);
+
+    private double X(int i) => Count <= 1 ? ML + PlotWidth / 2 : ML + i * PlotWidth / (Count - 1);
+    private double Y(double value) => MT + PlotHeight - value / Scale.Max * PlotHeight;
+
+    private string Points(ChartSeries series) =>
+        string.Join(" ", series.Values.Select((v, i) => $"{F(X(i))},{F(Y(v))}"));
+
+    private string AreaPath(ChartSeries series) =>
+        $"M{F(X(0))},{F(Y(0))} L{Points(series).Replace(" ", " L", StringComparison.Ordinal)} L{F(X(Count - 1))},{F(Y(0))} Z";
+
+    /// <summary>The end label of a series, moved apart when two series end at nearly the same height.</summary>
+    private double EndLabelY(ChartSeries series)
+    {
+        var y = Y(series.Values[^1]) + 4;
+        var index = Series.ToList().IndexOf(series);
+        if (index == 1 && Series.Count == 2)
+        {
+            var other = Y(Series[0].Values[^1]) + 4;
+            if (Math.Abs(other - y) < 14)
+                y = other + (y >= other ? 14 : -14);
+        }
+        return y;
+    }
+}

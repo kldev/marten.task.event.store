@@ -1,0 +1,28 @@
+@* The numbers of a chart as a table (spec 009): the first column is the label, the others are numbers. *@
+
+<table class="min-w-full text-xs" data-testid="chart-table">
+    <thead class="sticky top-0 bg-white">
+        <tr>
+            @for (var c = 0; c < Headers.Count; c++)
+            {
+                <th class="border-b border-ink-100 px-2 py-1.5 font-semibold text-ink-500 @(c == 0 ? "text-left" : "text-right")">@Headers[c]</th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var row in Rows)
+        {
+            <tr class="border-b border-ink-50 last:border-0">
+                @for (var c = 0; c < row.Count; c++)
+                {
+                    <td class="px-2 py-1 @(c == 0 ? "text-ink-700" : "text-right tabular-nums text-ink-900")">@row[c]</td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<string> Headers { get; set; } = [];
+    [Parameter, EditorRequired] public IEnumerable<IReadOnlyList<string>> Rows { get; set; } = [];
+}

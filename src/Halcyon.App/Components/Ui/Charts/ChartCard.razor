@@ -1,0 +1,53 @@
+@* A chart on the page (spec 009): title, what it shows, the legend (for two or more series), the chart, and the same
+   numbers as a table behind "Pokaż tabelę". *@
+
+<section class="card flex min-w-0 flex-col p-4 sm:p-5 @Class" data-testid="@TestId" aria-labelledby="@($"{TestId}-title")">
+    <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div>
+            <h2 id="@($"{TestId}-title")" class="text-base">@Title</h2>
+            @if (Subtitle is not null)
+            {
+                <p class="mt-0.5 text-xs text-ink-500">@Subtitle</p>
+            }
+        </div>
+        @if (Legend.Count > 1)
+        {
+            <ul class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-700" data-testid="@($"{TestId}-legend")">
+                @foreach (var item in Legend)
+                {
+                    <li class="flex items-center gap-1.5">
+                        @if (item.Line)
+                        {
+                            <span class="h-0.5 w-3.5 rounded-full" style="background-color: @item.Color"></span>
+                        }
+                        else
+                        {
+                            <span class="size-2.5 rounded-sm" style="background-color: @item.Color"></span>
+                        }
+                        @item.Name
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+
+    <div class="mt-4 flex-1">@ChildContent</div>
+
+    @if (Table is not null)
+    {
+        <details class="mt-3 border-t border-ink-100 pt-2 text-sm" data-testid="@($"{TestId}-table")">
+            <summary class="cursor-pointer text-xs font-medium text-halcyon-700 hover:underline">Pokaż tabelę</summary>
+            <div class="mt-2 max-h-80 overflow-auto">@Table</div>
+        </details>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public IReadOnlyList<LegendItem> Legend { get; set; } = [];
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Table { get; set; }
+    [Parameter] public string TestId { get; set; } = "chart";
+    [Parameter] public string Class { get; set; } = "";
+}

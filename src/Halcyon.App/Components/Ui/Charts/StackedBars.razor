@@ -1,0 +1,53 @@
+@* Horizontal stacked bars (spec 009) in HTML, so the labels stay sharp on a phone. All rows share one scale; the total
+   is at the end of the bar, the parts in the tooltip. *@
+@using static Halcyon.App.Components.Ui.Charts.ChartScale
+
+@if (Rows.All(r => r.Total == 0))
+{
+    <p class="py-6 text-center text-sm text-ink-500" data-testid="@($"{TestId}-empty")">@Empty</p>
+}
+else
+{
+    <ul class="space-y-2" data-testid="@TestId">
+        @foreach (var row in Rows)
+        {
+            <li class="group relative grid grid-cols-[minmax(6rem,11rem)_1fr_auto] items-center gap-3 text-sm" tabindex="0" data-testid="@($"{TestId}-row")" data-key="@row.Key">
+                <span class="truncate text-ink-700" title="@row.Label">@row.Label</span>
+                <span class="flex h-5 items-stretch gap-[2px]" aria-hidden="true">
+                    @{
+                        var parts = row.Values.Select((v, i) => (Value: v, Segment: Segments[i])).Where(p => p.Value > 0).ToList();
+                    }
+                    @for (var p = 0; p < parts.Count; p++)
+                    {
+                        <span class="@(p == parts.Count - 1 ? "rounded-r" : "")" style="width: @Width(parts[p].Value); background-color: @parts[p].Segment.Color"></span>
+                    }
+                </span>
+                <span class="w-10 text-right font-medium tabular-nums text-ink-900" data-testid="@($"{TestId}-total")">@N(row.Total)</span>
+
+                <span class="pointer-events-none absolute top-full left-28 z-10 mt-1 hidden min-w-48 rounded-lg border border-ink-200 bg-white p-2.5 text-xs shadow-md group-hover:block group-focus:block" role="tooltip">
+                    <span class="mb-1 block font-semibold text-ink-900">@row.Label</span>
+                    @for (var i = 0; i < Segments.Count; i++)
+                    {
+                        <span class="flex items-center gap-2 text-ink-700">
+                            <span class="size-2.5 rounded-sm" style="background-color: @Segments[i].Color"></span>
+                            @Segments[i].Name: <span class="ml-auto pl-3 tabular-nums">@N(row.Values[i])</span>
+                        </span>
+                    }
+                    <span class="mt-1 flex border-t border-ink-100 pt-1 font-semibold text-ink-900">Razem <span class="ml-auto tabular-nums">@N(row.Total)</span></span>
+                </span>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<Breakdown> Rows { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyList<ChartSegment> Segments { get; set; } = [];
+    [Parameter] public string Empty { get; set; } = "Brak zgłoszeń w tym okresie.";
+    [Parameter] public string TestId { get; set; } = "bar-chart";
+
+    private int Max => Math.Max(1, Rows.Max(r => r.Total));
+
+    private string Width(int value) =>
+        (value * 100.0 / Max).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + "%";
+}

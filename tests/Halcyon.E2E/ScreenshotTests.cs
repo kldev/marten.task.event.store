@@ -152,6 +152,10 @@ public class ScreenshotTests(E2EEnvironment env)
         await Expect(page.GetByTestId("report-table")).ToBeVisibleAsync();
         await ShotAsync(page, "13-report-agents");
 
+        await page.GotoAsync("/wykresy");
+        await Expect(page.GetByTestId("chart-heatmap")).ToBeVisibleAsync();
+        await ShotAsync(page, "14-charts");
+
         await page.SetViewportSizeAsync(390, 844);
         await page.GotoAsync("/");
         await Expect(page.GetByTestId("ticket-table")).ToBeVisibleAsync();

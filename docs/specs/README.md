@@ -13,6 +13,7 @@ test. A changed decision updates the spec and its ADR in the same commit.
 | [006](done/006-date-time-picker.md) | Custom date and time picker | Domain `CalendarMonthTests`; e2e `ReportTicketTests` |
 | [007](done/007-database-and-seed.md) | Production Marten setup and seed | Integration `MigratorTests`, `SeedTests` |
 | [008](done/008-report-fields-and-reports.md) | Report fields, recruitment and campaigns, handler from the department, paged lists with search, reports with XLSX / PDF / CSV | Domain `ReportFieldsTests`, `ReportPeriodsTests`, `HandlerTests`; integration `ReportTests`, `PagingTests`; e2e `ReportFieldsTests`, `RecruitmentCampaignTests`, `PagingAndHandlerTests` |
+| [009](done/009-charts.md) | Charts: flow, backlog, deadlines kept, SLA use, queue now, categories, agents, heatmap | Domain `ChartBucketsTests`; integration `ChartNumbersTests`, `ChartTests`; e2e `ChartsTests` |
 
 ## Requirement → spec
 
@@ -40,3 +41,4 @@ test. A changed decision updates the spec and its ADR in the same commit.
 | Recruitment (company and clients), campaign budgets (Facebook, TikTok...), recruitment orders campaigns | 008 |
 | Agent names a person from HR (the department) to do the work | 008 |
 | 200 tickets in the seed, paging, "count total" button | 008 |
+| Charts besides the reports | 009 |
