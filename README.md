@@ -69,6 +69,9 @@ straight from the event stream. All screens are real, produced by the e2e run, i
 
 ## Screenshots
 
+The whole portal - a ticket's life step by step, two agents at once, campaigns, every report, the phone - with new
+diagrams is in **[`docs/Portal.md`](docs/Portal.md)** (screens in [`docs/screens/portal/`](docs/screens/portal/)).
+
 | | |
 |---|---|
 | <img src="docs/screens/01-public-report.jpg" alt="Public report form" /> | <img src="docs/screens/03-pool.jpg" alt="The pool" /> |
@@ -94,8 +97,8 @@ flowchart TB
     subgraph host["Halcyon.App (one Blazor Server host)"]
         direction LR
         pages["Razor pages + components<br/>Tailwind v4 · Lucide icons"]
-        features["Features/Tickets<br/>ReportTicket · TicketWriter · TicketQueries<br/>AddTicketAttachments"]
-        endpoints["/auth/login · /auth/login-default<br/>/zalaczniki/{ticket}/{file}"]
+        features["Features/Tickets<br/>ReportTicket · TicketWriter · TicketQueries<br/>AddTicketAttachments<br/>Features/Reports<br/>CategoryReports · AgentReport · ChartQueries"]
+        endpoints["/auth/login · /auth/login-default<br/>/zalaczniki/{ticket}/{file}<br/>/raporty/{slug}/eksport.{xlsx|pdf|csv}"]
     end
 
     domain["Halcyon.Domain<br/>Ticket aggregate: decide → event<br/>SLA · deadline states · categories · attachment rules"]
@@ -125,8 +128,8 @@ flowchart TB
     class events,docs,s3 store
 ```
 
-The pages inject the feature classes directly, with no HTTP calls to their own host. The sign-in form and the
-attachment download are the only plain HTTP endpoints: a circuit cannot write a cookie or stream a file.
+The pages inject the feature classes directly, with no HTTP calls to their own host. The sign-in form, the attachment
+download and the report exports are the only plain HTTP endpoints: a circuit cannot write a cookie or stream a file.
 
 ### A ticket's life
 
@@ -234,6 +237,7 @@ report fields (spec 008): text, date, e-mail, choice, amount or IBAN, checked by
 ```mermaid
 mindmap
   root((Halcyon))
+    Feedback in every category
     IT
       Sprzęt
       Awaria
@@ -319,9 +323,10 @@ src/Halcyon.App/             the host: Components/ (pages, UI), Features/<Area>/
 src/Halcyon.DbMigrator/      apply / --dry-run / seed, exit code 0 or 1
 tests/Halcyon.Domain.Tests/  rules only, no I/O
 tests/Halcyon.IntegrationTests/  features, host, migrator and seed on PostgreSQL 18; S3 against RustFS
-tests/Halcyon.E2E/           Playwright against the real app process (own PostgreSQL + RustFS), screenshots
+tests/Halcyon.E2E/           Playwright against the real app process (own PostgreSQL + RustFS), screenshots + portal tour
 deploy/rustfs/               the bucket init script
-docs/adr/  docs/specs/       decisions 0001-0009, specs 001-008 (each criterion names its test)
+docs/adr/  docs/specs/done/  decisions 0001-0010, specs 001-009 (each criterion names its test)
+docs/Portal.md               the portal in screenshots, with diagrams; docs/screens/ holds the images
 ```
 
 ## Run locally
@@ -368,11 +373,11 @@ markup or styles change. The file is committed, and the images use it as it is.
 scripts/test.sh              # domain + integration
 scripts/test.sh e2e          # browser tests (installs Chromium on the first run; HEADED=1 to watch)
 scripts/test.sh all          # all three levels
-scripts/screens.sh           # regenerate docs/screens/*.jpg from the e2e run
+scripts/screens.sh           # regenerate docs/screens/*.jpg and docs/screens/portal/*.jpg from the e2e run
 dotnet csharpier check .
 ```
 
-Integration and e2e tests need Docker. The e2e run writes `halcyon-app.log` and `screens/*.jpg` next to its output
+Integration and e2e tests need Docker. The e2e run writes `halcyon-app.log` and `screens/**/*.jpg` next to its output
 (`tests/Halcyon.E2E/bin/Debug/net10.0/`).
 
 ## Configuration
@@ -393,8 +398,9 @@ Everything comes from the environment; required values make the host refuse to s
 
 | Document | What is in it |
 |---|---|
-| [`docs/adr/`](docs/adr/) | 0001 one host + migrator · 0002 Marten in production mode · 0003 ticket as an event stream · 0004 deadlines and alerts · 0005 simple sign-in · 0006 idempotent seed · 0007 three test levels · 0008 attachments in S3 · 0009 report fields and exports |
-| [`docs/specs/`](docs/specs/) | 001 agents and sign-in · 002 reporting · 003 pool and work · 004 deadlines and alerts · 005 comments and timeline · 006 date-time picker · 007 database and seed · 008 report fields and reports |
+| [`docs/adr/`](docs/adr/) | 0001 one host + migrator · 0002 Marten in production mode · 0003 ticket as an event stream · 0004 deadlines and alerts · 0005 simple sign-in · 0006 idempotent seed · 0007 three test levels · 0008 attachments in S3 · 0009 report fields and exports · 0010 charts drawn on the server |
+| [`docs/specs/`](docs/specs/) | 001 agents and sign-in · 002 reporting · 003 pool and work · 004 deadlines and alerts · 005 comments and timeline · 006 date-time picker · 007 database and seed · 008 report fields and reports · 009 charts |
+| [`docs/Portal.md`](docs/Portal.md) | the whole portal in e2e screenshots, with diagrams: the map of pages, a ticket's life, the conflict of two agents, campaigns, reports and charts, how the screens are made |
 
 ## Status
 

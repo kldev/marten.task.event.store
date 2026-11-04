@@ -10,42 +10,11 @@ namespace Halcyon.E2E;
 /// </summary>
 public class ScreenshotTests(E2EEnvironment env)
 {
-    private static readonly string Dir = Path.Combine(AppContext.BaseDirectory, "screens");
-
-    private static readonly string? DocsDir =
-        Environment.GetEnvironmentVariable("HALCYON_SCREENS_TO_DOCS") == "1"
-            ? Path.Combine(E2EEnvironment.RepoRoot(), "docs", "screens")
-            : null;
-
-    private static async Task ShotAsync(IPage page, string name, bool fullPage = true)
-    {
-        // Let fonts and the circuit settle so a shot never catches a half-rendered page.
-        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-        var viewport = page.ViewportSize!;
-        if (fullPage)
-        {
-            // A window as tall as the page instead of Playwright's full-page stitching: the sticky sidebar and top bar
-            // then stay where they belong and the sidebar runs the whole height.
-            await page.EvaluateAsync("window.scrollTo(0, 0)");
-            var height = await page.EvaluateAsync<int>("document.documentElement.scrollHeight");
-            await page.SetViewportSizeAsync(viewport.Width, Math.Max(viewport.Height, height));
-            await page.WaitForTimeoutAsync(150);
-        }
-        var bytes = await page.ScreenshotAsync(new() { Type = ScreenshotType.Jpeg, Quality = 85 });
-        if (fullPage)
-            await page.SetViewportSizeAsync(viewport.Width, viewport.Height);
-        await File.WriteAllBytesAsync(Path.Combine(Dir, $"{name}.jpg"), bytes);
-        if (DocsDir is not null)
-            await File.WriteAllBytesAsync(Path.Combine(DocsDir, $"{name}.jpg"), bytes);
-    }
+    private readonly Screens screens = new();
 
     [Fact]
     public async Task MainScreens()
     {
-        Directory.CreateDirectory(Dir);
-        if (DocsDir is not null)
-            Directory.CreateDirectory(DocsDir);
-
         await env.ReportAsync("Serwer pocztowy odrzuca załączniki", Priority.Critical, TimeSpan.FromMinutes(150));
         var (id, _) = await env.ReportAsync(
             "Błąd przy zapisie faktury w CRM",
@@ -76,26 +45,26 @@ public class ScreenshotTests(E2EEnvironment env)
         await Expect(anonymous.GetByTestId("attachment-pending")).ToHaveCountAsync(1);
         await anonymous.GetByTestId("requester-search").FillAsync("Michalski");
         await anonymous.GetByTestId("requester-option").First.ClickAsync();
-        await ShotAsync(anonymous, "01-public-report");
+        await screens.ShotAsync(anonymous, "01-public-report");
 
         await anonymous.GetByTestId("submit").ClickAsync();
         await Expect(anonymous.GetByTestId("public-sent")).ToBeVisibleAsync();
-        await ShotAsync(anonymous, "10-public-report-sent", fullPage: false);
+        await screens.ShotAsync(anonymous, "10-public-report-sent", fullPage: false);
 
         await anonymous.GotoAsync("/zglos");
         await anonymous.GetByTestId("category-marketing").ClickAsync();
         await anonymous.GetByTestId("subcategory-marketing.graphics").ClickAsync();
-        await ShotAsync(anonymous, "07-public-report-marketing");
+        await screens.ShotAsync(anonymous, "07-public-report-marketing");
 
         await anonymous.GotoAsync("/logowanie");
         await Expect(anonymous.GetByTestId("signin-default")).ToBeVisibleAsync();
-        await ShotAsync(anonymous, "02-sign-in-demo", fullPage: false);
+        await screens.ShotAsync(anonymous, "02-sign-in-demo", fullPage: false);
 
         // ---- the agent
         var page = await env.SignInAsync();
         await page.SetViewportSizeAsync(1440, 900);
         await Expect(page.GetByTestId("ticket-table")).ToBeVisibleAsync();
-        await ShotAsync(page, "03-pool");
+        await screens.ShotAsync(page, "03-pool");
 
         await page.GotoAsync($"/zgloszenia/{id}");
         await Expect(page.GetByTestId("timeline")).ToBeVisibleAsync();
@@ -114,24 +83,24 @@ public class ScreenshotTests(E2EEnvironment env)
         await page.GetByTestId("comment-input").FillAsync("Odtworzone na testowym CRM - błąd przy fakturze z rabatem.");
         await page.GetByTestId("comment-submit").ClickAsync();
         await Expect(page.GetByTestId("comment")).ToHaveCountAsync(1);
-        await ShotAsync(page, "04-ticket-attachments");
+        await screens.ShotAsync(page, "04-ticket-attachments");
 
         await page.GotoAsync("/nowe");
         await page.GetByTestId("category-it").ClickAsync();
         await page.GetByTestId("priority-Critical").ClickAsync();
         await page.GetByTestId("reported-at-field").ClickAsync();
         await Expect(page.GetByTestId("reported-at-popup")).ToBeVisibleAsync();
-        await ShotAsync(page, "05-new-ticket-picker");
+        await screens.ShotAsync(page, "05-new-ticket-picker");
 
         await page.GotoAsync("/wszystkie");
         await Expect(page.GetByTestId("ticket-table")).ToBeVisibleAsync();
         await page.GetByTestId("filter-category").SelectOptionAsync("hr-abroad");
         await Expect(page.GetByTestId("ticket-row").First).ToContainTextAsync("Kadry Zagranica");
-        await ShotAsync(page, "06-all-tickets-hr");
+        await screens.ShotAsync(page, "06-all-tickets-hr");
 
         await page.GotoAsync("/agenci");
         await Expect(page.GetByTestId("agent-card").First).ToBeVisibleAsync();
-        await ShotAsync(page, "08-agents");
+        await screens.ShotAsync(page, "08-agents");
 
         // ---- spec 008: report fields and the reports (the seed has HR tickets with data)
         await page.GotoAsync("/nowe");
@@ -142,24 +111,24 @@ public class ScreenshotTests(E2EEnvironment env)
         await page.GetByTestId("field-department").SelectOptionAsync("Logistyka");
         await page.GetByTestId("field-country").SelectOptionAsync("Ukraina");
         await page.GetByTestId("field-identity-document").SelectOptionAsync("PESEL");
-        await ShotAsync(page, "11-new-employee-fields");
+        await screens.ShotAsync(page, "11-new-employee-fields");
 
         await page.GotoAsync("/raporty/kadry-zagranica");
         await Expect(page.GetByTestId("report-table")).ToBeVisibleAsync();
-        await ShotAsync(page, "12-report-hr-abroad");
+        await screens.ShotAsync(page, "12-report-hr-abroad");
 
         await page.GotoAsync("/raporty/agenci");
         await Expect(page.GetByTestId("report-table")).ToBeVisibleAsync();
-        await ShotAsync(page, "13-report-agents");
+        await screens.ShotAsync(page, "13-report-agents");
 
         await page.GotoAsync("/wykresy");
         await Expect(page.GetByTestId("chart-heatmap")).ToBeVisibleAsync();
-        await ShotAsync(page, "14-charts");
+        await screens.ShotAsync(page, "14-charts");
 
         await page.SetViewportSizeAsync(390, 844);
         await page.GotoAsync("/");
         await Expect(page.GetByTestId("ticket-table")).ToBeVisibleAsync();
-        await ShotAsync(page, "09-pool-phone");
+        await screens.ShotAsync(page, "09-pool-phone");
 
         await page.Context.CloseAsync();
         await anonymous.Context.CloseAsync();
