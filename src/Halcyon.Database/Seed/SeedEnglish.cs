@@ -12,9 +12,6 @@ namespace Halcyon.Database.Seed;
 /// </summary>
 public static partial class SeedEnglish
 {
-    public static SeedDefinition Definition { get; } =
-        new(SeedData.Agents, SeedData.People, [.. SeedData.Tickets.Select(Translate)]);
-
     private static SeedTicket Translate(SeedTicket ticket) =>
         ticket with
         {
@@ -262,4 +259,8 @@ public static partial class SeedEnglish
             "Book online interviews with 3 candidates for forklift operator.",
         ["Operator wózka widłowego"] = "Forklift operator",
     };
+
+    // Last: static initializers run in the order of the file, and this one needs Openings and Texts.
+    public static SeedDefinition Definition { get; } =
+        new(SeedData.Agents, SeedData.People, [.. SeedData.Tickets.Select(Translate)]);
 }
