@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Halcyon.Domain.Localization;
 
 namespace Halcyon.App.Localization;
 
@@ -19,7 +20,7 @@ public static partial class Tr
     /// <summary>A catalog name in the UI's language; a name the dictionary does not know is shown as it is.</summary>
     public static string N(string? pl) =>
         pl is null ? ""
-        : Language.IsEnglish && CatalogText.English.TryGetValue(pl, out var en) ? en
+        : Language.IsEnglish && EnglishText.English.TryGetValue(pl, out var en) ? en
         : pl;
 
     /// <summary>"Belgia · Umowa…" for a grouped topic, in the UI's language.</summary>
@@ -31,7 +32,7 @@ public static partial class Tr
     {
         if (message is null || !Language.IsEnglish)
             return message ?? "";
-        if (CatalogText.Messages.TryGetValue(message, out var exact))
+        if (EnglishText.Messages.TryGetValue(message, out var exact))
             return exact;
         foreach (var (pattern, english) in Patterns)
         {

@@ -18,7 +18,7 @@ The team keeps working in Polish by default (ADR-0012).
 
 ## Surface
 - App: `Localization/Language.cs` (cultures, `/jezyk/{code}`), `Localization/Tr.cs` (`T`, `N`, `Err`),
-  `Localization/CatalogText.cs` (the dictionary), `Components/Ui/LanguageSwitch.razor`; every page and component.
+  `Halcyon.Domain/Localization/EnglishText.cs` (the dictionary), `Components/Ui/LanguageSwitch.razor`; every page and component.
 
 ## Out of scope
 - A third language; translated demo data; per-agent language stored in the database (the cookie is per browser).

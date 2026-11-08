@@ -20,7 +20,7 @@ need English - without touching the stored events, whose keys and values the cat
   files and no keys: a page reads like before, with its English next to the Polish.
 - The domain keeps its Polish names and messages. The app translates them for display: `N(name)` for the catalog
   (categories, topics, report fields, choices, priorities, statuses, months, departments) and `Err(message)` for a
-  `DomainException`, from one dictionary (`Localization/CatalogText.cs`) and patterns for messages with a name or a number.
+  `DomainException`, from one dictionary (`Halcyon.Domain/Localization/EnglishText.cs`) and patterns for messages with a name or a number.
   Stored keys and choice values never change; a text the dictionary does not know shows in Polish.
 - What people typed (titles, descriptions, comments, names) and the seed's data are shown as they are.
 - Texts made without a reader (background jobs' descriptions and results) are functions evaluated when a page asks.
@@ -34,7 +34,7 @@ need English - without touching the stored events, whose keys and values the cat
 
 ## Consequences
 - A new UI text needs both languages - `T("…")` with one argument does not compile.
-- A new catalog name or domain message needs a line in `CatalogText`, or it shows in Polish in the English UI.
+- A new catalog name or domain message needs a line in `EnglishText`, or it shows in Polish in the English UI.
 - Exports (XLSX, PDF, CSV) follow the language of the request that downloads them.
 
 ## Revisit when

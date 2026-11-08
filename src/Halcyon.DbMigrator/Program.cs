@@ -11,7 +11,8 @@ namespace Halcyon.DbMigrator;
 /// <summary>
 /// <c>Halcyon.DbMigrator [apply] [--dry-run]</c> brings the schema in line with this version and exits;
 /// <c>--dry-run</c> prints the pending SQL and changes nothing. <c>Halcyon.DbMigrator seed</c> applies the schema and
-/// then inserts the missing demo data. Exit code 0 on success, 1 on failure (ADR-0002, ADR-0006).
+/// then inserts the missing demo data - in Polish, or in English with <c>Seed:Language=en</c> (<c>Seed__Language</c>,
+/// ADR-0012; for an empty database: records already there are never rewritten). Exit code 0 on success, 1 on failure (ADR-0002, ADR-0006).
 /// </summary>
 public static class Program
 {
@@ -47,7 +48,9 @@ public static class Program
         {
             await host.Services.GetRequiredService<SchemaMigrator>().ApplyAsync(dryRun);
             if (seed && !dryRun)
-                await host.Services.GetRequiredService<HalcyonSeeder>().RunAsync();
+                await host
+                    .Services.GetRequiredService<HalcyonSeeder>()
+                    .RunAsync(builder.Configuration["Seed:Language"] == "en" ? SeedEnglish.Definition : null);
             return 0;
         }
         catch (Exception exception)

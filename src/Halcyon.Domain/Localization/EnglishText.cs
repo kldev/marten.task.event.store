@@ -1,11 +1,12 @@
-namespace Halcyon.App.Localization;
+namespace Halcyon.Domain.Localization;
 
 /// <summary>
 /// English for the domain's Polish texts (ADR-0012): the catalog's names, report fields and their choices, the
 /// priorities, statuses and months, and the domain's refusals. Keyed by the Polish text the domain keeps, so a stored
-/// key or value never changes; a text missing here is shown in Polish, never as an empty space.
+/// key or value never changes; a text missing here is shown in Polish, never as an empty space. Next to the catalog,
+/// because the app shows it and the English demo seed writes it.
 /// </summary>
-internal static class CatalogText
+public static class EnglishText
 {
     public static readonly IReadOnlyDictionary<string, string> English = new Dictionary<string, string>
     {
@@ -233,7 +234,7 @@ internal static class CatalogText
         ["Powód"] = "Reason",
     };
 
-    /// <summary>The domain's refusals without a variable part; the others are patterns in <see cref="Tr"/>.</summary>
+    /// <summary>The domain's refusals without a variable part; the others are patterns in the app's <c>Tr</c>.</summary>
     public static readonly IReadOnlyDictionary<string, string> Messages = new Dictionary<string, string>
     {
         ["Agent nie może być zgłaszającym - wybierz osobę z listy."] =
