@@ -107,6 +107,10 @@ services:
       Storage__SecretKey: ${S3_SECRET_KEY}
       # Must match rustfs-init - S3_BUCKET.
       Storage__Bucket: ${S3_BUCKET:-halcyon-attachments}
+      # HTTP answers and the log in the database (ADR-0011); the defaults in code are the production ones.
+      Monitoring__Retention: ${MONITORING_RETENTION:-14.00:00:00}
+      Monitoring__CleanupInterval: ${MONITORING_CLEANUP_INTERVAL:-01:00:00}
+      Monitoring__LogLevel: ${MONITORING_LOG_LEVEL:-Information}
     ports:
       - "${APP_PORT:-8080}:8080"
     depends_on:

@@ -1,0 +1,38 @@
+@* A figure of the system pages: label, value, a note; Tone colours the value ("ok", "warn", "error"). *@
+
+@if (Href is not null)
+{
+    <a href="@Href" class="card block p-4 transition hover:border-halcyon-300" data-testid="@TestId">@Body</a>
+}
+else
+{
+    <div class="card p-4" data-testid="@TestId">@Body</div>
+}
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter, EditorRequired] public string Value { get; set; } = "";
+    [Parameter] public string? Note { get; set; }
+    [Parameter] public string Tone { get; set; } = "";
+    [Parameter] public string? Href { get; set; }
+    [Parameter] public string TestId { get; set; } = "tile";
+
+    private string ValueClass =>
+        Tone switch
+        {
+            "ok" => "text-emerald-700",
+            "warn" => "text-amber-700",
+            "error" => "text-red-700",
+            _ => "text-ink-900",
+        };
+
+    private RenderFragment Body =>
+        @<text>
+            <p class="text-xs font-medium text-ink-500">@Label</p>
+            <p class="mt-1 text-2xl font-semibold tabular-nums @ValueClass" data-testid="@($"{TestId}-value")">@Value</p>
+            @if (Note is not null)
+            {
+                <p class="text-xs text-ink-500">@Note</p>
+            }
+        </text>;
+}

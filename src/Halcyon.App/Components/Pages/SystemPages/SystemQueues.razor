@@ -1,0 +1,184 @@
+@page "/system/kolejki"
+@using static Halcyon.App.Monitoring.SystemText
+@inject MonitoringQueues Queues
+@inject BackgroundJobs Jobs
+@inject MonitoringWriter Writer
+@inject MonitoringCleanup Cleanup
+@inject DatabaseActivity Activity
+
+<PageTitle>Kolejki · Halcyon</PageTitle>
+
+<div class="space-y-5" data-testid="system-queues-page">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <p class="text-xs text-ink-500"><a href="system/status" class="hover:underline">System</a> /</p>
+            <h1>Kolejki i zadania w tle</h1>
+            <p class="mt-1 text-sm text-ink-500">
+                Halcyon nie używa brokera: zapis zgłoszeń idzie prosto do magazynu zdarzeń. Kolejki to bufory w pamięci tej instancji
+                między żądaniem a bazą; zadania w tle przenoszą je do bazy i sprzątają po upływie retencji.
+            </p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" data-testid="refresh" @onclick="LoadAsync"><Icon Name="refresh" /> Odśwież</button>
+    </div>
+
+    <Notice Kind="success" Message="@success" />
+    <Notice Message="@error" />
+
+    <section class="card overflow-hidden" data-testid="queues">
+        <div class="px-4 pt-4 sm:px-5">
+            <h2 class="text-base">Kolejki w pamięci</h2>
+            <p class="mt-0.5 text-xs text-ink-500">Liczniki od startu tej instancji. Pełna kolejka odrzuca nowe wpisy, żeby niedostępna baza nie zabrała aplikacji pamięci.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="mt-3 min-w-full divide-y divide-ink-100">
+                <thead>
+                    <tr>
+                        <th class="table-head">Kolejka</th><th class="table-head text-right">Czeka</th><th class="table-head text-right">Przyjęte</th>
+                        <th class="table-head text-right">Zapisane</th><th class="table-head text-right">Odrzucone</th><th class="table-head text-right">Błąd zapisu</th>
+                        <th class="table-head">Ostatni zapis</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    @foreach (var q in queues)
+                    {
+                        <tr data-testid="queue-row" data-name="@q.Name">
+                            <td class="cell">
+                                <span class="font-mono text-xs font-medium text-ink-900">@q.Name</span>
+                                <span class="block text-xs text-ink-500">@q.Description</span>
+                            </td>
+                            <td class="cell text-right text-xs tabular-nums" data-testid="queue-pending">@N(q.Pending) <span class="text-ink-400">/ @N(q.Capacity)</span></td>
+                            <td class="cell text-right text-xs tabular-nums">@N(q.Enqueued)</td>
+                            <td class="cell text-right text-xs tabular-nums" data-testid="queue-written">@N(q.Written)</td>
+                            <td class="cell text-right text-xs tabular-nums @(q.Dropped > 0 ? "font-semibold text-red-700" : "")">@N(q.Dropped)</td>
+                            <td class="cell text-right text-xs tabular-nums @(q.Failed > 0 ? "font-semibold text-red-700" : "")">@N(q.Failed)</td>
+                            <td class="cell text-xs whitespace-nowrap text-ink-600">@SystemText.Time(q.LastWriteAt)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card overflow-hidden" data-testid="jobs">
+        <div class="px-4 pt-4 sm:px-5">
+            <h2 class="text-base">Zadania w tle</h2>
+            <p class="mt-0.5 text-xs text-ink-500">Działają w każdej instancji aplikacji; sprzątanie jest idempotentne, więc dwie repliki nie przeszkadzają sobie.</p>
+        </div>
+        <ul class="mt-2 divide-y divide-ink-100">
+            @foreach (var job in jobs)
+            {
+                <li class="flex flex-wrap items-start gap-x-6 gap-y-2 px-4 py-3 sm:px-5" data-testid="job-row" data-name="@job.Name">
+                    <div class="min-w-64 flex-1">
+                        <p class="flex items-center gap-2">
+                            <span class="font-mono text-sm font-medium text-ink-900">@job.Name</span>
+                            @if (job.LastError is not null)
+                            {
+                                <span class="badge bg-red-100 text-red-800">błąd</span>
+                            }
+                            else if (job.Runs > 0)
+                            {
+                                <span class="badge bg-emerald-100 text-emerald-800">OK</span>
+                            }
+                        </p>
+                        <p class="text-xs text-ink-500">@job.Description co @Span(job.Interval)</p>
+                        <p class="mt-1 text-xs text-ink-700" data-testid="job-result">@(job.LastError ?? job.LastResult ?? "Jeszcze nie działało.")</p>
+                    </div>
+                    <dl class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
+                        <dt class="text-ink-500">Uruchomienia</dt><dd class="tabular-nums">@N(job.Runs) <span class="text-ink-400">(błędy: @N(job.Failures))</span></dd>
+                        <dt class="text-ink-500">Ostatnio</dt><dd>@SystemText.Time(job.LastFinishedAt)</dd>
+                        <dt class="text-ink-500">Następne</dt><dd>@(job.NextRunAt is null ? $"co {Span(job.Interval)}" : SystemText.Time(job.NextRunAt))</dd>
+                    </dl>
+                    <button type="button" class="btn btn-secondary btn-sm" disabled="@busy" data-testid="job-run" @onclick="() => RunAsync(job.Name)">
+                        Uruchom teraz
+                    </button>
+                </li>
+            }
+        </ul>
+    </section>
+
+    <section class="card overflow-hidden" data-testid="event-progress">
+        <div class="px-4 pt-4 sm:px-5">
+            <h2 class="text-base">Magazyn zdarzeń (Marten)</h2>
+            <p class="mt-0.5 text-xs text-ink-500">
+                Postęp odczytu zdarzeń (<span class="font-mono">events.mt_event_progression</span>). Projekcje są inline (ADR-0002) i liczą się w tej samej
+                transakcji co zdarzenia, więc nie mają tu zaległości; tabela zwykle trzyma tylko znacznik najwyższego numeru albo jest pusta.
+            </p>
+        </div>
+        @if (progress.Count == 0)
+        {
+            <p class="px-4 py-4 text-sm text-ink-500 sm:px-5" data-testid="event-progress-empty">Brak wpisów postępu - nic nie czeka na przetworzenie w tle.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="mt-3 min-w-full divide-y divide-ink-100">
+                    <thead><tr><th class="table-head">Nazwa</th><th class="table-head text-right">Ostatni numer</th><th class="table-head">Aktualizacja</th></tr></thead>
+                    <tbody class="divide-y divide-ink-100">
+                        @foreach (var p in progress)
+                        {
+                            <tr data-testid="event-progress-row">
+                                <td class="cell font-mono text-xs">@p.Name</td>
+                                <td class="cell text-right text-xs tabular-nums">@N(p.LastSequence)</td>
+                                <td class="cell text-xs text-ink-600">@SystemText.Time(p.UpdatedAt)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+@code {
+    private IReadOnlyList<QueueState> queues = [];
+    private IReadOnlyList<BackgroundJobState> jobs = [];
+    private IReadOnlyList<EventProgress> progress = [];
+    private bool busy;
+    private string? success;
+    private string? error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        queues = Queues.States();
+        jobs = Jobs.States();
+        try
+        {
+            progress = await Activity.EventProgressAsync();
+        }
+        catch (Npgsql.NpgsqlException e)
+        {
+            error = $"Nie udało się odczytać postępu zdarzeń: {e.Message}";
+        }
+    }
+
+    private async Task RunAsync(string name)
+    {
+        busy = true;
+        success = null;
+        error = null;
+        try
+        {
+            if (name == Jobs.Writer.Name)
+            {
+                var written = await Writer.FlushAsync();
+                success = $"Zapisano do bazy: {written}.";
+            }
+            else if (name == Jobs.Cleanup.Name)
+            {
+                var result = await Cleanup.RunOnceAsync();
+                success = $"Usunięto: {result.Requests} odpowiedzi HTTP i {result.Logs} wpisów logu starszych niż {SystemText.Time(result.Cutoff)}.";
+            }
+        }
+        catch (Npgsql.NpgsqlException e)
+        {
+            error = $"Zadanie nie powiodło się: {e.Message}";
+        }
+        finally
+        {
+            busy = false;
+            await LoadAsync();
+        }
+    }
+}

@@ -14,6 +14,7 @@ test. A changed decision updates the spec and its ADR in the same commit.
 | [007](done/007-database-and-seed.md) | Production Marten setup and seed | Integration `MigratorTests`, `SeedTests` |
 | [008](done/008-report-fields-and-reports.md) | Report fields, recruitment and campaigns, handler from the department, paged lists with search, reports with XLSX / PDF / CSV | Domain `ReportFieldsTests`, `ReportPeriodsTests`, `HandlerTests`; integration `ReportTests`, `PagingTests`; e2e `ReportFieldsTests`, `RecruitmentCampaignTests`, `PagingAndHandlerTests` |
 | [009](done/009-charts.md) | Charts: flow, backlog, deadlines kept, SLA use, queue now, categories, agents, heatmap | Domain `ChartBucketsTests`; integration `ChartNumbersTests`, `ChartTests`; e2e `ChartsTests` |
+| [010](done/010-system-status-logs-database-queues.md) | System menu: status with HTTP statistics (200 / 403 / 500), the log, the database, the queues; 14-day retention | Integration `MonitoringTests`, `MigratorTests`; e2e `SystemPagesTests` |
 
 ## Requirement → spec
 

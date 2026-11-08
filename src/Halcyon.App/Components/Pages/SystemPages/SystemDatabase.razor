@@ -1,0 +1,154 @@
+@page "/system/baza"
+@using static Halcyon.App.Monitoring.SystemText
+@inject DatabaseActivity Activity
+
+<PageTitle>Baza danych · Halcyon</PageTitle>
+
+<div class="space-y-5" data-testid="system-database-page">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <p class="text-xs text-ink-500"><a href="system/status" class="hover:underline">System</a> /</p>
+            <h1>Baza danych</h1>
+            <p class="mt-1 text-sm text-ink-500">PostgreSQL teraz: serwer, sesje tej bazy, tabele i magazyn zdarzeń.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            @if (snapshot is not null)
+            {
+                <span class="text-xs text-ink-500">odczyt @SystemText.Time(snapshot.ReadAt)</span>
+            }
+            <button type="button" class="btn btn-secondary btn-sm" data-testid="refresh" @onclick="LoadAsync"><Icon Name="refresh" /> Odśwież</button>
+        </div>
+    </div>
+
+    <Notice Message="@error" />
+
+    @if (snapshot is null)
+    {
+        @if (error is null)
+        {
+            <p class="text-sm text-ink-500">Wczytywanie…</p>
+        }
+    }
+    else
+    {
+        var server = snapshot.Server;
+        var sessions = snapshot.Sessions;
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" data-testid="db-figures">
+            <Tile TestId="db-version" Label="Wersja" Value="@ShortVersion(server.Version)" Note="@($"działa od {Span(snapshot.ReadAt - server.StartedAt)}")" />
+            <Tile TestId="db-size" Label="Rozmiar bazy" Value="@Bytes(server.DatabaseSizeBytes)" />
+            <Tile TestId="db-connections" Label="Połączenia" Value="@($"{server.ServerConnections} / {server.MaxConnections}")" Note="cały serwer / max_connections" />
+            <Tile TestId="db-sessions" Label="Sesje tej bazy" Value="@N(sessions.Count)" Note="@($"aktywne: {sessions.Count(s => s.State == "active")}")" />
+            <Tile TestId="db-waiting" Label="Czekają na blokadę" Value="@N(sessions.Count(s => s.WaitEventType == "Lock"))" Tone="@(sessions.Any(s => s.WaitEventType == "Lock") ? "warn" : "")"
+                  Note="@($"idle in transaction: {sessions.Count(s => s.State?.StartsWith("idle in transaction") == true)}")" />
+            <Tile TestId="db-events" Label="Zdarzenia" Value="@N(snapshot.Events.LastSequence)" Note="@($"strumieni ok. {N(snapshot.Events.Streams)} · ostatnie {SystemText.Time(snapshot.Events.LastEventAt)}")" />
+        </div>
+
+        @if (!server.SeesAllSessions)
+        {
+            <p class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200" data-testid="db-limited">
+                Rola aplikacji nie należy do <span class="font-mono">pg_read_all_stats</span>: treść zapytań innych ról PostgreSQL ukrywa.
+            </p>
+        }
+
+        <section class="card overflow-hidden" data-testid="db-sessions-table">
+            <div class="px-4 pt-4 sm:px-5">
+                <h2 class="text-base">Sesje</h2>
+                <p class="mt-0.5 text-xs text-ink-500">
+                    Połączenia klientów z tą bazą (bez tej strony). Wyróżnione: czekają na blokadę, blokują inną sesję albo działają dłużej niż @Span(DatabaseActivity.LongRunning).
+                </p>
+            </div>
+            @if (sessions.Count == 0)
+            {
+                <p class="px-4 py-4 text-sm text-ink-500 sm:px-5">Brak innych sesji.</p>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="mt-3 min-w-full divide-y divide-ink-100">
+                        <thead>
+                            <tr>
+                                <th class="table-head">PID</th><th class="table-head">Rola / aplikacja</th><th class="table-head">Stan</th>
+                                <th class="table-head">Czeka na</th><th class="table-head text-right">Transakcja</th><th class="table-head text-right">Zapytanie</th>
+                                <th class="table-head">Treść</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-ink-100">
+                            @foreach (var s in sessions)
+                            {
+                                <tr class="@(s.Notable ? "bg-amber-50/70" : "")" data-testid="db-session">
+                                    <td class="cell font-mono text-xs">@s.Pid</td>
+                                    <td class="cell text-xs">
+                                        <span class="font-medium text-ink-800">@(s.Role ?? "-")</span>
+                                        <span class="block text-ink-500">@(s.Application ?? "")@(s.ClientAddress is null ? "" : $" · {s.ClientAddress}")</span>
+                                    </td>
+                                    <td class="cell text-xs whitespace-nowrap">@(s.State ?? "-")</td>
+                                    <td class="cell text-xs">
+                                        @(s.WaitEventType is null ? "-" : $"{s.WaitEventType}: {s.WaitEvent}")
+                                        @if (s.BlockedBy.Count > 0)
+                                        {
+                                            <span class="block font-semibold text-red-700">blokuje go: @string.Join(", ", s.BlockedBy)</span>
+                                        }
+                                        @if (s.Blocking)
+                                        {
+                                            <span class="block font-semibold text-amber-800">blokuje inną sesję</span>
+                                        }
+                                    </td>
+                                    <td class="cell text-right text-xs tabular-nums">@Ms(s.TransactionMs)</td>
+                                    <td class="cell text-right text-xs tabular-nums">@Ms(s.QueryMs)</td>
+                                    <td class="cell max-w-md font-mono text-[11px] break-all text-ink-600">@s.Query</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        <section class="card overflow-hidden" data-testid="db-tables">
+            <div class="px-4 pt-4 sm:px-5">
+                <h2 class="text-base">Tabele</h2>
+                <p class="mt-0.5 text-xs text-ink-500">Schematy <span class="font-mono">halcyon</span> (dokumenty, odpowiedzi HTTP, logi) i <span class="font-mono">events</span> (magazyn zdarzeń). Rozmiar z indeksami; wiersze według statystyk PostgreSQL.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="mt-3 min-w-full divide-y divide-ink-100">
+                    <thead><tr><th class="table-head">Tabela</th><th class="table-head text-right">Wiersze</th><th class="table-head text-right">Rozmiar</th></tr></thead>
+                    <tbody class="divide-y divide-ink-100">
+                        @foreach (var t in snapshot.Tables)
+                        {
+                            <tr data-testid="db-table" data-name="@($"{t.Schema}.{t.Name}")">
+                                <td class="cell font-mono text-xs"><span class="text-ink-400">@t.Schema.</span>@t.Name</td>
+                                <td class="cell text-right text-xs tabular-nums">@N(t.Rows)</td>
+                                <td class="cell text-right text-xs tabular-nums">@Bytes(t.TotalBytes)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <p class="text-xs text-ink-500" title="@server.Version">@server.Version</p>
+    }
+</div>
+
+@code {
+    private DatabaseSnapshot? snapshot;
+    private string? error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        error = null;
+        try
+        {
+            snapshot = await Activity.ReadAsync();
+        }
+        catch (Npgsql.NpgsqlException e)
+        {
+            error = $"Nie udało się odczytać stanu bazy: {e.Message}";
+        }
+    }
+
+    /// <summary>"PostgreSQL 18.1 (Debian ...) on x86_64..." → "PostgreSQL 18.1".</summary>
+    private static string ShortVersion(string version) => string.Join(' ', version.Split(' ').Take(2));
+}

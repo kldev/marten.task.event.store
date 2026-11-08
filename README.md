@@ -60,6 +60,9 @@ straight from the event stream. All screens are real, produced by the e2e run, i
 - **Report data and exports** (ADR-0009). A topic can collect its own fields (a Limosa number, a new employee's PESEL,
   an invoice amount); they are validated in the domain, stored in the ticket's events and turned into HR, finance and
   agents' reports with XLSX (ClosedXML), PDF (QuestPDF) and CSV exports.
+- **The app reports on itself** (ADR-0011). A System menu shows how many answers were 200, 403 or 500, the most
+  frequent errors, the application's log, PostgreSQL's sessions and tables, and the in-memory queues. Answers and log
+  entries go to the database through a bounded queue and binary COPY, and a background job removes them after 14 days.
 - **Charts without a chart library** (ADR-0010). Flow in and out, the backlog, deadlines kept, SLA use per priority, the
   queue now, categories, agents and a weekday × hour heatmap, drawn on the server as SVG and HTML from one query on the
   projection; hover values by CSS alone and the same numbers as a table under each chart.
@@ -393,13 +396,21 @@ Everything comes from the environment; required values make the host refuse to s
 | `Storage__ServiceUrl` / `__AccessKey` / `__SecretKey` | - | required, the S3 endpoint and keys |
 | `Storage__Bucket` / `Storage__Region` | `halcyon-attachments` / `us-east-1` | |
 | `Database__ApplyChangesOnStartup` | Development only | a release host checks the schema and refuses a stale one |
+| `Monitoring__Retention` | `14.00:00:00` | how long HTTP answers and log entries stay in the database (ADR-0011) |
+| `Monitoring__CleanupInterval` / `__CleanupBatchSize` | `01:00:00` / 5000 | how often the cleanup runs, rows per DELETE |
+| `Monitoring__FlushInterval` / `__WriteBatchSize` / `__QueueCapacity` | `00:00:02` / 500 / 10000 | the in-memory queues and their writer |
+| `Monitoring__LogLevel` | `Information` | the lowest log level kept in the database (the console keeps its own levels) |
+| `Monitoring__IgnoredPaths__0..N` | `/health`, `/_blazor`, `/_framework`, `/_content`, `/css`, `/favicon` | path prefixes not recorded; entries from the environment are added to the defaults |
+
+Log levels are set in the `Serilog` section (`Serilog__MinimumLevel__Override__<category>`); `Logging__LogLevel__*` does
+nothing.
 
 ## Documentation
 
 | Document | What is in it |
 |---|---|
-| [`docs/adr/`](docs/adr/) | 0001 one host + migrator · 0002 Marten in production mode · 0003 ticket as an event stream · 0004 deadlines and alerts · 0005 simple sign-in · 0006 idempotent seed · 0007 three test levels · 0008 attachments in S3 · 0009 report fields and exports · 0010 charts drawn on the server |
-| [`docs/specs/`](docs/specs/) | 001 agents and sign-in · 002 reporting · 003 pool and work · 004 deadlines and alerts · 005 comments and timeline · 006 date-time picker · 007 database and seed · 008 report fields and reports · 009 charts |
+| [`docs/adr/`](docs/adr/) | 0001 one host + migrator · 0002 Marten in production mode · 0003 ticket as an event stream · 0004 deadlines and alerts · 0005 simple sign-in · 0006 idempotent seed · 0007 three test levels · 0008 attachments in S3 · 0009 report fields and exports · 0010 charts drawn on the server · 0011 HTTP answers and the log in the database |
+| [`docs/specs/`](docs/specs/) | 001 agents and sign-in · 002 reporting · 003 pool and work · 004 deadlines and alerts · 005 comments and timeline · 006 date-time picker · 007 database and seed · 008 report fields and reports · 009 charts · 010 system: status, logs, database, queues |
 | [`docs/Portal.md`](docs/Portal.md) | the whole portal in e2e screenshots, with diagrams: the map of pages, a ticket's life, the conflict of two agents, campaigns, reports and charts, how the screens are made |
 
 ## Status

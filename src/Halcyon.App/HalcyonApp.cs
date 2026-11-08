@@ -3,6 +3,7 @@ using Halcyon.App.Features.Agents;
 using Halcyon.App.Features.Reports;
 using Halcyon.App.Features.Tickets;
 using Halcyon.App.Infrastructure;
+using Halcyon.App.Monitoring;
 using Halcyon.App.Storage;
 using Halcyon.Database;
 using Halcyon.Database.Migrations;
@@ -29,8 +30,17 @@ public static class HalcyonApp
 
         builder.Services.AddSerilog(
             (services, logger) =>
-                logger.ReadFrom.Configuration(builder.Configuration).ReadFrom.Services(services).WriteTo.Console()
+                logger
+                    .ReadFrom.Configuration(builder.Configuration)
+                    .ReadFrom.Services(services)
+                    .WriteTo.Console()
+                    // The log the system pages browse, kept for the retention (ADR-0011).
+                    .WriteTo.Sink(services.GetRequiredService<AppLogSink>()),
+            // The host's own logger, not the static Log.Logger: two hosts in one process (the tests) would otherwise write
+            // into each other's log - and so into each other's database.
+            preserveStaticLogger: true
         );
+        builder.AddHalcyonMonitoring();
 
         builder.Services.AddHalcyonDatabase(
             DatabaseStartup.ConnectionString(builder.Configuration),
@@ -66,6 +76,7 @@ public static class HalcyonApp
 
         var app = builder.Build();
 
+        app.UseRequestRecording();
         if (!app.Environment.IsDevelopment())
             app.UseExceptionHandler("/blad", createScopeForErrors: true);
 

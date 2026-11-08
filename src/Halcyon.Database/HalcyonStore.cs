@@ -1,4 +1,5 @@
 using Halcyon.Database.Documents;
+using Halcyon.Database.Monitoring;
 using Halcyon.Database.Projections;
 using Halcyon.Domain.Tickets;
 using JasperFx.Events;
@@ -54,5 +55,8 @@ public static class HalcyonStore
             .Duplicate(x => x.AssigneeId!)
             .Duplicate(x => x.Deadline)
             .Index(x => x.CategoryKey);
+
+        // HTTP answers and the application's log, with retention (ADR-0011).
+        MonitoringSchema.Register(options);
     }
 }

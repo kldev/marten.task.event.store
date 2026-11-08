@@ -1,0 +1,124 @@
+@page "/system/logi"
+@using Microsoft.Extensions.Options
+@using static Halcyon.App.Monitoring.SystemText
+@inject MonitoringQueries Queries
+@inject IOptions<MonitoringOptions> Options
+
+<PageTitle>Logi · Halcyon</PageTitle>
+
+<div class="space-y-5" data-testid="system-logs-page">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <p class="text-xs text-ink-500"><a href="system/status" class="hover:underline">System</a> /</p>
+            <h1>Logi aplikacji</h1>
+            <p class="mt-1 text-sm text-ink-500">
+                Wpisy logu od poziomu @Options.Value.LogLevel, z ostatnich @(Options.Value.Retention.TotalDays.ToString("0.##")) dni.
+                Odpowiedzi HTTP są na stronie <a href="system/status" class="text-halcyon-700 hover:underline">Status systemu</a>.
+            </p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" data-testid="refresh" @onclick="LoadAsync"><Icon Name="refresh" /> Odśwież</button>
+    </div>
+
+    <div class="flex flex-wrap items-end gap-3" data-testid="log-filters">
+        <div>
+            <span class="label text-xs" id="level-label">Poziom</span>
+            <div class="inline-flex rounded-lg border border-ink-200 bg-white p-0.5" role="radiogroup" aria-labelledby="level-label" data-testid="filter-level">
+                @foreach (var (value, text, testId) in Levels)
+                {
+                    var chosen = filter.MinLevel == value;
+                    <button type="button" role="radio" aria-checked="@(chosen ? "true" : "false")"
+                            class="rounded-md px-3 py-1 text-sm transition @(chosen ? "bg-halcyon-700 font-medium text-white shadow-sm" : "text-ink-600 hover:bg-ink-50")"
+                            data-testid="filter-level-@testId" @onclick="() => ApplyAsync(filter with { MinLevel = value, Page = 0 })">
+                        @text
+                    </button>
+                }
+            </div>
+        </div>
+        <div class="min-w-60 flex-1 sm:max-w-sm">
+            <label class="label text-xs" for="log-search">Szukaj w treści, źródle i wyjątku</label>
+            <input id="log-search" class="input py-1.5" placeholder="np. Npgsql, timeout" data-testid="filter-search" value="@filter.Search"
+                   @onchange="e => ApplyAsync(filter with { Search = e.Value?.ToString(), Page = 0 })" />
+        </div>
+    </div>
+
+    <Notice Message="@error" />
+
+    <section class="card overflow-hidden" data-testid="logs">
+        @if (logs is null)
+        {
+            <p class="px-4 py-4 text-sm text-ink-500 sm:px-5">Wczytywanie…</p>
+        }
+        else if (logs.Rows.Count == 0)
+        {
+            <p class="px-4 py-4 text-sm text-ink-500 sm:px-5" data-testid="logs-empty">Brak wpisów.</p>
+        }
+        else
+        {
+            <ul class="divide-y divide-ink-100">
+                @foreach (var log in logs.Rows)
+                {
+                    <li class="px-4 py-3 sm:px-5" data-testid="log-row" data-level="@log.Level">
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                            <span class="badge @LevelClass(log.Level)">@LevelName(log.Level)</span>
+                            <span class="whitespace-nowrap text-ink-600 tabular-nums">@SystemText.Time(log.At)</span>
+                            <span class="font-mono text-ink-500" title="@log.Source">@ShortSource(log.Source)</span>
+                            @if (log.RequestPath is not null)
+                            {
+                                <span class="font-mono text-ink-400 break-all">@log.RequestPath</span>
+                            }
+                            @if (log.TraceId is not null)
+                            {
+                                <span class="ml-auto font-mono text-[11px] text-ink-400" title="Trace id">@log.TraceId</span>
+                            }
+                        </div>
+                        <p class="mt-1 text-sm break-words whitespace-pre-wrap text-ink-900" data-testid="log-message">@log.Message</p>
+                        @if (log.Exception is not null)
+                        {
+                            <details class="mt-1" data-testid="log-exception">
+                                <summary class="cursor-pointer text-xs font-medium text-red-700 hover:underline">Wyjątek: @FirstLine(log.Exception)</summary>
+                                <pre class="mt-2 max-h-96 overflow-auto rounded-lg bg-ink-900 p-3 text-[11px] leading-relaxed text-ink-100">@log.Exception</pre>
+                            </details>
+                        }
+                    </li>
+                }
+            </ul>
+            <Pager Page="filter.Page" HasMore="logs.HasMore" Changed="p => ApplyAsync(filter with { Page = p })" />
+        }
+    </section>
+</div>
+
+@code {
+    private static readonly (int Value, string Text, string TestId)[] Levels =
+    [
+        (2, "Info i wyżej", "info"),
+        (3, "Ostrzeżenia i błędy", "warning"),
+        (4, "Tylko błędy", "error"),
+    ];
+
+    private LogFilter filter = new();
+    private Slice<LogRow>? logs;
+    private string? error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        error = null;
+        try
+        {
+            logs = await Queries.LogsAsync(filter);
+        }
+        catch (Npgsql.NpgsqlException e)
+        {
+            error = $"Nie udało się odczytać logów z bazy: {e.Message}";
+        }
+    }
+
+    private async Task ApplyAsync(LogFilter value)
+    {
+        filter = value;
+        await LoadAsync();
+    }
+
+    private static string FirstLine(string text) => text.Split('\n', 2)[0].Trim();
+}

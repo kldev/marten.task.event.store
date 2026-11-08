@@ -6,7 +6,7 @@
 @using Halcyon.App.Infrastructure
 
 <div class="min-h-screen lg:flex">
-    <aside class="bg-ink-900 text-white lg:fixed lg:inset-y-0 lg:w-60">
+    <aside class="bg-ink-900 text-white lg:fixed lg:inset-y-0 lg:flex lg:w-60 lg:flex-col">
         <div class="flex items-center gap-2 px-5 py-4">
             <span class="flex size-8 items-center justify-center rounded-lg bg-halcyon-600">
                 <Icon Name="bird" Class="size-5 text-white" />
@@ -14,7 +14,7 @@
             <span class="text-lg font-semibold tracking-tight">Halcyon</span>
             <span class="ml-auto size-1.5 rounded-full bg-rufous-500 lg:hidden"></span>
         </div>
-        <nav class="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:overflow-visible" aria-label="Menu główne">
+        <nav class="flex gap-1 overflow-x-auto px-3 pb-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto" aria-label="Menu główne">
             <NavLink class="nav-link shrink-0" href="" Match="NavLinkMatch.All" data-testid="nav-pool"><Icon Name="inbox" /> Pula</NavLink>
             <NavLink class="nav-link shrink-0" href="moje" data-testid="nav-mine"><Icon Name="user" /> Moje zgłoszenia</NavLink>
             <NavLink class="nav-link shrink-0" href="wszystkie" data-testid="nav-all"><Icon Name="list" /> Wszystkie</NavLink>
@@ -29,8 +29,13 @@
             <NavLink class="nav-link shrink-0" href="raporty/rekrutacja" data-testid="nav-report-rekrutacja"><Icon Name="users" /> Rekrutacja</NavLink>
             <NavLink class="nav-link shrink-0" href="raporty/marketing" data-testid="nav-report-marketing"><Icon Name="megaphone" /> Marketing</NavLink>
             <NavLink class="nav-link shrink-0" href="raporty/agenci" data-testid="nav-report-agents"><Icon Name="chart-column" /> Praca agentów</NavLink>
+            <p class="hidden px-3 pt-4 pb-1 text-[11px] font-semibold tracking-wide text-ink-400 uppercase lg:block">System</p>
+            <NavLink class="nav-link shrink-0" href="system/status" data-testid="nav-system-status"><Icon Name="activity" /> Status systemu</NavLink>
+            <NavLink class="nav-link shrink-0" href="system/logi" data-testid="nav-system-logs"><Icon Name="scroll-text" /> Logi</NavLink>
+            <NavLink class="nav-link shrink-0" href="system/baza" data-testid="nav-system-database"><Icon Name="database" /> Baza danych</NavLink>
+            <NavLink class="nav-link shrink-0" href="system/kolejki" data-testid="nav-system-queues"><Icon Name="layers" /> Kolejki</NavLink>
         </nav>
-        <p class="hidden px-5 py-3 font-mono text-[11px] text-ink-500 lg:absolute lg:bottom-0 lg:block" title="@(AppVersion.Commit ?? "commit nieznany")" data-testid="app-version">@AppVersion.Text</p>
+        <p class="hidden px-5 py-3 font-mono text-[11px] text-ink-500 lg:block" title="@(AppVersion.Commit ?? "commit nieznany")" data-testid="app-version">@AppVersion.Text</p>
     </aside>
 
     <div class="flex min-w-0 flex-1 flex-col lg:pl-60">
