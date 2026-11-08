@@ -1,17 +1,17 @@
 @page "/agenci"
 @inject AgentDirectory Directory
 
-<PageTitle>Agenci · Halcyon</PageTitle>
+<PageTitle>@T("Agenci", "Agents") · Halcyon</PageTitle>
 
 <div class="space-y-5">
     <div>
-        <h1>Agenci</h1>
-        <p class="mt-1 text-sm text-ink-500">Zespół obsługujący zgłoszenia i ich bieżące obciążenie.</p>
+        <h1>@T("Agenci", "Agents")</h1>
+        <p class="mt-1 text-sm text-ink-500">@T("Zespół obsługujący zgłoszenia i ich bieżące obciążenie.", "The team handling tickets and their current workload.")</p>
     </div>
 
     @if (agents is null)
     {
-        <p class="text-sm text-ink-500">Wczytywanie…</p>
+        <p class="text-sm text-ink-500">@T("Wczytywanie…", "Loading…")</p>
     }
     else
     {
@@ -26,7 +26,7 @@
                         <h2 class="text-base" data-testid="agent-name">@a.FullName</h2>
                         <a href="tel:@a.Phone.Replace(" ", "")" class="block text-ink-600 hover:text-halcyon-700" data-testid="agent-phone">@a.Phone</a>
                         <a href="mailto:@a.Email" class="block truncate text-ink-600 hover:text-halcyon-700" data-testid="agent-email">@a.Email</a>
-                        <p class="mt-1 text-xs text-ink-500" data-testid="agent-load">W realizacji: <strong class="text-ink-800">@a.InProgress</strong></p>
+                        <p class="mt-1 text-xs text-ink-500" data-testid="agent-load">@T("W realizacji:", "In progress:") <strong class="text-ink-800">@a.InProgress</strong></p>
                     </div>
                 </article>
             }

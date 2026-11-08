@@ -36,7 +36,8 @@ public static class ChartColors
 
 public static class ChartScale
 {
-    private static readonly CultureInfo Polish = CultureInfo.GetCultureInfo("pl-PL");
+    /// <summary>The reader's number format (ADR-0012): "1 234" in Polish, "1,234" in English.</summary>
+    private static CultureInfo Reader => Localization.Language.Culture;
     private static readonly int[] Multiples = [1, 2, 5, 10];
 
     /// <summary>A round top for the value axis with four even steps (1, 2 or 5 times a power of ten).</summary>
@@ -53,14 +54,17 @@ public static class ChartScale
     /// <summary>Which labels to show under an axis of <paramref name="count"/> buckets: at most 8, always the last.</summary>
     public static bool ShowLabel(int index, int count) => (count - 1 - index) % (int)Math.Ceiling(count / 8.0) == 0;
 
-    public static string N(int value) => value.ToString("N0", Polish);
+    public static string N(int value) => value.ToString("N0", Reader);
 
     public static string N(double value) => value.ToString("0.#", CultureInfo.InvariantCulture);
 
-    public static string Percent(double share) => (share * 100).ToString("0", Polish) + " %";
+    public static string Percent(double share) => (share * 100).ToString("0", Reader) + " %";
 
     /// <summary>"1 zgłoszenie", "3 zgłoszenia", "5 zgłoszeń".</summary>
-    public static string Tickets(int n) => $"{N(n)} {Plural(n, "zgłoszenie", "zgłoszenia", "zgłoszeń")}";
+    public static string Tickets(int n) =>
+        Localization.Language.IsEnglish
+            ? $"{N(n)} {(n == 1 ? "ticket" : "tickets")}"
+            : $"{N(n)} {Plural(n, "zgłoszenie", "zgłoszenia", "zgłoszeń")}";
 
     public static string Plural(int n, string one, string few, string many)
     {

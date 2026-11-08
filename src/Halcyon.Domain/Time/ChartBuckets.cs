@@ -29,7 +29,9 @@ public static class ChartBuckets
     /// The buckets of a range, oldest first, the last one holding today. Whole calendar units, never "the last 168
     /// hours": a day that changes the clock is 23 or 25 hours long.
     /// </summary>
-    public static IReadOnlyList<ChartBucket> For(ChartRange range, DateOnly today)
+    /// <param name="culture">The weekday's language in the long label ("wt. 03.11.2026"); Polish unless the caller
+    /// shows the chart in another one.</param>
+    public static IReadOnlyList<ChartBucket> For(ChartRange range, DateOnly today, CultureInfo? culture = null)
     {
         switch (range)
         {
@@ -55,7 +57,7 @@ public static class ChartBuckets
                     .Select(day => new ChartBucket(
                         new DayRange(day, day),
                         day.ToString("dd.MM", CultureInfo.InvariantCulture),
-                        day.ToString("ddd dd.MM.yyyy", Polish)
+                        day.ToString("ddd dd.MM.yyyy", culture ?? Polish)
                     ))
                     .ToList();
             }

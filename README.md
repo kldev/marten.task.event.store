@@ -68,6 +68,8 @@ straight from the event stream. All screens are real, produced by the e2e run, i
   projection; hover values by CSS alone and the same numbers as a table under each chart.
 - **Paged lists, totals on request.** Pages are read in the database (open by deadline, then resolved), the next page
   is known from one extra row, and the total is a separate `COUNT` behind a button; a search finds a title or a number.
+- **Polish and English** (ADR-0012). A PL / EN switch on every page; texts sit in both languages where they are used,
+  the domain keeps its Polish catalog and refusals and the app translates them for display - stored data never changes.
 - **Spec-driven.** Every feature has a spec in `docs/specs/`, and every acceptance criterion names its test.
 
 ## Screenshots

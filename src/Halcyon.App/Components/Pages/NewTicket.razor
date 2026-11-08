@@ -5,23 +5,23 @@
 @inject NavigationManager Navigation
 @inject TicketChanges Changes
 
-<PageTitle>Nowe zgłoszenie · Halcyon</PageTitle>
+<PageTitle>@T("Nowe zgłoszenie", "New ticket") · Halcyon</PageTitle>
 
 <div class="space-y-5">
     <div>
-        <h1>Nowe zgłoszenie</h1>
+        <h1>@T("Nowe zgłoszenie", "New ticket")</h1>
         <p class="mt-1 text-sm text-ink-500">
-            Zarejestruj sprawę w imieniu zgłaszającego. Priorytet podaje zgłaszający; termin liczy się od daty zgłoszenia.
+            @T("Zarejestruj sprawę w imieniu zgłaszającego. Priorytet podaje zgłaszający; termin liczy się od daty zgłoszenia.", "Register an issue on behalf of the requester. The requester sets the priority; the deadline counts from the report date.")
         </p>
     </div>
     <div class="card p-6">
         @if (people is null)
         {
-            <p class="text-sm text-ink-500">Wczytywanie…</p>
+            <p class="text-sm text-ink-500">@T("Wczytywanie…", "Loading…")</p>
         }
         else
         {
-            <ReportForm ForAgent="true" People="people" OnSubmit="SaveAsync" SubmitText="Dodaj do puli" FormName="agent-report" Prefill="prefill" />
+            <ReportForm ForAgent="true" People="people" OnSubmit="SaveAsync" SubmitText="@T("Dodaj do puli", "Add to the pool")" FormName="agent-report" Prefill="prefill" />
         }
     </div>
 </div>

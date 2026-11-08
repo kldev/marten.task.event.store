@@ -1,17 +1,17 @@
 @page "/osoby"
 @inject AgentDirectory Directory
 
-<PageTitle>Osoby · Halcyon</PageTitle>
+<PageTitle>@T("Osoby", "People") · Halcyon</PageTitle>
 
 <div class="space-y-5">
     <div>
-        <h1>Osoby zgłaszające</h1>
-        <p class="mt-1 text-sm text-ink-500">Pracownicy, którzy zgłaszają sprawy. Nie logują się - wybierają siebie z listy.</p>
+        <h1>@T("Osoby zgłaszające", "Requesters")</h1>
+        <p class="mt-1 text-sm text-ink-500">@T("Pracownicy, którzy zgłaszają sprawy. Nie logują się - wybierają siebie z listy.", "Employees who report issues. They do not sign in - they pick themselves from the list.")</p>
     </div>
 
     @if (people is null)
     {
-        <p class="text-sm text-ink-500">Wczytywanie…</p>
+        <p class="text-sm text-ink-500">@T("Wczytywanie…", "Loading…")</p>
     }
     else
     {
@@ -19,10 +19,10 @@
             <table class="min-w-full divide-y divide-ink-100" data-testid="people">
                 <thead class="bg-ink-50/60">
                     <tr>
-                        <th class="table-head">Imię i nazwisko</th>
-                        <th class="table-head">Dział</th>
+                        <th class="table-head">@T("Imię i nazwisko", "Name")</th>
+                        <th class="table-head">@T("Dział", "Department")</th>
                         <th class="table-head">E-mail</th>
-                        <th class="table-head">Telefon</th>
+                        <th class="table-head">@T("Telefon", "Phone")</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-ink-100">
@@ -30,7 +30,7 @@
                     {
                         <tr data-testid="person-row">
                             <td class="cell font-medium text-ink-900">@p.FullName</td>
-                            <td class="cell text-ink-700">@p.Department</td>
+                            <td class="cell text-ink-700">@N(p.Department)</td>
                             <td class="cell text-ink-700">@p.Email</td>
                             <td class="cell text-ink-700">@(p.Phone ?? "-")</td>
                         </tr>

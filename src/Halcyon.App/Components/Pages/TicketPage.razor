@@ -11,13 +11,13 @@
 @inject TicketChanges Changes
 @inject TimeProvider Time
 
-<PageTitle>@(details?.Ticket.Number ?? "Zgłoszenie") · Halcyon</PageTitle>
+<PageTitle>@(details?.Ticket.Number ?? T("Zgłoszenie", "Ticket")) · Halcyon</PageTitle>
 
 @if (loaded && details is null)
 {
     <div class="card p-8 text-center" data-testid="ticket-missing">
-        <h1>Nie ma takiego zgłoszenia</h1>
-        <a href="" class="mt-3 inline-block text-sm text-halcyon-700 hover:underline">Wróć do puli</a>
+        <h1>@T("Nie ma takiego zgłoszenia", "There is no such ticket")</h1>
+        <a href="" class="mt-3 inline-block text-sm text-halcyon-700 hover:underline">@T("Wróć do puli", "Back to the pool")</a>
     </div>
 }
 else if (details is { } d)
@@ -37,7 +37,7 @@ else if (details is { } d)
             <div class="flex flex-wrap gap-2">
                 @if (t.Status == TicketStatus.InPool)
                 {
-                    <button type="button" class="btn btn-primary" data-testid="take" @onclick="TakeAsync"><Icon Name="flag" /> Przejmij</button>
+                    <button type="button" class="btn btn-primary" data-testid="take" @onclick="TakeAsync"><Icon Name="flag" /> @T("Przejmij", "Take")</button>
                 }
                 else if (t.Status == TicketStatus.InProgress && t.AssigneeId == me)
                 {
@@ -52,12 +52,12 @@ else if (details is { } d)
         <div class="grid gap-5 lg:grid-cols-3">
             <div class="space-y-5 lg:col-span-2">
                 <section class="card p-5">
-                    <h2 class="mb-2">Opis</h2>
+                    <h2 class="mb-2">@T("Opis", "Description")</h2>
                     <p class="text-sm whitespace-pre-line text-ink-800" data-testid="ticket-description">@t.Description</p>
                 </section>
 
                 <section class="card p-5" data-testid="attachments">
-                    <h2 class="mb-3 flex items-center gap-2"><Icon Name="paperclip" Class="size-4 text-ink-500" /> Załączniki (@t.Attachments.Count)</h2>
+                    <h2 class="mb-3 flex items-center gap-2"><Icon Name="paperclip" Class="size-4 text-ink-500" /> @T("Załączniki", "Attachments") (@t.Attachments.Count)</h2>
                     @if (t.Attachments.Count > 0)
                     {
                         <ul class="mb-4 grid gap-3 sm:grid-cols-2">
@@ -82,7 +82,7 @@ else if (details is { } d)
                                             <a href="@url" target="_blank" rel="noopener" class="block truncate text-sm font-medium text-ink-800 hover:text-halcyon-700 hover:underline" title="@a.FileName" data-testid="attachment-name">@a.FileName</a>
                                             <span class="block truncate text-xs text-ink-500">@AttachmentRules.SizeText(a.Size) · @a.AddedBy · @LocalTime.Format(a.At)</span>
                                         </span>
-                                        <a href="@AttachmentEndpoints.UrlFor(t.Id, a.Id, download: true)" class="btn btn-ghost btn-sm" title="Pobierz" aria-label="Pobierz @a.FileName" data-testid="attachment-download">
+                                        <a href="@AttachmentEndpoints.UrlFor(t.Id, a.Id, download: true)" class="btn btn-ghost btn-sm" title="@T("Pobierz", "Download")" aria-label="@T("Pobierz", "Download") @a.FileName" data-testid="attachment-download">
                                             <Icon Name="download" />
                                         </a>
                                     </div>
@@ -95,14 +95,14 @@ else if (details is { } d)
                     {
                         <div class="mt-3 flex justify-end">
                             <button type="button" class="btn btn-secondary" disabled="@attaching" data-testid="attachments-submit" @onclick="AttachAsync">
-                                <Icon Name="paperclip" /> Dodaj @(newFiles.Count == 1 ? "plik" : $"pliki ({newFiles.Count})")
+                                <Icon Name="paperclip" /> @(newFiles.Count == 1 ? T("Dodaj plik", "Add file") : T($"Dodaj pliki ({newFiles.Count})", $"Add files ({newFiles.Count})"))
                             </button>
                         </div>
                     }
                 </section>
 
                 <section class="card p-5" data-testid="comments">
-                    <h2 class="mb-3">Komentarze (@d.Timeline.Count(e => e.Kind == TimelineKind.Commented))</h2>
+                    <h2 class="mb-3">@T("Komentarze", "Comments") (@d.Timeline.Count(e => e.Kind == TimelineKind.Commented))</h2>
                     <ul class="mb-4 space-y-3">
                         @foreach (var c in d.Timeline.Where(e => e.Kind == TimelineKind.Commented))
                         {
@@ -112,17 +112,17 @@ else if (details is { } d)
                             </li>
                         }
                     </ul>
-                    <label class="label" for="comment">Dodaj komentarz</label>
+                    <label class="label" for="comment">@T("Dodaj komentarz", "Add a comment")</label>
                     <textarea id="comment" class="input min-h-20" maxlength="@TicketLimits.CommentMax" data-testid="comment-input" @bind="commentText"></textarea>
                     <div class="mt-2 flex justify-end">
                         <button type="button" class="btn btn-secondary" data-testid="comment-submit" @onclick="CommentAsync">
-                            <Icon Name="message" /> Dodaj komentarz
+                            <Icon Name="message" /> @T("Dodaj komentarz", "Add a comment")
                         </button>
                     </div>
                 </section>
 
                 <section class="card p-5" data-testid="timeline">
-                    <h2 class="mb-3">Historia</h2>
+                    <h2 class="mb-3">@T("Historia", "History")</h2>
                     <ol class="relative space-y-4 border-l border-ink-200 pl-5">
                         @foreach (var e in d.Timeline)
                         {
@@ -132,7 +132,7 @@ else if (details is { } d)
                                 <div class="text-sm font-medium text-ink-800">@e.Text</div>
                                 @if (!string.IsNullOrEmpty(e.Note) && e.Kind != TimelineKind.Commented)
                                 {
-                                    <div class="text-sm text-ink-600">„@e.Note”</div>
+                                    <div class="text-sm text-ink-600">@(T("„", "“") + e.Note + "”")</div>
                                 }
                             </li>
                         }
@@ -142,37 +142,39 @@ else if (details is { } d)
 
             <aside class="space-y-5">
                 <section class="card space-y-3 p-5 text-sm">
-                    <Field Label="Kategoria">@d.CategoryName</Field>
-                    <Field Label="Podkategoria">@d.SubcategoryName</Field>
-                    <Field Label="Zgłaszający" TestId="ticket-requester">@t.RequesterName</Field>
-                    <Field Label="Kanał">@(t.Channel == ReportChannel.SelfService ? "Samodzielnie (strona publiczna)" : $"Agent: {t.RegisteredByName}")</Field>
-                    <Field Label="Data zgłoszenia">@LocalTime.Format(t.ReportedAt)</Field>
-                    <Field Label="Termin" TestId="ticket-deadline">@LocalTime.Format(t.Deadline)</Field>
-                    <Field Label="Realizuje" TestId="ticket-assignee">@(t.AssigneeName ?? "- (w puli)")</Field>
-                    <Field Label="Osoba realizująca" TestId="ticket-handler">@(t.HandlerName ?? "-")</Field>
+                    <Field Label="@T("Kategoria", "Category")">@CategoryText(d)</Field>
+                    <Field Label="@T("Podkategoria", "Topic")">@SubcategoryText(d)</Field>
+                    <Field Label="@T("Zgłaszający", "Requester")" TestId="ticket-requester">@t.RequesterName</Field>
+                    <Field Label="@T("Kanał", "Channel")">@(t.Channel == ReportChannel.SelfService ? T("Samodzielnie (strona publiczna)", "Self-service (public page)") : $"Agent: {t.RegisteredByName}")</Field>
+                    <Field Label="@T("Data zgłoszenia", "Reported on")">@LocalTime.Format(t.ReportedAt)</Field>
+                    <Field Label="@T("Termin", "Deadline")" TestId="ticket-deadline">@LocalTime.Format(t.Deadline)</Field>
+                    <Field Label="@T("Realizuje", "Assignee")" TestId="ticket-assignee">@(t.AssigneeName ?? T("- (w puli)", "- (in the pool)"))</Field>
+                    <Field Label="@T("Osoba realizująca", "Person doing the work")" TestId="ticket-handler">@(t.HandlerName ?? "-")</Field>
                     @if (t.OriginalPriority != t.Priority)
                     {
-                        <Field Label="Pierwotny priorytet">@PriorityNames.Name(t.OriginalPriority)</Field>
+                        <Field Label="@T("Pierwotny priorytet", "Original priority")">@N(PriorityNames.Name(t.OriginalPriority))</Field>
                     }
                 </section>
 
                 @if (t.Status == TicketStatus.InProgress && t.AssigneeId == me)
                 {
                     <section class="card space-y-3 p-5 text-sm" data-testid="handler-assign">
-                        <h2 class="flex items-center gap-2"><Icon Name="user-plus" Class="size-4 text-ink-500" /> Osoba realizująca</h2>
+                        <h2 class="flex items-center gap-2"><Icon Name="user-plus" Class="size-4 text-ink-500" /> @T("Osoba realizująca", "Person doing the work")</h2>
                         <p class="text-xs text-ink-500">
-                            Gdy sam nie możesz tego załatwić (np. system ci nie pozwala), wskaż osobę
-                            @(Department is { } dept ? $"z działu {dept}" : "z listy"), która zajmie się sprawą. Zgłoszenie zostaje u ciebie.
+                            @T(
+                                $"Gdy sam nie możesz tego załatwić (np. system ci nie pozwala), wskaż osobę {(Department is null ? "z listy" : $"z działu {Department}")}, która zajmie się sprawą. Zgłoszenie zostaje u ciebie.",
+                                $"When you cannot handle it yourself (e.g. the system does not let you), choose a person {(Department is null ? "from the list" : $"from the {N(Department)} department")} to take care of it. The ticket stays with you."
+                            )
                         </p>
                         <select class="input" data-testid="handler-select" @bind="handlerId">
-                            <option value="">- bez osoby realizującej -</option>
+                            <option value="">@T("- bez osoby realizującej -", "- no person doing the work -")</option>
                             @foreach (var person in Candidates)
                             {
-                                <option value="@person.Id">@person.FirstName @person.LastName (@person.Department)</option>
+                                <option value="@person.Id">@person.FirstName @person.LastName (@N(person.Department))</option>
                             }
                         </select>
-                        <input class="input" placeholder="Powód, np. brak uprawnień w systemie kadrowym" maxlength="@TicketLimits.ReasonMax" data-testid="handler-reason" @bind="handlerReason" />
-                        <button type="button" class="btn btn-secondary w-full" data-testid="handler-submit" @onclick="AssignHandlerAsync">Zapisz osobę realizującą</button>
+                        <input class="input" placeholder="@T("Powód, np. brak uprawnień w systemie kadrowym", "Reason, e.g. no permissions in the HR system")" maxlength="@TicketLimits.ReasonMax" data-testid="handler-reason" @bind="handlerReason" />
+                        <button type="button" class="btn btn-secondary w-full" data-testid="handler-submit" @onclick="AssignHandlerAsync">@T("Zapisz osobę realizującą", "Save the person doing the work")</button>
                     </section>
                 }
 
@@ -180,25 +182,25 @@ else if (details is { } d)
                 {
                     <section class="card space-y-3 p-5 text-sm" data-testid="ticket-fields">
                         <div class="flex items-center justify-between gap-2">
-                            <h2 class="flex items-center gap-2"><Icon Name="file-spreadsheet" Class="size-4 text-ink-500" /> Dane do raportu</h2>
+                            <h2 class="flex items-center gap-2"><Icon Name="file-spreadsheet" Class="size-4 text-ink-500" /> @T("Dane do raportu", "Report data")</h2>
                             @if (!editingFields)
                             {
-                                <button type="button" class="btn btn-ghost btn-sm" data-testid="fields-edit" @onclick="StartEditingFields">Uzupełnij</button>
+                                <button type="button" class="btn btn-ghost btn-sm" data-testid="fields-edit" @onclick="StartEditingFields">@T("Uzupełnij", "Fill in")</button>
                             }
                         </div>
                         @if (editingFields)
                         {
                             <ReportFieldInputs Definitions="FieldDefinitions" Values="fieldValues" IdPrefix="ticket-field" />
                             <div class="flex justify-end gap-2">
-                                <button type="button" class="btn btn-ghost btn-sm" data-testid="fields-cancel" @onclick="() => editingFields = false">Anuluj</button>
-                                <button type="button" class="btn btn-secondary btn-sm" data-testid="fields-submit" @onclick="SaveFieldsAsync">Zapisz dane</button>
+                                <button type="button" class="btn btn-ghost btn-sm" data-testid="fields-cancel" @onclick="() => editingFields = false">@T("Anuluj", "Cancel")</button>
+                                <button type="button" class="btn btn-secondary btn-sm" data-testid="fields-submit" @onclick="SaveFieldsAsync">@T("Zapisz dane", "Save data")</button>
                             </div>
                         }
                         else
                         {
                             @foreach (var field in FieldDefinitions)
                             {
-                                <Field Label="@field.Label" TestId="@($"ticket-field-{field.Key}")">
+                                <Field Label="@N(field.Label)" TestId="@($"ticket-field-{field.Key}")">
                                     @if (t.Fields.GetValueOrDefault(field.Key) is not { } value)
                                     {
                                         @("-")
@@ -220,10 +222,10 @@ else if (details is { } d)
                 @if (t.CategoryKey == "recruitment")
                 {
                     <section class="card space-y-3 p-5 text-sm" data-testid="campaigns">
-                        <h2 class="flex items-center gap-2"><Icon Name="megaphone" Class="size-4 text-ink-500" /> Kampanie w marketingu</h2>
+                        <h2 class="flex items-center gap-2"><Icon Name="megaphone" Class="size-4 text-ink-500" /> @T("Kampanie w marketingu", "Marketing campaigns")</h2>
                         @if (campaigns.Count == 0)
                         {
-                            <p class="text-ink-500">Rekrutacja nie zamówiła jeszcze kampanii dla tego zgłoszenia.</p>
+                            <p class="text-ink-500">@T("Rekrutacja nie zamówiła jeszcze kampanii dla tego zgłoszenia.", "Recruitment has not ordered a campaign for this ticket yet.")</p>
                         }
                         else
                         {
@@ -233,10 +235,10 @@ else if (details is { } d)
                                     <li data-testid="campaign">
                                         <a href="zgloszenia/@c.Id" class="font-medium text-ink-900 hover:text-halcyon-700 hover:underline">@c.Title</a>
                                         <div class="text-xs text-ink-500">
-                                            @c.Number · @PriorityNames.Status(c.Status)
+                                            @c.Number · @N(PriorityNames.Status(c.Status))
                                             @if (c.Fields.GetValueOrDefault("channels") is { } channels)
                                             {
-                                                <span> · @channels</span>
+                                                <span> · @MultiText(channels)</span>
                                             }
                                             @if (c.Fields.GetValueOrDefault("amount") is { } amount && ReportFields.ParseAmount(amount) is { } money)
                                             {
@@ -248,7 +250,7 @@ else if (details is { } d)
                             </ul>
                         }
                         <a href="@ReportPrefill.CampaignUrlFor(t)" class="btn btn-secondary w-full" data-testid="order-campaign">
-                            <Icon Name="megaphone" /> Zamów kampanię w marketingu
+                            <Icon Name="megaphone" /> @T("Zamów kampanię w marketingu", "Order a marketing campaign")
                         </a>
                     </section>
                 }
@@ -256,19 +258,19 @@ else if (details is { } d)
                 @if (t.Status != TicketStatus.Done)
                 {
                     <section class="card space-y-3 p-5" data-testid="priority-change">
-                        <h2>Zmień priorytet</h2>
+                        <h2>@T("Zmień priorytet", "Change priority")</h2>
                         <select class="input" data-testid="priority-select" @bind="newPriority">
                             @foreach (var p in Enum.GetValues<Priority>())
                             {
-                                <option value="@p">@PriorityNames.Name(p) (@PriorityNames.SlaText(p))</option>
+                                <option value="@p">@N(PriorityNames.Name(p)) (@N(PriorityNames.SlaText(p)))</option>
                             }
                         </select>
                         <p class="text-xs text-ink-600" data-testid="priority-preview">
-                            Nowy termin: <strong class="font-mono">@LocalTime.Format(Sla.DeadlineFor(t.ReportedAt, newPriority))</strong>
-                            (liczony od daty zgłoszenia)
+                            @T("Nowy termin", "New deadline"): <strong class="font-mono">@LocalTime.Format(Sla.DeadlineFor(t.ReportedAt, newPriority))</strong>
+                            @T("(liczony od daty zgłoszenia)", "(counted from the report date)")
                         </p>
-                        <input class="input" placeholder="Powód (opcjonalnie)" maxlength="@TicketLimits.ReasonMax" data-testid="priority-reason" @bind="priorityReason" />
-                        <button type="button" class="btn btn-secondary w-full" data-testid="priority-submit" @onclick="ChangePriorityAsync">Zapisz priorytet</button>
+                        <input class="input" placeholder="@T("Powód (opcjonalnie)", "Reason (optional)")" maxlength="@TicketLimits.ReasonMax" data-testid="priority-reason" @bind="priorityReason" />
+                        <button type="button" class="btn btn-secondary w-full" data-testid="priority-submit" @onclick="ChangePriorityAsync">@T("Zapisz priorytet", "Save priority")</button>
                     </section>
                 }
             </aside>
@@ -313,9 +315,9 @@ else if (details is { } d)
             handlerReason = null;
             return assigned switch
             {
-                null => "Osoba realizująca bez zmian.",
-                { Person: { } person } => $"Do realizacji: {person.FullName}.",
-                _ => "Usunięto osobę realizującą.",
+                null => T("Osoba realizująca bez zmian.", "The person doing the work is unchanged."),
+                { Person: { } person } => T($"Do realizacji: {person.FullName}.", $"Assigned to: {person.FullName}."),
+                _ => T("Usunięto osobę realizującą.", "The person doing the work was removed."),
             };
         });
     private IReadOnlyList<TicketView> campaigns = [];
@@ -333,8 +335,20 @@ else if (details is { } d)
                 day.ToString("dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture),
             FieldKind.Amount when ReportFields.ParseAmount(value) is { } amount =>
                 amount.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pl-PL")),
+            FieldKind.Choice => N(value),
+            FieldKind.MultiChoice => MultiText(value),
             _ => value,
         };
+
+    /// <summary>A multi-choice value ("Facebook, TikTok") with each option in the UI's language.</summary>
+    private static string MultiText(string value) =>
+        string.Join(ReportFields.MultiSeparator, ReportFields.SplitMulti(value).Select(o => N(o)));
+
+    private static string CategoryText(TicketDetails d) =>
+        CategoryCatalog.Default.FindCategory(d.Ticket.CategoryKey) is { } category ? N(category.Name) : d.CategoryName;
+
+    private static string SubcategoryText(TicketDetails d) =>
+        CategoryCatalog.Default.FindSubcategory(d.Ticket.SubcategoryKey)?.Subcategory is { } sub ? N(sub) : d.SubcategoryName;
 
     private void StartEditingFields()
     {
@@ -347,7 +361,7 @@ else if (details is { } d)
         {
             var updated = await UpdateFields.ExecuteAsync(Id, agent, fieldValues);
             editingFields = false;
-            return updated is null ? "Dane bez zmian." : $"Zapisano dane do raportu ({updated.Changes.Count}).";
+            return updated is null ? T("Dane bez zmian.", "The data is unchanged.") : T($"Zapisano dane do raportu ({updated.Changes.Count}).", $"Report data saved ({updated.Changes.Count}).");
         });
 
     protected override async Task OnParametersSetAsync()
@@ -355,7 +369,7 @@ else if (details is { } d)
         me = (await CurrentAgent.GetAsync()).Id;
         await LoadAsync();
         if (IsNew == "1" && details is not null)
-            success = $"Zgłoszenie {details.Ticket.Number} dodane do puli.";
+            success = T($"Zgłoszenie {details.Ticket.Number} dodane do puli.", $"Ticket {details.Ticket.Number} added to the pool.");
     }
 
     private async Task LoadAsync()
@@ -379,7 +393,7 @@ else if (details is { } d)
         }
         catch (DomainException exception)
         {
-            error = exception.Message;
+            error = Err(exception.Message);
         }
         await LoadAsync();
         await Changes.NotifyAsync();
@@ -389,7 +403,7 @@ else if (details is { } d)
         RunAsync(async agent =>
         {
             await Take.ExecuteAsync(Id, agent);
-            return "Przejęto zgłoszenie.";
+            return T("Przejęto zgłoszenie.", "Ticket taken.");
         });
 
     private Task ChangePriorityAsync() =>
@@ -398,8 +412,11 @@ else if (details is { } d)
             var changed = await ChangePriority.ExecuteAsync(Id, agent, newPriority, priorityReason);
             priorityReason = null;
             return changed is null
-                ? "Priorytet bez zmian."
-                : $"Priorytet zmieniony: {PriorityNames.Name(changed.From)} → {PriorityNames.Name(changed.To)}.";
+                ? T("Priorytet bez zmian.", "The priority is unchanged.")
+                : T(
+                    $"Priorytet zmieniony: {PriorityNames.Name(changed.From)} → {PriorityNames.Name(changed.To)}.",
+                    $"Priority changed: {N(PriorityNames.Name(changed.From))} → {N(PriorityNames.Name(changed.To))}."
+                );
         });
 
     private Task CommentAsync() =>
@@ -407,7 +424,7 @@ else if (details is { } d)
         {
             await Comment.ExecuteAsync(Id, agent, commentText);
             commentText = null;
-            return "Komentarz dodany.";
+            return T("Komentarz dodany.", "Comment added.");
         });
 
     private async Task AttachAsync()
@@ -420,7 +437,7 @@ else if (details is { } d)
                 var added = await Attach.ExecuteAsync(Id, agent, newFiles.ToList());
                 newFiles.Clear();
                 picker?.Reset();
-                return added.Count == 1 ? "Załącznik dodany." : $"Dodano załączniki: {added.Count}.";
+                return added.Count == 1 ? T("Załącznik dodany.", "Attachment added.") : T($"Dodano załączniki: {added.Count}.", $"Attachments added: {added.Count}.");
             });
         }
         finally
@@ -432,7 +449,7 @@ else if (details is { } d)
     private async Task OnWorkDoneAsync((bool Ok, string Message) result)
     {
         success = result.Ok ? result.Message : null;
-        error = result.Ok ? null : result.Message;
+        error = result.Ok ? null : Err(result.Message);
         await LoadAsync();
         await Changes.NotifyAsync();
     }

@@ -5,6 +5,7 @@ using Microsoft.Net.Http.Headers;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using static Halcyon.App.Localization.Tr;
 
 namespace Halcyon.App.Features.Reports;
 
@@ -116,7 +117,7 @@ public static class ReportExport
         }
 
         var range = sheet.Range(1, 1, Math.Max(table.Rows.Count + 1, 2), table.Columns.Count);
-        range.CreateTable("Raport").ShowAutoFilter = true;
+        range.CreateTable(T("Raport", "Report")).ShowAutoFilter = true;
         sheet.SheetView.FreezeRows(1);
         sheet.Columns().AdjustToContents(1, Math.Min(table.Rows.Count + 1, 200), 8, 60);
 
@@ -144,11 +145,11 @@ public static class ReportExport
                         .PaddingBottom(10)
                         .Column(column =>
                         {
-                            column.Item().Text($"Raport: {table.Title}").FontSize(14).SemiBold();
+                            column.Item().Text($"{T("Raport", "Report")}: {table.Title}").FontSize(14).SemiBold();
                             column
                                 .Item()
                                 .Text(
-                                    $"{table.FilterText} · {table.Count} {table.RowNoun} · wygenerowano {CategoryReportQueries.Format(table.GeneratedAt)}"
+                                    $"{table.FilterText} · {table.Count} {table.RowNoun} · {T("wygenerowano", "generated")} {CategoryReportQueries.Format(table.GeneratedAt)}"
                                 )
                                 .FontColor(Colors.Grey.Darken1);
                         });
@@ -200,7 +201,7 @@ public static class ReportExport
                         .AlignRight()
                         .Text(text =>
                         {
-                            text.Span("Strona ");
+                            text.Span(T("Strona ", "Page "));
                             text.CurrentPageNumber();
                             text.Span(" / ");
                             text.TotalPages();

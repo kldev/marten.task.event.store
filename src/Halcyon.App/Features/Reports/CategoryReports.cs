@@ -5,6 +5,7 @@ using Halcyon.Domain.Categories;
 using Halcyon.Domain.Tickets;
 using Halcyon.Domain.Time;
 using Marten;
+using static Halcyon.App.Localization.Tr;
 
 namespace Halcyon.App.Features.Reports;
 
@@ -197,26 +198,26 @@ public sealed class CategoryReportQueries(IDocumentStore store, TimeProvider tim
 
         var columns = new List<ReportColumn>
         {
-            new("number", "Numer"),
-            new("reported-at", "Data zgłoszenia", ReportColumnKind.DateTime),
+            new("number", T("Numer", "Number")),
+            new("reported-at", T("Data zgłoszenia", "Reported at"), ReportColumnKind.DateTime),
         };
         if (showGroup)
-            columns.Add(new("group", "Rynek"));
+            columns.Add(new("group", T("Rynek", "Market")));
         columns.AddRange([
-            new("subcategory", "Podkategoria"),
-            new("title", "Tytuł"),
-            new("requester", "Zgłaszający"),
-            new("status", "Status"),
-            new("priority", "Priorytet"),
-            new("assignee", "Agent"),
-            new("handler", "Osoba realizująca"),
-            new("deadline", "Termin", ReportColumnKind.DateTime),
-            new("resolved-at", "Zrealizowano", ReportColumnKind.DateTime),
+            new("subcategory", T("Podkategoria", "Topic")),
+            new("title", T("Tytuł", "Title")),
+            new("requester", T("Zgłaszający", "Requester")),
+            new("status", T("Status", "Status")),
+            new("priority", T("Priorytet", "Priority")),
+            new("assignee", T("Agent", "Agent")),
+            new("handler", T("Osoba realizująca", "Person doing the work")),
+            new("deadline", T("Termin", "Deadline"), ReportColumnKind.DateTime),
+            new("resolved-at", T("Zrealizowano", "Resolved"), ReportColumnKind.DateTime),
         ]);
         columns.AddRange(
             fields.Select(f => new ReportColumn(
                 "field:" + f.Key,
-                f.Label,
+                N(f.Label),
                 f.Kind switch
                 {
                     FieldKind.Date => ReportColumnKind.Date,
@@ -232,24 +233,33 @@ public sealed class CategoryReportQueries(IDocumentStore store, TimeProvider tim
                 var sub = category.Subcategories.FirstOrDefault(s => s.Key == t.SubcategoryKey);
                 var cells = new List<string> { t.Number, Format(t.ReportedAt) };
                 if (showGroup)
-                    cells.Add(sub?.Group ?? "");
+                    cells.Add(N(sub?.Group));
                 cells.AddRange([
-                    sub?.Name ?? t.SubcategoryKey,
+                    sub is null ? t.SubcategoryKey : N(sub.Name),
                     t.Title,
                     t.RequesterName,
-                    PriorityNames.Status(t.Status),
-                    PriorityNames.Name(t.Priority),
+                    N(PriorityNames.Status(t.Status)),
+                    N(PriorityNames.Name(t.Priority)),
                     t.AssigneeName ?? "",
                     t.HandlerName ?? "",
                     Format(t.Deadline),
                     t.ResolvedAt is { } resolved ? Format(resolved) : "",
                 ]);
-                cells.AddRange(fields.Select(f => t.Fields.GetValueOrDefault(f.Key) ?? ""));
+                // A choice's stored value is Polish; shown in the reader's language (a free text falls back to itself).
+                cells.AddRange(fields.Select(f => N(t.Fields.GetValueOrDefault(f.Key))));
                 return new ReportRow(t.Id, cells);
             })
             .ToList();
 
-        return new ReportTable(report.Slug, report.Title, Describe(category, filter), time.GetUtcNow(), columns, rows);
+        return new ReportTable(
+            report.Slug,
+            N(report.Title),
+            Describe(category, filter),
+            time.GetUtcNow(),
+            columns,
+            rows,
+            T("zgłoszeń", "tickets")
+        );
     }
 
     public static string Format(DateTimeOffset utc) =>
@@ -260,16 +270,21 @@ public sealed class CategoryReportQueries(IDocumentStore store, TimeProvider tim
         var parts = new List<string>();
         if (filter.From is not null || filter.To is not null)
             parts.Add(
-                $"zgłoszone {(filter.From is { } f ? "od " + f.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture) : "")}"
+                T("zgłoszone ", "reported ")
+                    + $"{(filter.From is { } f ? T("od ", "from ") + f.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture) : "")}"
                     + $"{(filter.From is not null && filter.To is not null ? " " : "")}"
-                    + $"{(filter.To is { } t ? "do " + t.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture) : "")}"
+                    + $"{(filter.To is { } t ? T("do ", "to ") + t.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture) : "")}"
             );
         if (filter.Group is { } group)
-            parts.Add($"rynek: {group}");
+            parts.Add($"{T("rynek", "market")}: {N(group)}");
         if (filter.SubcategoryKey is { } key && category.Subcategories.FirstOrDefault(s => s.Key == key) is { } sub)
-            parts.Add($"podkategoria: {sub.DisplayName}");
+            parts.Add($"{T("podkategoria", "topic")}: {N(sub)}");
         if (filter.Completion != CompletionFilter.Any)
-            parts.Add(filter.Completion == CompletionFilter.Open ? "tylko niezrealizowane" : "tylko zrealizowane");
-        return parts.Count == 0 ? "Wszystkie zgłoszenia" : string.Join(", ", parts);
+            parts.Add(
+                filter.Completion == CompletionFilter.Open
+                    ? T("tylko niezrealizowane", "open only")
+                    : T("tylko zrealizowane", "resolved only")
+            );
+        return parts.Count == 0 ? T("Wszystkie zgłoszenia", "All tickets") : string.Join(", ", parts);
     }
 }

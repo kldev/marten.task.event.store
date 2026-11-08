@@ -1,11 +1,11 @@
 @page "/wszystkie"
 
-<PageTitle>Wszystkie zgłoszenia · Halcyon</PageTitle>
+<PageTitle>@T("Wszystkie zgłoszenia", "All tickets") · Halcyon</PageTitle>
 
 <div class="space-y-5">
     <div>
-        <h1>Wszystkie zgłoszenia</h1>
-        <p class="mt-1 text-sm text-ink-500">Otwarte według terminu, potem zrealizowane.</p>
+        <h1>@T("Wszystkie zgłoszenia", "All tickets")</h1>
+        <p class="mt-1 text-sm text-ink-500">@T("Otwarte według terminu, potem zrealizowane.", "Open tickets by deadline, then the resolved ones.")</p>
     </div>
     <TicketListView Scope="TicketScope.All" InitialDeadline="InitialDeadline" />
 </div>

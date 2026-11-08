@@ -4,7 +4,7 @@
 @inject ReportTicket Reporting
 @inject AgentDirectory Directory
 
-<PageTitle>Zgłoś sprawę · Halcyon</PageTitle>
+<PageTitle>@T("Zgłoś sprawę", "Report an issue") · Halcyon</PageTitle>
 
 <div class="mt-6 w-full max-w-6xl space-y-4">
     <div class="card space-y-6 p-6">
@@ -13,31 +13,31 @@
                 <Icon Name="send" Class="size-6" />
             </span>
             <div class="space-y-1">
-            <h1>Zgłoś sprawę</h1>
+            <h1>@T("Zgłoś sprawę", "Report an issue")</h1>
             <p class="text-sm text-ink-500">
-                Wybierz siebie z listy (albo zgłoś incognito), opisz sprawę i nadaj jej priorytet. Zgłoszenie trafi do puli,
-                z której przejmie je jeden z agentów.
+                @T("Wybierz siebie z listy (albo zgłoś incognito), opisz sprawę i nadaj jej priorytet. Zgłoszenie trafi do puli, z której przejmie je jeden z agentów.", "Pick yourself from the list (or report incognito), describe the issue and set its priority. The ticket goes to the pool, where one of the agents takes it.")
             </p>
             </div>
+            <div class="ml-auto shrink-0"><LanguageSwitch /></div>
         </div>
 
         @if (sent is { } number)
         {
             <div class="space-y-4" data-testid="public-sent">
-                <Notice Kind="success" Message="@($"Dziękujemy! Zgłoszenie zostało przyjęte. Numer zgłoszenia: {number}.")" />
-                <button type="button" class="btn btn-secondary" data-testid="public-again" @onclick="() => sent = null">Zgłoś kolejną sprawę</button>
+                <Notice Kind="success" Message="@T($"Dziękujemy! Zgłoszenie zostało przyjęte. Numer zgłoszenia: {number}.", $"Thank you! Your ticket has been received. Ticket number: {number}.")" />
+                <button type="button" class="btn btn-secondary" data-testid="public-again" @onclick="() => sent = null">@T("Zgłoś kolejną sprawę", "Report another issue")</button>
             </div>
         }
         else if (people is null)
         {
-            <p class="text-sm text-ink-500">Wczytywanie…</p>
+            <p class="text-sm text-ink-500">@T("Wczytywanie…", "Loading…")</p>
         }
         else
         {
             <ReportForm People="people" OnSubmit="SendAsync" FormName="public-report" />
         }
     </div>
-    <a href="logowanie" class="block text-center text-sm text-halcyon-100 hover:text-white">Jesteś agentem? Zaloguj się</a>
+    <a href="logowanie" class="block text-center text-sm text-halcyon-100 hover:text-white">@T("Jesteś agentem? Zaloguj się", "Are you an agent? Sign in")</a>
 </div>
 
 @code {

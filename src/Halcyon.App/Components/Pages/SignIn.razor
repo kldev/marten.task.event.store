@@ -4,22 +4,25 @@
 @attribute [ExcludeFromInteractiveRouting]
 @inject Microsoft.Extensions.Options.IOptions<Halcyon.App.Auth.AuthOptions> Auth
 
-<PageTitle>Logowanie · Halcyon</PageTitle>
+<PageTitle>@T("Logowanie", "Sign in") · Halcyon</PageTitle>
 
 <div class="mt-10 w-full max-w-sm space-y-6">
     <div class="card space-y-5 p-6">
-        <div class="space-y-1">
-            <h1>Logowanie agenta</h1>
-            <p class="text-sm text-ink-500">Firmowy e-mail i hasło zespołu.</p>
+        <div class="flex items-start justify-between gap-3">
+            <div class="space-y-1">
+                <h1>@T("Logowanie agenta", "Agent sign-in")</h1>
+                <p class="text-sm text-ink-500">@T("Firmowy e-mail i hasło zespołu.", "Your work e-mail and the team password.")</p>
+            </div>
+            <LanguageSwitch />
         </div>
 
         @if (Error == "invalid")
         {
-            <Notice Message="Nieprawidłowy e-mail lub hasło." />
+            <Notice Message="@T("Nieprawidłowy e-mail lub hasło.", "Wrong e-mail or password.")" />
         }
         else if (Error == "limit")
         {
-            <Notice Message="Zbyt wiele prób logowania. Spróbuj ponownie za minutę." />
+            <Notice Message="@T("Zbyt wiele prób logowania. Spróbuj ponownie za minutę.", "Too many sign-in attempts. Try again in a minute.")" />
         }
 
         @* A plain form: /auth/login checks the password, writes the session cookie and redirects (ADR-0005). *@
@@ -28,14 +31,14 @@
             <div>
                 <label for="email" class="label">E-mail</label>
                 <input id="email" name="email" type="email" autocomplete="username" required class="input"
-                       placeholder="imie.nazwisko@company.io" data-testid="signin-email" />
+                       placeholder="@N("imie.nazwisko@company.io")" data-testid="signin-email" />
             </div>
             <div>
-                <label for="password" class="label">Hasło</label>
+                <label for="password" class="label">@T("Hasło", "Password")</label>
                 <input id="password" name="password" type="password" autocomplete="current-password" required class="input"
                        data-testid="signin-password" />
             </div>
-            <button type="submit" class="btn btn-primary w-full" data-testid="signin-submit">Zaloguj</button>
+            <button type="submit" class="btn btn-primary w-full" data-testid="signin-submit">@T("Zaloguj", "Sign in")</button>
         </form>
 
         @if (Auth.Value.HasDefaultAgent)
@@ -44,7 +47,7 @@
             <form method="post" action="auth/login-default" data-enhance="false" data-testid="signin-default-form">
                 <input type="hidden" name="returnUrl" value="@ReturnUrl" />
                 <button type="submit" class="btn btn-secondary w-full" data-testid="signin-default">
-                    Zaloguj się jako domyślny agent
+                    @T("Zaloguj się jako domyślny agent", "Sign in as the default agent")
                 </button>
                 <p class="mt-2 text-center text-xs text-ink-500">@Auth.Value.DefaultAgentEmail</p>
             </form>
@@ -52,7 +55,7 @@
     </div>
 
     <a href="zglos" class="block text-center text-sm text-halcyon-100 hover:text-white" data-testid="public-report-link">
-        Nie jesteś agentem? Zgłoś sprawę bez logowania →
+        @T("Nie jesteś agentem? Zgłoś sprawę bez logowania →", "Not an agent? Report an issue without signing in →")
     </a>
 </div>
 

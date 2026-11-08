@@ -4,11 +4,11 @@
 {
     <div class="flex items-center gap-2 border-t border-ink-100 px-4 py-3 text-sm sm:px-5" data-testid="pager">
         <button type="button" class="btn btn-secondary btn-sm" disabled="@(Page == 0)" data-testid="page-prev" @onclick="() => Changed.InvokeAsync(Page - 1)">
-            <Icon Name="chevron-left" /> Poprzednia
+            <Icon Name="chevron-left" /> @T("Poprzednia", "Previous")
         </button>
-        <span class="text-ink-600" data-testid="page-number">Strona @(Page + 1)</span>
+        <span class="text-ink-600" data-testid="page-number">@T("Strona", "Page") @(Page + 1)</span>
         <button type="button" class="btn btn-secondary btn-sm" disabled="@(!HasMore)" data-testid="page-next" @onclick="() => Changed.InvokeAsync(Page + 1)">
-            Następna <Icon Name="chevron-right" />
+            @T("Następna", "Next") <Icon Name="chevron-right" />
         </button>
     </div>
 }

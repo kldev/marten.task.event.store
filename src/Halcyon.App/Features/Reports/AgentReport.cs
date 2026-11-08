@@ -3,6 +3,7 @@ using Halcyon.Database.Documents;
 using Halcyon.Domain.Tickets;
 using Halcyon.Domain.Time;
 using Marten;
+using static Halcyon.App.Localization.Tr;
 
 namespace Halcyon.App.Features.Reports;
 
@@ -32,9 +33,9 @@ public sealed class AgentReportQueries(IDocumentStore store, TimeProvider time)
         var periods = ReportPeriods.For(ReportPeriods.Today(now), which == AgentPeriods.Previous);
         var ranges = new[]
         {
-            ("Tydzień", periods.Week),
-            ("Miesiąc", periods.Month),
-            ("3 miesiące", periods.ThreeMonths),
+            (T("Tydzień", "Week"), periods.Week),
+            (T("Miesiąc", "Month"), periods.Month),
+            (T("3 miesiące", "3 months"), periods.ThreeMonths),
         };
         // The widest range holds the other two.
         var from = ranges.Min(r => r.Item2.From);
@@ -60,17 +61,39 @@ public sealed class AgentReportQueries(IDocumentStore store, TimeProvider time)
             .GroupBy(t => t.AssigneeId!.Value)
             .ToDictionary(g => g.Key, g => g.Count());
 
-        var columns = new List<ReportColumn> { new("agent", "Agent") };
+        var columns = new List<ReportColumn> { new("agent", T("Agent", "Agent")) };
         foreach (var (name, range) in ranges)
         {
             var label = $"{name} {range.Text}";
-            columns.Add(new($"taken:{name}", $"{label}: przejęte", ReportColumnKind.Number, label, "Przejęte"));
             columns.Add(
-                new($"resolved:{name}", $"{label}: zrealizowane", ReportColumnKind.Number, label, "Zrealizowane")
+                new(
+                    $"taken:{name}",
+                    $"{label}: {T("przejęte", "taken")}",
+                    ReportColumnKind.Number,
+                    label,
+                    T("Przejęte", "Taken")
+                )
             );
-            columns.Add(new($"late:{name}", $"{label}: po terminie", ReportColumnKind.Number, label, "Po terminie"));
+            columns.Add(
+                new(
+                    $"resolved:{name}",
+                    $"{label}: {T("zrealizowane", "resolved")}",
+                    ReportColumnKind.Number,
+                    label,
+                    T("Zrealizowane", "Resolved")
+                )
+            );
+            columns.Add(
+                new(
+                    $"late:{name}",
+                    $"{label}: {T("po terminie", "late")}",
+                    ReportColumnKind.Number,
+                    label,
+                    T("Po terminie", "Late")
+                )
+            );
         }
-        columns.Add(new("in-progress", "Teraz w realizacji", ReportColumnKind.Number));
+        columns.Add(new("in-progress", T("Teraz w realizacji", "In progress now"), ReportColumnKind.Number));
 
         string N(int value) => value.ToString(CultureInfo.InvariantCulture);
 
@@ -88,15 +111,26 @@ public sealed class AgentReportQueries(IDocumentStore store, TimeProvider time)
             rows.Add(new ReportRow(null, cells));
         }
 
-        var totals = new List<string> { "Razem" };
+        var totals = new List<string> { T("Razem", "Total") };
         for (var c = 1; c < columns.Count; c++)
             totals.Add(N(rows.Sum(r => int.Parse(r.Cells[c], CultureInfo.InvariantCulture))));
         rows.Add(new ReportRow(null, totals, IsTotal: true));
 
         var text =
             which == AgentPeriods.Previous
-                ? "Poprzednie pełne okresy kalendarzowe"
-                : "Bieżące okresy kalendarzowe (tydzień pon-niedz, miesiąc, 3 miesiące)";
-        return new ReportTable(Slug, "Praca agentów", text, now, columns, rows, "agentów");
+                ? T("Poprzednie pełne okresy kalendarzowe", "Previous full calendar periods")
+                : T(
+                    "Bieżące okresy kalendarzowe (tydzień pon-niedz, miesiąc, 3 miesiące)",
+                    "Current calendar periods (week Mon-Sun, month, 3 months)"
+                );
+        return new ReportTable(
+            Slug,
+            T("Praca agentów", "Agents' work"),
+            text,
+            now,
+            columns,
+            rows,
+            T("agentów", "agents")
+        );
     }
 }

@@ -17,26 +17,34 @@
                 var value = Values[d][h];
                 <span class="group relative h-6 rounded-[3px] @Step(value)" data-testid="heat-cell" data-day="@d" data-hour="@h" data-value="@value">
                     <span class="pointer-events-none absolute @(d < 2 ? "top-full mt-1" : "bottom-full mb-1") left-1/2 z-10 hidden -translate-x-1/2 rounded-md border border-ink-200 bg-white px-2 py-1 whitespace-nowrap text-ink-800 shadow-md group-hover:block" role="tooltip">
-                        <strong>@LongDays[d] @h.ToString("00", System.Globalization.CultureInfo.InvariantCulture):00–@((h + 1).ToString("00", System.Globalization.CultureInfo.InvariantCulture)):00</strong> · @Tickets(value)
+                        <strong>@LongDays[d] @h.ToString("00", System.Globalization.CultureInfo.InvariantCulture):00–@((h + 1).ToString("00", System.Globalization.CultureInfo.InvariantCulture)):00</strong> · @TicketCount(value)
                     </span>
                 </span>
             }
         }
     </div>
     <div class="mt-3 flex items-center gap-2 text-[11px] text-ink-500" aria-hidden="true">
-        <span>mniej</span>
+        <span>@T("mniej", "fewer")</span>
         @foreach (var step in Steps)
         {
             <span class="h-3 w-5 rounded-[3px] @step"></span>
         }
-        <span>więcej</span>
-        <span class="ml-auto">najwięcej: @Tickets(Max) w godzinie</span>
+        <span>@T("więcej", "more")</span>
+        <span class="ml-auto">@T("najwięcej", "peak"): @TicketCount(Max) @T("w godzinie", "in an hour")</span>
     </div>
 </div>
 
 @code {
-    private static readonly string[] Days = ["pon", "wt", "śr", "czw", "pt", "sob", "niedz"];
-    private static readonly string[] LongDays = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"];
+    private static string[] Days =>
+        Language.IsEnglish ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] : ["pon", "wt", "śr", "czw", "pt", "sob", "niedz"];
+
+    private static string[] LongDays =>
+        Language.IsEnglish
+            ? ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            : ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"];
+
+    /// <summary>"1 zgłoszenie", "5 zgłoszeń"; "1 ticket", "5 tickets".</summary>
+    private static string TicketCount(int n) => T(Tickets(n), $"{N(n)} {(n == 1 ? "ticket" : "tickets")}");
 
     // Written out for Tailwind's scanner: an empty hour, then six steps of the brand ramp.
     private static readonly string[] Steps =

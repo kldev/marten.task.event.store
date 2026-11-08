@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using static Halcyon.App.Localization.Tr;
 
 namespace Halcyon.App.Monitoring;
 
@@ -51,7 +52,7 @@ public sealed class MonitoringQueue<T>
     private long failed;
     private long lastWriteTicks;
 
-    public MonitoringQueue(string name, string description, int capacity)
+    public MonitoringQueue(string name, Func<string> description, int capacity)
     {
         Name = name;
         Description = description;
@@ -68,7 +69,9 @@ public sealed class MonitoringQueue<T>
     }
 
     public string Name { get; }
-    public string Description { get; }
+
+    /// <summary>In the reader's language (ADR-0012): asked for when the page renders.</summary>
+    public Func<string> Description { get; }
     public int Capacity { get; }
 
     public void Enqueue(T item)
@@ -101,7 +104,7 @@ public sealed class MonitoringQueue<T>
         var ticks = Interlocked.Read(ref lastWriteTicks);
         return new QueueState(
             Name,
-            Description,
+            Description(),
             channel.Reader.Count,
             Capacity,
             Interlocked.Read(ref enqueued),
@@ -117,10 +120,18 @@ public sealed class MonitoringQueue<T>
 public sealed class MonitoringQueues(Microsoft.Extensions.Options.IOptions<MonitoringOptions> options)
 {
     public MonitoringQueue<RequestRecord> Requests { get; } =
-        new("http-requests", "Odpowiedzi HTTP → tabela halcyon.http_requests", options.Value.QueueCapacity);
+        new(
+            "http-requests",
+            () => T("Odpowiedzi HTTP → tabela halcyon.http_requests", "HTTP responses → table halcyon.http_requests"),
+            options.Value.QueueCapacity
+        );
 
     public MonitoringQueue<LogRecord> Logs { get; } =
-        new("app-logs", "Log aplikacji → tabela halcyon.app_logs", options.Value.QueueCapacity);
+        new(
+            "app-logs",
+            () => T("Log aplikacji → tabela halcyon.app_logs", "Application log → table halcyon.app_logs"),
+            options.Value.QueueCapacity
+        );
 
     public IReadOnlyList<QueueState> States() => [Requests.State(), Logs.State()];
 }

@@ -1,11 +1,11 @@
 @page "/moje"
 
-<PageTitle>Moje zgłoszenia · Halcyon</PageTitle>
+<PageTitle>@T("Moje zgłoszenia", "My tickets") · Halcyon</PageTitle>
 
 <div class="space-y-5">
     <div>
-        <h1>Moje zgłoszenia</h1>
-        <p class="mt-1 text-sm text-ink-500">Zgłoszenia, które realizujesz. Możesz je zakończyć, oddać do puli albo przekazać.</p>
+        <h1>@T("Moje zgłoszenia", "My tickets")</h1>
+        <p class="mt-1 text-sm text-ink-500">@T("Zgłoszenia, które realizujesz. Możesz je zakończyć, oddać do puli albo przekazać.", "Tickets you are working on. You can resolve them, return them to the pool or hand them over.")</p>
     </div>
-    <TicketListView Scope="TicketScope.Mine" EmptyText="Nie masz zgłoszeń w realizacji. Przejmij coś z puli." />
+    <TicketListView Scope="TicketScope.Mine" EmptyText="@T("Nie masz zgłoszeń w realizacji. Przejmij coś z puli.", "You have no tickets in progress. Take one from the pool.")" />
 </div>

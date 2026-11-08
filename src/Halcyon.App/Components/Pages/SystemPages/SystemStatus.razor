@@ -9,35 +9,35 @@
 @inject IOptions<MonitoringOptions> Options
 @inject TimeProvider Time
 
-<PageTitle>Status systemu · Halcyon</PageTitle>
+<PageTitle>@T("Status systemu", "System status") · Halcyon</PageTitle>
 
 <div class="space-y-5" data-testid="system-status-page">
     <div class="flex flex-wrap items-end justify-between gap-3">
         <div>
             <p class="text-xs text-ink-500">System /</p>
-            <h1>Status systemu</h1>
+            <h1>@T("Status systemu", "System status")</h1>
             <p class="mt-1 text-sm text-ink-500">
-                Odpowiedzi HTTP aplikacji: sukcesy i błędy. Każda odpowiedź trafia do bazy i zostaje tam
-                @RetentionText, potem usuwa ją zadanie w tle (zob. <a href="system/kolejki" class="text-halcyon-700 hover:underline">Kolejki</a>).
+                @T("Odpowiedzi HTTP aplikacji: sukcesy i błędy. Każda odpowiedź trafia do bazy i zostaje tam", "The application's HTTP responses: successes and errors. Every response is stored in the database and kept there for")
+                @RetentionText, @T("potem usuwa ją zadanie w tle (zob.", "then a background job deletes it (see") <a href="system/kolejki" class="text-halcyon-700 hover:underline">@T("Kolejki", "Queues")</a>).
             </p>
         </div>
-        <button type="button" class="btn btn-secondary btn-sm" data-testid="refresh" @onclick="LoadAsync"><Icon Name="refresh" /> Odśwież</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-testid="refresh" @onclick="LoadAsync"><Icon Name="refresh" /> @T("Odśwież", "Refresh")</button>
     </div>
 
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" data-testid="health">
         <div class="card p-4">
-            <p class="text-xs font-medium text-ink-500">Wersja</p>
+            <p class="text-xs font-medium text-ink-500">@T("Wersja", "Version")</p>
             <p class="mt-1 font-mono text-sm text-ink-900">@AppVersion.Text</p>
-            <p class="text-xs text-ink-500">działa od @Span(Time.GetUtcNow() - started)</p>
+            <p class="text-xs text-ink-500">@T("działa od", "running for") @Span(Time.GetUtcNow() - started)</p>
         </div>
         @foreach (var (name, entry) in health)
         {
             var ok = entry.Status == HealthStatus.Healthy;
             <div class="card p-4" data-testid="health-@name">
-                <p class="text-xs font-medium text-ink-500">@(name switch { "database" => "Baza danych", "storage" => "Magazyn plików (S3)", _ => name })</p>
+                <p class="text-xs font-medium text-ink-500">@(name switch { "database" => T("Baza danych", "Database"), "storage" => T("Magazyn plików (S3)", "File storage (S3)"), _ => name })</p>
                 <p class="mt-1 flex items-center gap-2 text-sm font-semibold @(ok ? "text-emerald-700" : "text-red-700")">
                     <span class="size-2 rounded-full @(ok ? "bg-emerald-500" : "bg-red-600")"></span>
-                    @(ok ? "Działa" : entry.Status == HealthStatus.Degraded ? "Częściowo" : "Nie działa")
+                    @(ok ? T("Działa", "Running") : entry.Status == HealthStatus.Degraded ? T("Częściowo", "Degraded") : T("Nie działa", "Down"))
                 </p>
                 <p class="text-xs text-ink-500">@(entry.Description ?? $"{entry.Duration.TotalMilliseconds:0} ms")</p>
             </div>
@@ -46,7 +46,7 @@
 
     <div class="flex flex-wrap items-end gap-3">
         <div>
-            <span class="label text-xs" id="status-range-label">Okres</span>
+            <span class="label text-xs" id="status-range-label">@T("Okres", "Period")</span>
             <div class="inline-flex rounded-lg border border-ink-200 bg-white p-0.5" role="radiogroup" aria-labelledby="status-range-label" data-testid="status-range">
                 @foreach (var (value, text, testId) in Ranges)
                 {
@@ -61,7 +61,7 @@
         </div>
         @if (stats is not null)
         {
-            <p class="pb-2 text-sm text-ink-500 sm:ml-auto">od @SystemText.Time(stats.From)</p>
+            <p class="pb-2 text-sm text-ink-500 sm:ml-auto">@T("od", "since") @SystemText.Time(stats.From)</p>
         }
     </div>
 
@@ -69,26 +69,26 @@
 
     @if (stats is null)
     {
-        <p class="text-sm text-ink-500">Wczytywanie…</p>
+        <p class="text-sm text-ink-500">@T("Wczytywanie…", "Loading…")</p>
     }
     else
     {
         <div class="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7" data-testid="http-figures">
-            <Tile TestId="kpi-total" Label="Wszystkie" Value="@N(stats.Total)" Note="@($"śr. {Ms(stats.AverageMs)} · p95 {Ms(stats.P95Ms)}")" />
-            <Tile TestId="kpi-200" Label="200 OK" Value="@N(stats.Ok)" Note="@($"2xx razem: {N(stats.Success)}")" Tone="ok" />
-            <Tile TestId="kpi-3xx" Label="Przekierowania 3xx" Value="@N(stats.Redirects)" Note="@Share(stats.Redirects, stats.Total)" />
-            <Tile TestId="kpi-403" Label="403 Brak dostępu" Value="@N(stats.Forbidden)" Note="@Share(stats.Forbidden, stats.Total)" Tone="@(stats.Forbidden > 0 ? "warn" : "")" />
-            <Tile TestId="kpi-404" Label="404 Nie znaleziono" Value="@N(stats.NotFound)" Note="@($"inne 4xx: {N(stats.OtherClientErrors)}")" Tone="@(stats.NotFound > 0 ? "warn" : "")" />
-            <Tile TestId="kpi-500" Label="500 Błąd serwera" Value="@N(stats.InternalServerErrors)" Note="@($"5xx razem: {N(stats.ServerErrors)} · {Share(stats.ServerErrors, stats.Total)}")" Tone="@(stats.ServerErrors > 0 ? "error" : "")" />
-            <Tile TestId="kpi-log" Label="Błędy w logu" Value="@N(logErrors)" Note="@($"ostrzeżenia: {N(logWarnings)}")" Tone="@(logErrors > 0 ? "error" : "")" Href="system/logi" />
+            <Tile TestId="kpi-total" Label="@T("Wszystkie", "All")" Value="@N(stats.Total)" Note="@($"{T("śr.", "avg")} {Ms(stats.AverageMs)} · p95 {Ms(stats.P95Ms)}")" />
+            <Tile TestId="kpi-200" Label="200 OK" Value="@N(stats.Ok)" Note="@($"{T("2xx razem", "2xx total")}: {N(stats.Success)}")" Tone="ok" />
+            <Tile TestId="kpi-3xx" Label="@T("Przekierowania 3xx", "3xx redirects")" Value="@N(stats.Redirects)" Note="@Share(stats.Redirects, stats.Total)" />
+            <Tile TestId="kpi-403" Label="@T("403 Brak dostępu", "403 Forbidden")" Value="@N(stats.Forbidden)" Note="@Share(stats.Forbidden, stats.Total)" Tone="@(stats.Forbidden > 0 ? "warn" : "")" />
+            <Tile TestId="kpi-404" Label="@T("404 Nie znaleziono", "404 Not found")" Value="@N(stats.NotFound)" Note="@($"{T("inne 4xx", "other 4xx")}: {N(stats.OtherClientErrors)}")" Tone="@(stats.NotFound > 0 ? "warn" : "")" />
+            <Tile TestId="kpi-500" Label="@T("500 Błąd serwera", "500 Server error")" Value="@N(stats.InternalServerErrors)" Note="@($"{T("5xx razem", "5xx total")}: {N(stats.ServerErrors)} · {Share(stats.ServerErrors, stats.Total)}")" Tone="@(stats.ServerErrors > 0 ? "error" : "")" />
+            <Tile TestId="kpi-log" Label="@T("Błędy w logu", "Errors in the log")" Value="@N(logErrors)" Note="@($"{T("ostrzeżenia", "warnings")}: {N(logWarnings)}")" Tone="@(logErrors > 0 ? "error" : "")" Href="system/logi" />
         </div>
 
         <div class="grid gap-4 lg:grid-cols-3">
-            <ChartCard Title="Odpowiedzi w czasie" Class="lg:col-span-2" TestId="chart-http"
-                       Subtitle="@(range == StatusRange.Hours24 ? "Na godzinę, czas polski." : "Na dzień, czas polski.")"
+            <ChartCard Title="@T("Odpowiedzi w czasie", "Responses over time")" Class="lg:col-span-2" TestId="chart-http"
+                       Subtitle="@(range == StatusRange.Hours24 ? T("Na godzinę, czas polski.", "Per hour, Polish time.") : T("Na dzień, czas polski.", "Per day, Polish time."))"
                        Legend="Legend">
                 <ChildContent>
-                    <StackedColumns Buckets="ChartBuckets" Series="Series" TestId="http-chart" Label="Odpowiedzi HTTP: sukcesy, błędy klienta i serwera" />
+                    <StackedColumns Buckets="ChartBuckets" Series="Series" TestId="http-chart" Label="@T("Odpowiedzi HTTP: sukcesy, błędy klienta i serwera", "HTTP responses: successes, client and server errors")" />
                 </ChildContent>
                 <Table>
                     <ChartTable Headers="TableHeaders" Rows="TableRows" />
@@ -96,11 +96,11 @@
             </ChartCard>
 
             <section class="card p-4 sm:p-5" data-testid="by-status">
-                <h2 class="text-base">Według kodu</h2>
-                <p class="mt-0.5 text-xs text-ink-500">Każdy kod odpowiedzi w okresie.</p>
+                <h2 class="text-base">@T("Według kodu", "By status code")</h2>
+                <p class="mt-0.5 text-xs text-ink-500">@T("Każdy kod odpowiedzi w okresie.", "Every response status code in the period.")</p>
                 @if (stats.ByStatus.Count == 0)
                 {
-                    <p class="mt-4 text-sm text-ink-500">Brak odpowiedzi w okresie.</p>
+                    <p class="mt-4 text-sm text-ink-500">@T("Brak odpowiedzi w okresie.", "No responses in the period.")</p>
                 }
                 else
                 {
@@ -122,18 +122,18 @@
 
         <section class="card overflow-hidden" data-testid="failing-paths">
             <div class="px-4 pt-4 sm:px-5">
-                <h2 class="text-base">Najczęstsze błędy</h2>
-                <p class="mt-0.5 text-xs text-ink-500">Adresy, które w okresie odpowiedziały kodem 400 lub wyższym.</p>
+                <h2 class="text-base">@T("Najczęstsze błędy", "Most frequent errors")</h2>
+                <p class="mt-0.5 text-xs text-ink-500">@T("Adresy, które w okresie odpowiedziały kodem 400 lub wyższym.", "Paths that answered with status 400 or higher in the period.")</p>
             </div>
             @if (stats.FailingPaths.Count == 0)
             {
-                <p class="px-4 py-4 text-sm text-ink-500 sm:px-5" data-testid="no-failures">Brak błędów w okresie.</p>
+                <p class="px-4 py-4 text-sm text-ink-500 sm:px-5" data-testid="no-failures">@T("Brak błędów w okresie.", "No errors in the period.")</p>
             }
             else
             {
                 <div class="overflow-x-auto">
                     <table class="mt-2 min-w-full divide-y divide-ink-100">
-                        <thead><tr><th class="table-head">Kod</th><th class="table-head">Adres</th><th class="table-head text-right">Liczba</th><th class="table-head">Ostatnio</th></tr></thead>
+                        <thead><tr><th class="table-head">@T("Kod", "Status")</th><th class="table-head">@T("Adres", "Path")</th><th class="table-head text-right">@T("Liczba", "Count")</th><th class="table-head">@T("Ostatnio", "Last seen")</th></tr></thead>
                         <tbody class="divide-y divide-ink-100">
                             @foreach (var f in stats.FailingPaths)
                             {
@@ -154,24 +154,24 @@
     <section class="card overflow-hidden" data-testid="requests">
         <div class="flex flex-wrap items-end gap-3 px-4 pt-4 sm:px-5">
             <div class="mr-auto">
-                <h2 class="text-base">Odpowiedzi HTTP</h2>
-                <p class="mt-0.5 text-xs text-ink-500">Najnowsze pierwsze. Adres bez parametrów zapytania.</p>
+                <h2 class="text-base">@T("Odpowiedzi HTTP", "HTTP responses")</h2>
+                <p class="mt-0.5 text-xs text-ink-500">@T("Najnowsze pierwsze. Adres bez parametrów zapytania.", "Newest first. Path without query parameters.")</p>
             </div>
             <div>
-                <label class="label text-xs" for="r-outcome">Wynik</label>
+                <label class="label text-xs" for="r-outcome">@T("Wynik", "Outcome")</label>
                 <select id="r-outcome" class="input py-1.5" data-testid="filter-outcome" value="@filter.Outcome"
                         @onchange="e => ApplyAsync(filter with { Outcome = Enum.Parse<RequestOutcome>(e.Value!.ToString()!), Page = 0 })">
-                    <option value="@RequestOutcome.All">Wszystkie</option>
-                    <option value="@RequestOutcome.Success">Sukcesy (&lt; 400)</option>
-                    <option value="@RequestOutcome.ClientError">Błędy klienta (4xx)</option>
+                    <option value="@RequestOutcome.All">@T("Wszystkie", "All")</option>
+                    <option value="@RequestOutcome.Success">@T("Sukcesy (< 400)", "Successes (< 400)")</option>
+                    <option value="@RequestOutcome.ClientError">@T("Błędy klienta (4xx)", "Client errors (4xx)")</option>
                     <option value="@RequestOutcome.Forbidden">403</option>
                     <option value="@RequestOutcome.NotFound">404</option>
-                    <option value="@RequestOutcome.ServerError">Błędy serwera (5xx)</option>
+                    <option value="@RequestOutcome.ServerError">@T("Błędy serwera (5xx)", "Server errors (5xx)")</option>
                 </select>
             </div>
             <div>
-                <label class="label text-xs" for="r-path">Adres zawiera</label>
-                <input id="r-path" class="input py-1.5" placeholder="np. /zgloszenia" data-testid="filter-path" value="@filter.Path"
+                <label class="label text-xs" for="r-path">@T("Adres zawiera", "Path contains")</label>
+                <input id="r-path" class="input py-1.5" placeholder="@T("np. /zgloszenia", "e.g. /zgloszenia")" data-testid="filter-path" value="@filter.Path"
                        @onchange="e => ApplyAsync(filter with { Path = e.Value?.ToString(), Page = 0 })" />
             </div>
         </div>
@@ -179,13 +179,13 @@
         {
             @if (requests.Rows.Count == 0)
             {
-                <p class="px-4 py-4 text-sm text-ink-500 sm:px-5" data-testid="requests-empty">Brak odpowiedzi.</p>
+                <p class="px-4 py-4 text-sm text-ink-500 sm:px-5" data-testid="requests-empty">@T("Brak odpowiedzi.", "No responses.")</p>
             }
             else
             {
                 <div class="overflow-x-auto">
                     <table class="mt-3 min-w-full divide-y divide-ink-100">
-                        <thead><tr><th class="table-head">Czas</th><th class="table-head">Kod</th><th class="table-head">Adres</th><th class="table-head text-right">Czas odp.</th><th class="table-head">Agent</th></tr></thead>
+                        <thead><tr><th class="table-head">@T("Czas", "Time")</th><th class="table-head">@T("Kod", "Status")</th><th class="table-head">@T("Adres", "Path")</th><th class="table-head text-right">@T("Czas odp.", "Duration")</th><th class="table-head">Agent</th></tr></thead>
                         <tbody class="divide-y divide-ink-100">
                             @foreach (var r in requests.Rows)
                             {
@@ -206,8 +206,8 @@
     </section>
 
     <section class="card p-4 sm:p-5" data-testid="monitoring-settings">
-        <h2 class="text-base">Ustawienia</h2>
-        <p class="mt-0.5 text-xs text-ink-500">Z tymi wartościami działa aplikacja. Ustawia je administrator wdrożenia w zmiennych środowiskowych.</p>
+        <h2 class="text-base">@T("Ustawienia", "Settings")</h2>
+        <p class="mt-0.5 text-xs text-ink-500">@T("Z tymi wartościami działa aplikacja. Ustawia je administrator wdrożenia w zmiennych środowiskowych.", "The values the application runs with. The deployment's administrator sets them in environment variables.")</p>
         <dl class="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
             @foreach (var (label, value, variable) in Settings)
             {
@@ -221,21 +221,21 @@
 </div>
 
 @code {
-    private static readonly (StatusRange Value, string Text, string TestId)[] Ranges =
+    private static (StatusRange Value, string Text, string TestId)[] Ranges =>
     [
-        (StatusRange.Hours24, "24 godziny", "24h"),
-        (StatusRange.Days7, "7 dni", "7d"),
-        (StatusRange.Days14, "14 dni", "14d"),
+        (StatusRange.Hours24, T("24 godziny", "24 hours"), "24h"),
+        (StatusRange.Days7, T("7 dni", "7 days"), "7d"),
+        (StatusRange.Days14, T("14 dni", "14 days"), "14d"),
     ];
 
-    private static readonly IReadOnlyList<LegendItem> Legend =
+    private static IReadOnlyList<LegendItem> Legend =>
     [
-        new("Sukces (< 400)", ChartColors.Reported),
-        new("Błąd klienta (4xx)", ChartColors.DueSoon),
-        new("Błąd serwera (5xx)", ChartColors.Late),
+        new(T("Sukces (< 400)", "Success (< 400)"), ChartColors.Reported),
+        new(T("Błąd klienta (4xx)", "Client error (4xx)"), ChartColors.DueSoon),
+        new(T("Błąd serwera (5xx)", "Server error (5xx)"), ChartColors.Late),
     ];
 
-    private static readonly IReadOnlyList<string> TableHeaders = ["Okres", "Sukces", "4xx", "5xx"];
+    private static IReadOnlyList<string> TableHeaders => [T("Okres", "Period"), T("Sukces", "Success"), "4xx", "5xx"];
 
     private readonly DateTimeOffset started = Process.GetCurrentProcess().StartTime.ToUniversalTime();
     private StatusRange range = StatusRange.Hours24;
@@ -247,16 +247,16 @@
     private long logWarnings;
     private string? error;
 
-    private string RetentionText => $"{Options.Value.Retention.TotalDays:0.##} dni";
+    private string RetentionText => $"{Options.Value.Retention.TotalDays:0.##} {T("dni", Options.Value.Retention.TotalDays == 1 ? "day" : "days")}";
 
     private IReadOnlyList<(string Label, string Value, string Variable)> Settings =>
     [
-        ("Retencja", RetentionText, "Monitoring__Retention"),
-        ("Sprzątanie co", Span(Options.Value.CleanupInterval), "Monitoring__CleanupInterval"),
-        ("Zapis do bazy co", Span(Options.Value.FlushInterval), "Monitoring__FlushInterval"),
-        ("Pojemność kolejki", N(Options.Value.QueueCapacity), "Monitoring__QueueCapacity"),
-        ("Najniższy poziom logu w bazie", Options.Value.LogLevel.ToString(), "Monitoring__LogLevel"),
-        ("Pomijane adresy", string.Join(", ", Options.Value.IgnoredPaths), "Monitoring__IgnoredPaths__N"),
+        (T("Retencja", "Retention"), RetentionText, "Monitoring__Retention"),
+        (T("Sprzątanie co", "Cleanup every"), Span(Options.Value.CleanupInterval), "Monitoring__CleanupInterval"),
+        (T("Zapis do bazy co", "Written to the database every"), Span(Options.Value.FlushInterval), "Monitoring__FlushInterval"),
+        (T("Pojemność kolejki", "Queue capacity"), N(Options.Value.QueueCapacity), "Monitoring__QueueCapacity"),
+        (T("Najniższy poziom logu w bazie", "Lowest log level stored in the database"), Options.Value.LogLevel.ToString(), "Monitoring__LogLevel"),
+        (T("Pomijane adresy", "Ignored paths"), string.Join(", ", Options.Value.IgnoredPaths), "Monitoring__IgnoredPaths__N"),
     ];
 
     private IReadOnlyList<ChartBucket> ChartBuckets =>
@@ -268,9 +268,9 @@
 
     private IReadOnlyList<ChartSeries> Series =>
     [
-        new("Sukces", ChartColors.Reported, stats!.Buckets.Select(b => b.Success).ToList()),
-        new("Błąd klienta", ChartColors.DueSoon, stats.Buckets.Select(b => b.ClientErrors).ToList()),
-        new("Błąd serwera", ChartColors.Late, stats.Buckets.Select(b => b.ServerErrors).ToList()),
+        new(T("Sukces", "Success"), ChartColors.Reported, stats!.Buckets.Select(b => b.Success).ToList()),
+        new(T("Błąd klienta", "Client error"), ChartColors.DueSoon, stats.Buckets.Select(b => b.ClientErrors).ToList()),
+        new(T("Błąd serwera", "Server error"), ChartColors.Late, stats.Buckets.Select(b => b.ServerErrors).ToList()),
     ];
 
     private IReadOnlyList<IReadOnlyList<string>> TableRows =>
@@ -291,7 +291,7 @@
         }
         catch (Npgsql.NpgsqlException e)
         {
-            error = $"Nie udało się odczytać statystyk z bazy: {e.Message}";
+            error = $"{T("Nie udało się odczytać statystyk z bazy", "Could not read the statistics from the database")}: {e.Message}";
         }
     }
 

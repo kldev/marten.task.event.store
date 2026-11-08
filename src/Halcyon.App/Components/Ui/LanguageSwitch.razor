@@ -1,0 +1,18 @@
+@* PL / EN (ADR-0012): a plain link to /jezyk/{code}, which writes the cookie and comes back to this page - a full load,
+   because a Blazor circuit keeps the culture of the request that opened it. *@
+@inject NavigationManager Navigation
+
+<div class="flex items-center gap-0.5 rounded-lg border border-ink-200 p-0.5 text-xs font-semibold" role="group" aria-label="@T("Język", "Language")" data-testid="language-switch">
+    @foreach (var (lang, label) in Codes)
+    {
+        <a href="@Language.SwitchUrl(lang, ReturnUrl)" data-enhance-nav="false" hreflang="@lang"
+           class="@(Language.Code == lang ? "rounded-md bg-ink-900 px-2 py-1 text-white" : "rounded-md px-2 py-1 text-ink-500 hover:text-ink-900")"
+           aria-current="@(Language.Code == lang ? "true" : null)" data-testid="language-@lang">@label</a>
+    }
+</div>
+
+@code {
+    private static readonly (string Code, string Label)[] Codes = [("pl", "PL"), ("en", "EN")];
+
+    private string ReturnUrl => "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+}

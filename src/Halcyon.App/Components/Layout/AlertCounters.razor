@@ -8,14 +8,14 @@
     <a href="wszystkie?termin=po-terminie" data-testid="counter-overdue" data-count="@counts.Overdue"
        class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold @(counts.Overdue > 0 ? "bg-red-700 text-white" : "bg-ink-100 text-ink-500")">
         <Icon Name="alarm" />
-        <span>Po terminie: @counts.Overdue</span>
+        <span>@T("Po terminie", "Overdue"): @counts.Overdue</span>
     </a>
     <a href="wszystkie?termin=konczy-sie" data-testid="counter-duesoon" data-count="@counts.DueSoon"
        class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold @(counts.DueSoon > 0 ? "bg-amber-100 text-amber-900 ring-1 ring-amber-300" : "bg-ink-100 text-ink-500")">
         <Icon Name="clock" />
-        <span>Kończy się czas: @counts.DueSoon</span>
+        <span>@T("Kończy się czas", "Due soon"): @counts.DueSoon</span>
     </a>
-    <span class="hidden text-xs text-ink-500 md:inline" data-testid="counter-pool">W puli: @counts.Pool · Moje: @counts.Mine</span>
+    <span class="hidden text-xs text-ink-500 md:inline" data-testid="counter-pool">@T("W puli", "In the pool"): @counts.Pool · @T("Moje", "Mine"): @counts.Mine</span>
 </div>
 
 @code {

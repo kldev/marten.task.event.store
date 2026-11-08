@@ -1,12 +1,12 @@
 @page "/"
 @page "/pula"
 
-<PageTitle>Pula · Halcyon</PageTitle>
+<PageTitle>@T("Pula", "Pool") · Halcyon</PageTitle>
 
 <div class="space-y-5">
     <div>
-        <h1>Pula zgłoszeń</h1>
-        <p class="mt-1 text-sm text-ink-500">Zgłoszenia czekające na agenta. Najpilniejsze na górze.</p>
+        <h1>@T("Pula zgłoszeń", "Ticket pool")</h1>
+        <p class="mt-1 text-sm text-ink-500">@T("Zgłoszenia czekające na agenta. Najpilniejsze na górze.", "Tickets waiting for an agent. The most urgent on top.")</p>
     </div>
-    <TicketListView Scope="TicketScope.Pool" EmptyText="Pula jest pusta - wszystkie zgłoszenia mają agenta." />
+    <TicketListView Scope="TicketScope.Pool" EmptyText="@T("Pula jest pusta - wszystkie zgłoszenia mają agenta.", "The pool is empty - every ticket has an agent.")" />
 </div>

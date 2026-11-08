@@ -44,7 +44,7 @@
     {
         var index = i;
         var total = Series.Sum(s => s.Values[index]);
-        var lines = Series.Select(s => $"{s.Name}: {N(s.Values[index])}").Append($"Razem: {N(total)}").ToList();
+        var lines = Series.Select(s => $"{s.Name}: {N(s.Values[index])}").Append($"{T("Razem", "Total")}: {N(total)}").ToList();
         var tipWidth = Math.Max(TextWidth(Buckets[index].LongLabel), lines.Max(TextWidth) + 14) + 20;
         var tipHeight = 26 + 18 * lines.Count;
         var tipX = Center(index) > W / 2.0 ? Center(index) - Band / 2 - 6 - tipWidth : Center(index) + Band / 2 + 6;

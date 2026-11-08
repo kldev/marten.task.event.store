@@ -1,12 +1,12 @@
 @page "/raporty"
 @using Halcyon.App.Features.Reports
 
-<PageTitle>Raporty · Halcyon</PageTitle>
+<PageTitle>@T("Raporty", "Reports") · Halcyon</PageTitle>
 
 <div class="space-y-5">
     <div>
-        <h1>Raporty</h1>
-        <p class="mt-1 text-sm text-ink-500">Zestawienia z eksportem do Excela (XLSX), PDF i CSV, oraz wykresy pracy działu.</p>
+        <h1>@T("Raporty", "Reports")</h1>
+        <p class="mt-1 text-sm text-ink-500">@T("Zestawienia z eksportem do Excela (XLSX), PDF i CSV, oraz wykresy pracy działu.", "Reports with export to Excel (XLSX), PDF and CSV, and charts of the team's work.")</p>
     </div>
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         @foreach (var report in CategoryReport.All)
@@ -15,23 +15,23 @@
             <a href="raporty/@report.Slug" class="card flex items-start gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-sm" data-testid="report-link-@report.Slug">
                 <span class="flex size-10 shrink-0 items-center justify-center rounded-lg @look.Bubble"><Icon Name="@look.Icon" Class="size-5" /></span>
                 <span>
-                    <span class="block font-semibold text-ink-900">@report.Title</span>
-                    <span class="block text-xs text-ink-500">Zgłoszenia z danymi do raportu: @CategoryLook.Hint(report.Category)</span>
+                    <span class="block font-semibold text-ink-900">@N(report.Title)</span>
+                    <span class="block text-xs text-ink-500">@T("Zgłoszenia z danymi do raportu", "Tickets with report data"): @CategoryLook.Hint(report.Category)</span>
                 </span>
             </a>
         }
         <a href="wykresy" class="card flex items-start gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-sm" data-testid="report-link-wykresy">
             <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-rufous-400/15 text-rufous-600"><Icon Name="chart-line" Class="size-5" /></span>
             <span>
-                <span class="block font-semibold text-ink-900">Wykresy</span>
-                <span class="block text-xs text-ink-500">Napływ i realizacja, terminowość, SLA, kolejka teraz, godziny zgłoszeń</span>
+                <span class="block font-semibold text-ink-900">@T("Wykresy", "Charts")</span>
+                <span class="block text-xs text-ink-500">@T("Napływ i realizacja, terminowość, SLA, kolejka teraz, godziny zgłoszeń", "Incoming and resolved, timeliness, SLA, queue now, hours of reporting")</span>
             </span>
         </a>
         <a href="raporty/agenci" class="card flex items-start gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-sm" data-testid="report-link-agenci">
             <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-halcyon-100 text-halcyon-700"><Icon Name="chart-column" Class="size-5" /></span>
             <span>
-                <span class="block font-semibold text-ink-900">Praca agentów</span>
-                <span class="block text-xs text-ink-500">Przejęte i zrealizowane w tygodniu, miesiącu i 3 miesiącach</span>
+                <span class="block font-semibold text-ink-900">@T("Praca agentów", "Agents' work")</span>
+                <span class="block text-xs text-ink-500">@T("Przejęte i zrealizowane w tygodniu, miesiącu i 3 miesiącach", "Taken and resolved in a week, a month and 3 months")</span>
             </span>
         </a>
     </div>

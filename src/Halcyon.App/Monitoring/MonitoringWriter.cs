@@ -2,6 +2,7 @@ using Halcyon.Database.Monitoring;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using NpgsqlTypes;
+using static Halcyon.App.Localization.Tr;
 
 namespace Halcyon.App.Monitoring;
 
@@ -79,7 +80,15 @@ public sealed class MonitoringWriter(
 
             var now = time.GetUtcNow();
             if (error is null)
-                jobs.Writer.Succeeded(now, $"Zapisano: {requests} odpowiedzi HTTP, {logs} wpisów logu", null);
+                jobs.Writer.Succeeded(
+                    now,
+                    () =>
+                        T(
+                            $"Zapisano: {requests} odpowiedzi HTTP, {logs} wpisów logu",
+                            $"Saved: {requests} HTTP responses, {logs} log entries"
+                        ),
+                    null
+                );
             else
                 jobs.Writer.Failed(now, error, null);
             return requests + logs;

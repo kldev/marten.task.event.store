@@ -13,5 +13,6 @@
 | [0009](0009-report-fields-and-exports.md) | Report fields are code in the category catalog; reports read the projection and export XLSX / PDF / CSV |
 | [0010](0010-charts-drawn-on-the-server.md) | Charts are drawn on the server as SVG and HTML from one query on the projection; no chart library |
 | [0011](0011-http-answers-and-log-in-the-database.md) | HTTP answers and the application's log go to the database for 14 days; the app cleans them itself |
+| [0012](0012-polish-and-english-ui.md) | The UI speaks Polish and English (cookie, `/jezyk/{pl\|en}`); the domain and the data stay Polish |
 
 New ADR: copy `TEMPLATE.md`, next number, add a line here.

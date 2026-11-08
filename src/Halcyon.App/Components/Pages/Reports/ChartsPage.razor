@@ -2,21 +2,21 @@
 @using static Halcyon.App.Components.Ui.Charts.ChartScale
 @inject ChartQueries Charts
 
-<PageTitle>Wykresy · Halcyon</PageTitle>
+<PageTitle>@T("Wykresy", "Charts") · Halcyon</PageTitle>
 
 <div class="space-y-5" data-testid="charts-page">
     <div>
-        <p class="text-xs text-ink-500"><a href="raporty" class="hover:underline">Raporty</a> /</p>
-        <h1>Wykresy</h1>
+        <p class="text-xs text-ink-500"><a href="raporty" class="hover:underline">@T("Raporty", "Reports")</a> /</p>
+        <h1>@T("Wykresy", "Charts")</h1>
         <p class="mt-1 text-sm text-ink-500">
-            Jak pracuje dział: ile przychodzi, ile wychodzi, czy dotrzymujemy terminów i co pali się teraz.
-            Dni i tygodnie kalendarzowe czasu polskiego, ostatni kończy się dziś.
+            @T("Jak pracuje dział: ile przychodzi, ile wychodzi, czy dotrzymujemy terminów i co pali się teraz.", "How the team works: how much comes in, how much goes out, whether we meet deadlines and what is urgent right now.")
+            @T("Dni i tygodnie kalendarzowe czasu polskiego, ostatni kończy się dziś.", "Calendar days and weeks in Polish time; the last one ends today.")
         </p>
     </div>
 
     <div class="flex flex-wrap items-end gap-3" data-testid="chart-filters">
         <div>
-            <span class="label text-xs" id="range-label">Okres</span>
+            <span class="label text-xs" id="range-label">@T("Okres", "Period")</span>
             <div class="inline-flex rounded-lg border border-ink-200 bg-white p-0.5" role="radiogroup" aria-labelledby="range-label" data-testid="filter-range">
                 @foreach (var (value, text, testId) in Ranges)
                 {
@@ -30,13 +30,13 @@
             </div>
         </div>
         <div>
-            <label class="label text-xs" for="c-category">Kategoria</label>
+            <label class="label text-xs" for="c-category">@T("Kategoria", "Category")</label>
             <select id="c-category" class="input py-1.5" data-testid="filter-category" value="@(filter.CategoryKey ?? "")"
                     @onchange="e => ApplyAsync(filter with { CategoryKey = e.Value?.ToString() is { Length: > 0 } k ? k : null })">
-                <option value="">Wszystkie</option>
+                <option value="">@T("Wszystkie", "All")</option>
                 @foreach (var category in CategoryCatalog.Default.Categories)
                 {
-                    <option value="@category.Key">@category.Name</option>
+                    <option value="@category.Key">@N(category.Name)</option>
                 }
             </select>
         </div>
@@ -49,45 +49,46 @@
     @if (data is not null)
     {
         var f = data.Figures;
-        var unit = data.Filter.Range == ChartRange.Weeks12 ? "tydzień" : "dzień";
+        var weeks = data.Filter.Range == ChartRange.Weeks12;
+        var unit = weeks ? T("tydzień", "week") : T("dzień", "day");
 
         <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" data-testid="key-figures">
             <div class="card p-4" data-testid="kpi-reported">
-                <p class="text-xs font-medium text-ink-500">Zgłoszone</p>
+                <p class="text-xs font-medium text-ink-500">@T("Zgłoszone", "Reported")</p>
                 <p class="mt-1 text-2xl font-semibold text-ink-900">@N(f.Reported)</p>
-                <p class="text-xs text-ink-500">w okresie</p>
+                <p class="text-xs text-ink-500">@T("w okresie", "in the period")</p>
             </div>
             <div class="card p-4" data-testid="kpi-resolved">
-                <p class="text-xs font-medium text-ink-500">Zrealizowane</p>
+                <p class="text-xs font-medium text-ink-500">@T("Zrealizowane", "Resolved")</p>
                 <p class="mt-1 text-2xl font-semibold text-ink-900">@N(f.Resolved)</p>
-                <p class="text-xs text-ink-500">w tym po terminie: @N(f.ResolvedLate)</p>
+                <p class="text-xs text-ink-500">@T("w tym po terminie", "of which overdue"): @N(f.ResolvedLate)</p>
             </div>
             <div class="card p-4" data-testid="kpi-on-time">
-                <p class="text-xs font-medium text-ink-500">W terminie</p>
+                <p class="text-xs font-medium text-ink-500">@T("W terminie", "On time")</p>
                 <p class="mt-1 text-2xl font-semibold text-ink-900">@(f.OnTimeShare is { } share ? Percent(share) : "-")</p>
-                <p class="text-xs text-ink-500">zrealizowanych</p>
+                <p class="text-xs text-ink-500">@T("zrealizowanych", "of resolved")</p>
             </div>
             <div class="card p-4" data-testid="kpi-median">
-                <p class="text-xs font-medium text-ink-500">Mediana realizacji</p>
+                <p class="text-xs font-medium text-ink-500">@T("Mediana realizacji", "Median time to resolve")</p>
                 <p class="mt-1 text-2xl font-semibold text-ink-900">@(f.MedianResolution is { } m ? DurationText(m) : "-")</p>
-                <p class="text-xs text-ink-500">od zgłoszenia</p>
+                <p class="text-xs text-ink-500">@T("od zgłoszenia", "from reporting")</p>
             </div>
             <div class="card p-4" data-testid="kpi-open">
-                <p class="text-xs font-medium text-ink-500">Otwarte teraz</p>
+                <p class="text-xs font-medium text-ink-500">@T("Otwarte teraz", "Open now")</p>
                 <p class="mt-1 text-2xl font-semibold text-ink-900">@N(f.OpenNow)</p>
                 <p class="text-xs text-ink-500">
                     @if (f.DueSoonNow > 0)
                     {
-                        <span class="time-duesoon !px-1 !py-0 text-[11px]"><Icon Name="clock" Class="inline size-3" /> @N(f.DueSoonNow) zaraz termin</span>
+                        <span class="time-duesoon !px-1 !py-0 text-[11px]"><Icon Name="clock" Class="inline size-3" /> @N(f.DueSoonNow) @T("zaraz termin", "due soon")</span>
                     }
                     else
                     {
-                        <span>w puli i w realizacji</span>
+                        <span>@T("w puli i w realizacji", "in the pool and in progress")</span>
                     }
                 </p>
             </div>
             <div class="card p-4 @(f.OverdueNow > 0 ? "border-red-200 bg-red-50" : "")" data-testid="kpi-overdue">
-                <p class="text-xs font-medium @(f.OverdueNow > 0 ? "text-red-800" : "text-ink-500")">Po terminie teraz</p>
+                <p class="text-xs font-medium @(f.OverdueNow > 0 ? "text-red-800" : "text-ink-500")">@T("Po terminie teraz", "Overdue now")</p>
                 <p class="mt-1 flex items-center gap-1.5 text-2xl font-semibold @(f.OverdueNow > 0 ? "text-red-700" : "text-ink-900")">
                     @if (f.OverdueNow > 0)
                     {
@@ -95,22 +96,22 @@
                     }
                     @N(f.OverdueNow)
                 </p>
-                <p class="text-xs @(f.OverdueNow > 0 ? "text-red-800" : "text-ink-500")">@(f.OverdueNow > 0 ? "wymagają reakcji" : "nic nie jest spóźnione")</p>
+                <p class="text-xs @(f.OverdueNow > 0 ? "text-red-800" : "text-ink-500")">@(f.OverdueNow > 0 ? T("wymagają reakcji", "need action") : T("nic nie jest spóźnione", "nothing is late"))</p>
             </div>
         </div>
 
         <div class="grid gap-4 lg:grid-cols-2">
-            <ChartCard Title="Napływ i realizacja" Class="lg:col-span-2" TestId="chart-flow"
-                       Subtitle="@($"Zgłoszone i zrealizowane na {unit}. Gdy pomarańczowa linia jest pod turkusową, kolejka rośnie.")"
+            <ChartCard Title="@T("Napływ i realizacja", "Incoming and resolved")" Class="lg:col-span-2" TestId="chart-flow"
+                       Subtitle="@T($"Zgłoszone i zrealizowane na {unit}. Gdy pomarańczowa linia jest pod turkusową, kolejka rośnie.", $"Reported and resolved per {unit}. When the orange line is below the teal one, the queue grows.")"
                        Legend="FlowLegend">
                 <ChildContent>
                     @* Two drawings, so the text keeps its size: wide on a big screen, narrow on a phone. *@
                     <div class="hidden lg:block">
-                        <LineChart Buckets="data.Buckets" W="1000" TestId="flow-chart" Label="Zgłoszone i zrealizowane w czasie"
+                        <LineChart Buckets="data.Buckets" W="1000" TestId="flow-chart" Label="@T("Zgłoszone i zrealizowane w czasie", "Reported and resolved over time")"
                                    Series="FlowSeries(data)" />
                     </div>
                     <div class="lg:hidden">
-                        <LineChart Buckets="data.Buckets" TestId="flow-chart-narrow" Label="Zgłoszone i zrealizowane w czasie"
+                        <LineChart Buckets="data.Buckets" TestId="flow-chart-narrow" Label="@T("Zgłoszone i zrealizowane w czasie", "Reported and resolved over time")"
                                    Series="FlowSeries(data)" />
                     </div>
                 </ChildContent>
@@ -119,10 +120,10 @@
                 </Table>
             </ChartCard>
 
-            <ChartCard Title="Otwarte zgłoszenia" TestId="chart-backlog"
-                       Subtitle="@($"Ile było otwartych na koniec każdego {(unit == "dzień" ? "dnia" : "tygodnia")} (dziś: teraz).")">
+            <ChartCard Title="@T("Otwarte zgłoszenia", "Open tickets")" TestId="chart-backlog"
+                       Subtitle="@T($"Ile było otwartych na koniec każdego {(weeks ? "tygodnia" : "dnia")} (dziś: teraz).", $"How many were open at the end of each {(weeks ? "week" : "day")} (today: now).")">
                 <ChildContent>
-                    <LineChart Buckets="data.Buckets" Area="true" TestId="backlog-chart" Label="Otwarte zgłoszenia na koniec okresu"
+                    <LineChart Buckets="data.Buckets" Area="true" TestId="backlog-chart" Label="@T("Otwarte zgłoszenia na koniec okresu", "Open tickets at the end of the period")"
                                Series="BacklogSeries(data)" />
                 </ChildContent>
                 <Table>
@@ -130,11 +131,11 @@
                 </Table>
             </ChartCard>
 
-            <ChartCard Title="Terminowość" TestId="chart-on-time"
-                       Subtitle="@($"Zrealizowane na {unit}: w terminie i po terminie.")"
+            <ChartCard Title="@T("Terminowość", "Timeliness")" TestId="chart-on-time"
+                       Subtitle="@T($"Zrealizowane na {unit}: w terminie i po terminie.", $"Resolved per {unit}: on time and overdue.")"
                        Legend="OnTimeLegend">
                 <ChildContent>
-                    <StackedColumns Buckets="data.Buckets" TestId="on-time-chart" Label="Zrealizowane w terminie i po terminie"
+                    <StackedColumns Buckets="data.Buckets" TestId="on-time-chart" Label="@T("Zrealizowane w terminie i po terminie", "Resolved on time and overdue")"
                                     Series="OnTimeSeries(data)" />
                 </ChildContent>
                 <Table>
@@ -142,8 +143,8 @@
                 </Table>
             </ChartCard>
 
-            <ChartCard Title="Zużycie SLA według priorytetu" TestId="chart-sla"
-                       Subtitle="Czas realizacji jako część terminu zgłoszenia. Za kreską 100 % - po terminie; skala do 300 %, dalej znak ›."
+            <ChartCard Title="@T("Zużycie SLA według priorytetu", "SLA use by priority")" TestId="chart-sla"
+                       Subtitle="@T("Czas realizacji jako część terminu zgłoszenia. Za kreską 100 % - po terminie; skala do 300 %, dalej znak ›.", "Time to resolve as a share of the ticket's deadline. Past the 100 % line - overdue; the scale ends at 300 %, beyond it the › sign.")"
                        Legend="SlaLegend">
                 <ChildContent>
                     <SlaBars Rows="data.Sla" />
@@ -153,41 +154,41 @@
                 </Table>
             </ChartCard>
 
-            <ChartCard Title="Kolejka teraz" TestId="chart-queue"
-                       Subtitle="Otwarte zgłoszenia według priorytetu i stanu terminu w tej chwili (bez względu na okres)."
+            <ChartCard Title="@T("Kolejka teraz", "Queue now")" TestId="chart-queue"
+                       Subtitle="@T("Otwarte zgłoszenia według priorytetu i stanu terminu w tej chwili (bez względu na okres).", "Open tickets by priority and deadline state right now (regardless of the period).")"
                        Legend="QueueLegend">
                 <ChildContent>
-                    <StackedBars Rows="data.QueueByPriority" Segments="QueueSegments" TestId="queue-chart" Empty="Nie ma otwartych zgłoszeń." />
+                    <StackedBars Rows="Localized(data.QueueByPriority)" Segments="QueueSegments" TestId="queue-chart" Empty="@T("Nie ma otwartych zgłoszeń.", "There are no open tickets.")" />
                 </ChildContent>
                 <Table>
                     <ChartTable Headers="QueueHeaders" Rows="BreakdownRows(data.QueueByPriority)" />
                 </Table>
             </ChartCard>
 
-            <ChartCard Title="@(data.BySubcategory ? "Według podkategorii" : "Według kategorii")" TestId="chart-categories"
-                       Subtitle="Zgłoszone w okresie i co się z nimi stało; najwięcej na górze."
+            <ChartCard Title="@(data.BySubcategory ? T("Według podkategorii", "By topic") : T("Według kategorii", "By category"))" TestId="chart-categories"
+                       Subtitle="@T("Zgłoszone w okresie i co się z nimi stało; najwięcej na górze.", "Reported in the period and what happened to them; the most at the top.")"
                        Legend="OutcomeLegend">
                 <ChildContent>
-                    <StackedBars Rows="data.ByCategory" Segments="OutcomeSegments" TestId="category-chart" />
+                    <StackedBars Rows="Localized(data.ByCategory)" Segments="OutcomeSegments" TestId="category-chart" />
                 </ChildContent>
                 <Table>
                     <ChartTable Headers="CategoryHeaders(data)" Rows="BreakdownRows(data.ByCategory)" />
                 </Table>
             </ChartCard>
 
-            <ChartCard Title="Kto realizuje" TestId="chart-agents"
-                       Subtitle="@($"Zrealizowane w okresie przez agenta, który zamknął zgłoszenie (pierwszych {ChartQueries.TopAgents}).")"
+            <ChartCard Title="@T("Kto realizuje", "Who resolves")" TestId="chart-agents"
+                       Subtitle="@T($"Zrealizowane w okresie przez agenta, który zamknął zgłoszenie (pierwszych {ChartQueries.TopAgents}).", $"Resolved in the period, by the agent who closed the ticket (top {ChartQueries.TopAgents}).")"
                        Legend="OnTimeLegend">
                 <ChildContent>
-                    <StackedBars Rows="data.Agents" Segments="AgentSegments" TestId="agents-chart" Empty="Nic nie zrealizowano w tym okresie." />
+                    <StackedBars Rows="Localized(data.Agents)" Segments="AgentSegments" TestId="agents-chart" Empty="@T("Nic nie zrealizowano w tym okresie.", "Nothing was resolved in this period.")" />
                 </ChildContent>
                 <Table>
                     <ChartTable Headers="AgentHeaders" Rows="BreakdownRows(data.Agents)" />
                 </Table>
             </ChartCard>
 
-            <ChartCard Title="Kiedy przychodzą zgłoszenia" Class="lg:col-span-2" TestId="chart-heatmap"
-                       Subtitle="Zgłoszone w okresie według dnia tygodnia i godziny (czas polski). Ciemniej - więcej.">
+            <ChartCard Title="@T("Kiedy przychodzą zgłoszenia", "When tickets come in")" Class="lg:col-span-2" TestId="chart-heatmap"
+                       Subtitle="@T("Zgłoszone w okresie według dnia tygodnia i godziny (czas polski). Ciemniej - więcej.", "Reported in the period by weekday and hour (Polish time). Darker - more.")">
                 <ChildContent>
                     <Heatmap Values="data.Heat" />
                 </ChildContent>
@@ -200,92 +201,100 @@
 </div>
 
 @code {
-    private static readonly (ChartRange Value, string Text, string TestId)[] Ranges =
+    private static (ChartRange Value, string Text, string TestId)[] Ranges =>
     [
-        (ChartRange.Days7, "7 dni", "7"),
-        (ChartRange.Days30, "30 dni", "30"),
-        (ChartRange.Weeks12, "12 tygodni", "12w"),
+        (ChartRange.Days7, T("7 dni", "7 days"), "7"),
+        (ChartRange.Days30, T("30 dni", "30 days"), "30"),
+        (ChartRange.Weeks12, T("12 tygodni", "12 weeks"), "12w"),
     ];
 
-    private static readonly ChartSegment[] QueueSegments =
+    private static ChartSegment[] QueueSegments =>
     [
-        new("W terminie", ChartColors.OnTime),
-        new("Zaraz termin", ChartColors.DueSoon),
-        new("Po terminie", ChartColors.Late),
+        new(T("W terminie", "On time"), ChartColors.OnTime),
+        new(T("Zaraz termin", "Due soon"), ChartColors.DueSoon),
+        new(T("Po terminie", "Overdue"), ChartColors.Late),
     ];
 
-    private static readonly LegendItem[] QueueLegend = [.. QueueSegments.Select(s => new LegendItem(s.Name, s.Color))];
+    private static LegendItem[] QueueLegend => [.. QueueSegments.Select(s => new LegendItem(s.Name, s.Color))];
 
-    private static readonly ChartSegment[] OutcomeSegments =
+    private static ChartSegment[] OutcomeSegments =>
     [
-        new("Zrealizowane w terminie", ChartColors.OnTime),
-        new("Zrealizowane po terminie", ChartColors.Late),
-        new("Jeszcze otwarte", ChartColors.Open),
+        new(T("Zrealizowane w terminie", "Resolved on time"), ChartColors.OnTime),
+        new(T("Zrealizowane po terminie", "Resolved late"), ChartColors.Late),
+        new(T("Jeszcze otwarte", "Still open"), ChartColors.Open),
     ];
 
-    private static readonly LegendItem[] OutcomeLegend = [.. OutcomeSegments.Select(s => new LegendItem(s.Name, s.Color))];
+    private static LegendItem[] OutcomeLegend => [.. OutcomeSegments.Select(s => new LegendItem(s.Name, s.Color))];
 
-    private static readonly ChartSegment[] AgentSegments =
+    private static ChartSegment[] AgentSegments =>
     [
-        new("W terminie", ChartColors.OnTime),
-        new("Po terminie", ChartColors.Late),
+        new(T("W terminie", "On time"), ChartColors.OnTime),
+        new(T("Po terminie", "Overdue"), ChartColors.Late),
     ];
 
-    private static readonly string[] HeatDays = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"];
+    private static string[] HeatDays =>
+        Language.IsEnglish
+            ? ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            : ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"];
 
-    private static readonly string[] HeatHeaders =
-        ["Dzień", .. Enumerable.Range(0, 24).Select(h => h.ToString("00", System.Globalization.CultureInfo.InvariantCulture))];
+    private static string[] HeatHeaders =>
+        [T("Dzień", "Day"), .. Enumerable.Range(0, 24).Select(h => h.ToString("00", System.Globalization.CultureInfo.InvariantCulture))];
 
-    private static readonly LegendItem[] FlowLegend =
+    private static LegendItem[] FlowLegend =>
     [
-        new("Zgłoszone", ChartColors.Reported, Line: true),
-        new("Zrealizowane", ChartColors.Resolved, Line: true),
+        new(T("Zgłoszone", "Reported"), ChartColors.Reported, Line: true),
+        new(T("Zrealizowane", "Resolved"), ChartColors.Resolved, Line: true),
     ];
 
-    private static readonly LegendItem[] OnTimeLegend =
+    private static LegendItem[] OnTimeLegend =>
     [
-        new("W terminie", ChartColors.OnTime),
-        new("Po terminie", ChartColors.Late),
+        new(T("W terminie", "On time"), ChartColors.OnTime),
+        new(T("Po terminie", "Overdue"), ChartColors.Late),
     ];
 
-    private static readonly LegendItem[] SlaLegend =
+    private static LegendItem[] SlaLegend =>
     [
-        new("Mediana", ChartColors.Median),
-        new("90 % zgłoszeń", ChartColors.P90),
+        new(T("Mediana", "Median"), ChartColors.Median),
+        new(T("90 % zgłoszeń", "90 % of tickets"), ChartColors.P90),
     ];
 
-    private static readonly string[] SlaHeaders = ["Priorytet", "Zrealizowane", "Mediana", "Mediana % SLA", "90 % w % SLA"];
-    private static readonly string[] QueueHeaders = ["Priorytet", "W terminie", "Zaraz termin", "Po terminie", "Razem"];
-    private static readonly string[] AgentHeaders = ["Agent", "W terminie", "Po terminie", "Razem"];
+    private static string[] SlaHeaders =>
+        [T("Priorytet", "Priority"), T("Zrealizowane", "Resolved"), T("Mediana", "Median"), T("Mediana % SLA", "Median % of SLA"), T("90 % w % SLA", "90 % within % of SLA")];
 
-    private static string BucketHeader(ChartData d) => d.Filter.Range == ChartRange.Weeks12 ? "Tydzień" : "Dzień";
+    private static string[] QueueHeaders =>
+        [T("Priorytet", "Priority"), T("W terminie", "On time"), T("Zaraz termin", "Due soon"), T("Po terminie", "Overdue"), T("Razem", "Total")];
+
+    private static string[] AgentHeaders => ["Agent", T("W terminie", "On time"), T("Po terminie", "Overdue"), T("Razem", "Total")];
+
+    private static string BucketHeader(ChartData d) => d.Filter.Range == ChartRange.Weeks12 ? T("Tydzień", "Week") : T("Dzień", "Day");
 
     private static List<ChartSeries> FlowSeries(ChartData d) =>
     [
-        new("Zgłoszone", ChartColors.Reported, [.. d.Flow.Select(p => p.Reported)]),
-        new("Zrealizowane", ChartColors.Resolved, [.. d.Flow.Select(p => p.Resolved)]),
+        new(T("Zgłoszone", "Reported"), ChartColors.Reported, [.. d.Flow.Select(p => p.Reported)]),
+        new(T("Zrealizowane", "Resolved"), ChartColors.Resolved, [.. d.Flow.Select(p => p.Resolved)]),
     ];
 
-    private static string[] FlowHeaders(ChartData d) => [BucketHeader(d), "Zgłoszone", "Zrealizowane", "Różnica"];
+    private static string[] FlowHeaders(ChartData d) =>
+        [BucketHeader(d), T("Zgłoszone", "Reported"), T("Zrealizowane", "Resolved"), T("Różnica", "Difference")];
 
     private static IEnumerable<IReadOnlyList<string>> FlowRows(ChartData d) =>
         d.Flow.Select(p => (IReadOnlyList<string>)[p.Bucket.LongLabel, N(p.Reported), N(p.Resolved), Signed(p.Reported - p.Resolved)]);
 
     private static List<ChartSeries> BacklogSeries(ChartData d) =>
-        [new("Otwarte", ChartColors.Backlog, [.. d.Flow.Select(p => p.OpenAtEnd)])];
+        [new(T("Otwarte", "Open"), ChartColors.Backlog, [.. d.Flow.Select(p => p.OpenAtEnd)])];
 
-    private static string[] BacklogHeaders(ChartData d) => [BucketHeader(d), "Otwarte na koniec"];
+    private static string[] BacklogHeaders(ChartData d) => [BucketHeader(d), T("Otwarte na koniec", "Open at the end")];
 
     private static IEnumerable<IReadOnlyList<string>> BacklogRows(ChartData d) =>
         d.Flow.Select(p => (IReadOnlyList<string>)[p.Bucket.LongLabel, N(p.OpenAtEnd)]);
 
     private static List<ChartSeries> OnTimeSeries(ChartData d) =>
     [
-        new("W terminie", ChartColors.OnTime, [.. d.Flow.Select(p => p.ResolvedOnTime)]),
-        new("Po terminie", ChartColors.Late, [.. d.Flow.Select(p => p.ResolvedLate)]),
+        new(T("W terminie", "On time"), ChartColors.OnTime, [.. d.Flow.Select(p => p.ResolvedOnTime)]),
+        new(T("Po terminie", "Overdue"), ChartColors.Late, [.. d.Flow.Select(p => p.ResolvedLate)]),
     ];
 
-    private static string[] OnTimeHeaders(ChartData d) => [BucketHeader(d), "W terminie", "Po terminie", "W terminie %"];
+    private static string[] OnTimeHeaders(ChartData d) => [BucketHeader(d), T("W terminie", "On time"), T("Po terminie", "Overdue"), T("W terminie %", "On time %")];
 
     private static IEnumerable<IReadOnlyList<string>> OnTimeRows(ChartData d) =>
         d.Flow.Select(p => (IReadOnlyList<string>)
@@ -299,7 +308,7 @@
     private static IEnumerable<IReadOnlyList<string>> SlaRows(ChartData d) =>
         d.Sla.Select(s => (IReadOnlyList<string>)
         [
-            $"{PriorityNames.Name(s.Priority)} ({PriorityNames.SlaText(s.Priority)})",
+            $"{N(PriorityNames.Name(s.Priority))} ({N(PriorityNames.SlaText(s.Priority))})",
             N(s.Count),
             s.MedianTime is { } t ? DurationText(t) : "-",
             s.Median is { } m ? Percent(m) : "-",
@@ -307,11 +316,26 @@
         ]);
 
     private static string[] CategoryHeaders(ChartData d) =>
-        [d.BySubcategory ? "Podkategoria" : "Kategoria", "W terminie", "Po terminie", "Otwarte", "Razem"];
+        [
+            d.BySubcategory ? T("Podkategoria", "Topic") : T("Kategoria", "Category"),
+            T("W terminie", "On time"),
+            T("Po terminie", "Overdue"),
+            T("Otwarte", "Open"),
+            T("Razem", "Total"),
+        ];
 
     /// <summary>The label, every part, the total.</summary>
     private static IEnumerable<IReadOnlyList<string>> BreakdownRows(IEnumerable<Breakdown> rows) =>
-        rows.Select(b => (IReadOnlyList<string>)[b.Label, .. b.Values.Select(v => N(v)), N(b.Total)]);
+        Localized(rows).Select(b => (IReadOnlyList<string>)[b.Label, .. b.Values.Select(v => N(v)), N(b.Total)]);
+
+    /// <summary>The rows with their labels in the UI's language: topics, categories, priorities, "Pozostali (n)".</summary>
+    private static List<Breakdown> Localized(IEnumerable<Breakdown> rows) => [.. rows.Select(b => b with { Label = LabelText(b) })];
+
+    private static string LabelText(Breakdown b) =>
+        b.Key == "rest" && b.Label.StartsWith("Pozostali", StringComparison.Ordinal) ? T(b.Label, "Others" + b.Label["Pozostali".Length..])
+        : b.Label == "Nieznany" ? T("Nieznany", "Unknown")
+        : CategoryCatalog.Default.FindSubcategory(b.Key)?.Subcategory is { } sub ? N(sub)
+        : N(b.Label);
 
     private static IEnumerable<IReadOnlyList<string>> HeatRows(ChartData d) =>
         Enumerable.Range(0, 7).Select(day => (IReadOnlyList<string>)[HeatDays[day], .. d.Heat[day].Select(v => N(v))]);
@@ -328,7 +352,7 @@
     }
 
     private static string DurationText(TimeSpan time) =>
-        time < TimeSpan.FromMinutes(1) ? "< 1 min" : TimeLeftText.Duration(time);
+        time < TimeSpan.FromMinutes(1) ? "< 1 min" : TimeLeft.Duration(time);
 
     private static string Signed(int value) => value > 0 ? "+" + N(value) : N(value);
 }

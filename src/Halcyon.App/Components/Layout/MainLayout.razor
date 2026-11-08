@@ -14,39 +14,40 @@
             <span class="text-lg font-semibold tracking-tight">Halcyon</span>
             <span class="ml-auto size-1.5 rounded-full bg-rufous-500 lg:hidden"></span>
         </div>
-        <nav class="flex gap-1 overflow-x-auto px-3 pb-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto" aria-label="Menu główne">
-            <NavLink class="nav-link shrink-0" href="" Match="NavLinkMatch.All" data-testid="nav-pool"><Icon Name="inbox" /> Pula</NavLink>
-            <NavLink class="nav-link shrink-0" href="moje" data-testid="nav-mine"><Icon Name="user" /> Moje zgłoszenia</NavLink>
-            <NavLink class="nav-link shrink-0" href="wszystkie" data-testid="nav-all"><Icon Name="list" /> Wszystkie</NavLink>
-            <NavLink class="nav-link shrink-0" href="nowe" data-testid="nav-new"><Icon Name="plus" /> Nowe zgłoszenie</NavLink>
-            <NavLink class="nav-link shrink-0" href="agenci" data-testid="nav-agents"><Icon Name="users" /> Agenci</NavLink>
-            <NavLink class="nav-link shrink-0" href="osoby" data-testid="nav-people"><Icon Name="contact" /> Osoby</NavLink>
-            <p class="hidden px-3 pt-4 pb-1 text-[11px] font-semibold tracking-wide text-ink-400 uppercase lg:block">Raporty</p>
-            <NavLink class="nav-link shrink-0" href="wykresy" data-testid="nav-charts"><Icon Name="chart-line" /> Wykresy</NavLink>
-            <NavLink class="nav-link shrink-0" href="raporty/kadry-polska" data-testid="nav-report-kadry-polska"><Icon Name="briefcase" /> Kadry Polska</NavLink>
-            <NavLink class="nav-link shrink-0" href="raporty/kadry-zagranica" data-testid="nav-report-kadry-zagranica"><Icon Name="globe" /> Kadry Zagranica</NavLink>
-            <NavLink class="nav-link shrink-0" href="raporty/finanse" data-testid="nav-report-finanse"><Icon Name="banknote" /> Finanse</NavLink>
-            <NavLink class="nav-link shrink-0" href="raporty/rekrutacja" data-testid="nav-report-rekrutacja"><Icon Name="users" /> Rekrutacja</NavLink>
-            <NavLink class="nav-link shrink-0" href="raporty/marketing" data-testid="nav-report-marketing"><Icon Name="megaphone" /> Marketing</NavLink>
-            <NavLink class="nav-link shrink-0" href="raporty/agenci" data-testid="nav-report-agents"><Icon Name="chart-column" /> Praca agentów</NavLink>
+        <nav class="flex gap-1 overflow-x-auto px-3 pb-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto" aria-label="@T("Menu główne", "Main menu")">
+            <NavLink class="nav-link shrink-0" href="" Match="NavLinkMatch.All" data-testid="nav-pool"><Icon Name="inbox" /> @T("Pula", "Pool")</NavLink>
+            <NavLink class="nav-link shrink-0" href="moje" data-testid="nav-mine"><Icon Name="user" /> @T("Moje zgłoszenia", "My tickets")</NavLink>
+            <NavLink class="nav-link shrink-0" href="wszystkie" data-testid="nav-all"><Icon Name="list" /> @T("Wszystkie", "All tickets")</NavLink>
+            <NavLink class="nav-link shrink-0" href="nowe" data-testid="nav-new"><Icon Name="plus" /> @T("Nowe zgłoszenie", "New ticket")</NavLink>
+            <NavLink class="nav-link shrink-0" href="agenci" data-testid="nav-agents"><Icon Name="users" /> @T("Agenci", "Agents")</NavLink>
+            <NavLink class="nav-link shrink-0" href="osoby" data-testid="nav-people"><Icon Name="contact" /> @T("Osoby", "People")</NavLink>
+            <p class="hidden px-3 pt-4 pb-1 text-[11px] font-semibold tracking-wide text-ink-400 uppercase lg:block">@T("Raporty", "Reports")</p>
+            <NavLink class="nav-link shrink-0" href="wykresy" data-testid="nav-charts"><Icon Name="chart-line" /> @T("Wykresy", "Charts")</NavLink>
+            <NavLink class="nav-link shrink-0" href="raporty/kadry-polska" data-testid="nav-report-kadry-polska"><Icon Name="briefcase" /> @N("Kadry Polska")</NavLink>
+            <NavLink class="nav-link shrink-0" href="raporty/kadry-zagranica" data-testid="nav-report-kadry-zagranica"><Icon Name="globe" /> @N("Kadry Zagranica")</NavLink>
+            <NavLink class="nav-link shrink-0" href="raporty/finanse" data-testid="nav-report-finanse"><Icon Name="banknote" /> @N("Finanse")</NavLink>
+            <NavLink class="nav-link shrink-0" href="raporty/rekrutacja" data-testid="nav-report-rekrutacja"><Icon Name="users" /> @N("Rekrutacja")</NavLink>
+            <NavLink class="nav-link shrink-0" href="raporty/marketing" data-testid="nav-report-marketing"><Icon Name="megaphone" /> @N("Marketing")</NavLink>
+            <NavLink class="nav-link shrink-0" href="raporty/agenci" data-testid="nav-report-agents"><Icon Name="chart-column" /> @T("Praca agentów", "Agents' work")</NavLink>
             <p class="hidden px-3 pt-4 pb-1 text-[11px] font-semibold tracking-wide text-ink-400 uppercase lg:block">System</p>
-            <NavLink class="nav-link shrink-0" href="system/status" data-testid="nav-system-status"><Icon Name="activity" /> Status systemu</NavLink>
-            <NavLink class="nav-link shrink-0" href="system/logi" data-testid="nav-system-logs"><Icon Name="scroll-text" /> Logi</NavLink>
-            <NavLink class="nav-link shrink-0" href="system/baza" data-testid="nav-system-database"><Icon Name="database" /> Baza danych</NavLink>
-            <NavLink class="nav-link shrink-0" href="system/kolejki" data-testid="nav-system-queues"><Icon Name="layers" /> Kolejki</NavLink>
+            <NavLink class="nav-link shrink-0" href="system/status" data-testid="nav-system-status"><Icon Name="activity" /> @T("Status systemu", "System status")</NavLink>
+            <NavLink class="nav-link shrink-0" href="system/logi" data-testid="nav-system-logs"><Icon Name="scroll-text" /> @T("Logi", "Logs")</NavLink>
+            <NavLink class="nav-link shrink-0" href="system/baza" data-testid="nav-system-database"><Icon Name="database" /> @T("Baza danych", "Database")</NavLink>
+            <NavLink class="nav-link shrink-0" href="system/kolejki" data-testid="nav-system-queues"><Icon Name="layers" /> @T("Kolejki", "Queues")</NavLink>
         </nav>
-        <p class="hidden px-5 py-3 font-mono text-[11px] text-ink-500 lg:block" title="@(AppVersion.Commit ?? "commit nieznany")" data-testid="app-version">@AppVersion.Text</p>
+        <p class="hidden px-5 py-3 font-mono text-[11px] text-ink-500 lg:block" title="@(AppVersion.Commit ?? T("commit nieznany", "unknown commit"))" data-testid="app-version">@AppVersion.Text</p>
     </aside>
 
     <div class="flex min-w-0 flex-1 flex-col lg:pl-60">
         <header class="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-ink-200 bg-white/90 px-4 py-3 backdrop-blur sm:px-6">
             <AlertCounters Now="now" />
             <div class="ml-auto flex items-center gap-3">
+                <LanguageSwitch />
                 <AuthorizeView>
                     <span class="hidden text-sm text-ink-600 sm:inline" data-testid="current-agent">@context.User.Identity?.Name</span>
                 </AuthorizeView>
                 <form method="post" action="auth/logout" data-enhance="false">
-                    <button type="submit" class="btn btn-ghost btn-sm" data-testid="logout"><Icon Name="logout" /> Wyloguj</button>
+                    <button type="submit" class="btn btn-ghost btn-sm" data-testid="logout"><Icon Name="logout" /> @T("Wyloguj", "Sign out")</button>
                 </form>
             </div>
         </header>

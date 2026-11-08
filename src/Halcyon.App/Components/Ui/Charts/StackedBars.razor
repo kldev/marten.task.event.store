@@ -33,7 +33,7 @@ else
                             @Segments[i].Name: <span class="ml-auto pl-3 tabular-nums">@N(row.Values[i])</span>
                         </span>
                     }
-                    <span class="mt-1 flex border-t border-ink-100 pt-1 font-semibold text-ink-900">Razem <span class="ml-auto tabular-nums">@N(row.Total)</span></span>
+                    <span class="mt-1 flex border-t border-ink-100 pt-1 font-semibold text-ink-900">@T("Razem", "Total") <span class="ml-auto tabular-nums">@N(row.Total)</span></span>
                 </span>
             </li>
         }
@@ -43,7 +43,7 @@ else
 @code {
     [Parameter, EditorRequired] public IReadOnlyList<Breakdown> Rows { get; set; } = [];
     [Parameter, EditorRequired] public IReadOnlyList<ChartSegment> Segments { get; set; } = [];
-    [Parameter] public string Empty { get; set; } = "Brak zgłoszeń w tym okresie.";
+    [Parameter] public string Empty { get; set; } = T("Brak zgłoszeń w tym okresie.", "No tickets in this period.");
     [Parameter] public string TestId { get; set; } = "bar-chart";
 
     private int Max => Math.Max(1, Rows.Max(r => r.Total));

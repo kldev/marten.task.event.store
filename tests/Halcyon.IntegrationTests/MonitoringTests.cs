@@ -169,7 +169,7 @@ public class MonitoringTests(PostgresContainer postgres) : IAsyncLifetime
     [Fact]
     public void AFullQueue_DropsNewEntries_AndCountsThem()
     {
-        var queue = new MonitoringQueue<int>("test", "test", capacity: 3);
+        var queue = new MonitoringQueue<int>("test", () => "test", capacity: 3);
         for (var i = 0; i < 5; i++)
             queue.Enqueue(i);
 

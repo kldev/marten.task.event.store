@@ -3,13 +3,13 @@
 @using System.Globalization
 @inject CategoryReportQueries Reports
 
-<PageTitle>Raport @(report?.Title) · Halcyon</PageTitle>
+<PageTitle>@T("Raport", "Report") @N(report?.Title) · Halcyon</PageTitle>
 
 @if (report is null)
 {
     <div class="card p-8 text-center" data-testid="report-missing">
-        <h1>Nie ma takiego raportu</h1>
-        <a href="raporty" class="mt-3 inline-block text-sm text-halcyon-700 hover:underline">Wróć do raportów</a>
+        <h1>@T("Nie ma takiego raportu", "There is no such report")</h1>
+        <a href="raporty" class="mt-3 inline-block text-sm text-halcyon-700 hover:underline">@T("Wróć do raportów", "Back to reports")</a>
     </div>
 }
 else
@@ -17,42 +17,42 @@ else
     var category = report.Category;
     <div class="space-y-5" data-testid="report-page" data-report="@report.Slug">
         <div>
-            <p class="text-xs text-ink-500"><a href="raporty" class="hover:underline">Raporty</a> /</p>
-            <h1>Raport: @report.Title</h1>
-            <p class="mt-1 text-sm text-ink-500">Zgłoszenia według daty zgłoszenia, z danymi do raportu jako kolumnami (puste kolumny są pomijane).</p>
+            <p class="text-xs text-ink-500"><a href="raporty" class="hover:underline">@T("Raporty", "Reports")</a> /</p>
+            <h1>@T("Raport", "Report"): @N(report.Title)</h1>
+            <p class="mt-1 text-sm text-ink-500">@T("Zgłoszenia według daty zgłoszenia, z danymi do raportu jako kolumnami (puste kolumny są pomijane).", "Tickets by report date, with the report data as columns (empty columns are left out).")</p>
         </div>
 
         <div class="flex flex-wrap items-end gap-3" data-testid="report-filters">
             <div>
-                <span class="label text-xs">Zgłoszone od</span>
+                <span class="label text-xs">@T("Zgłoszone od", "Reported from")</span>
                 <DatePicker Id="r-from" TestId="filter-from" Value="@Day(filter.From)" ValueChanged="v => ApplyAsync(filter with { From = Parse(v) })" />
             </div>
             <div>
-                <span class="label text-xs">do</span>
+                <span class="label text-xs">@T("do", "to")</span>
                 <DatePicker Id="r-to" TestId="filter-to" Value="@Day(filter.To)" ValueChanged="v => ApplyAsync(filter with { To = Parse(v) })" />
             </div>
             @if (category.Groups.Count > 1)
             {
                 <div>
-                    <label class="label text-xs" for="r-group">Rynek</label>
+                    <label class="label text-xs" for="r-group">@T("Rynek", "Market")</label>
                     <select id="r-group" class="input py-1.5" data-testid="filter-group" value="@(filter.Group ?? "")"
                             @onchange="e => ApplyAsync(filter with { Group = Empty(e.Value), SubcategoryKey = null })">
-                        <option value="">Wszystkie</option>
+                        <option value="">@T("Wszystkie", "All")</option>
                         @foreach (var group in category.Groups)
                         {
-                            <option value="@group">@group</option>
+                            <option value="@group">@N(group)</option>
                         }
                     </select>
                 </div>
             }
             <div>
-                <label class="label text-xs" for="r-sub">Podkategoria</label>
+                <label class="label text-xs" for="r-sub">@T("Podkategoria", "Topic")</label>
                 <select id="r-sub" class="input py-1.5" data-testid="filter-subcategory" value="@(filter.SubcategoryKey ?? "")"
                         @onchange="e => ApplyAsync(filter with { SubcategoryKey = Empty(e.Value) })">
-                    <option value="">Wszystkie</option>
+                    <option value="">@T("Wszystkie", "All")</option>
                     @foreach (var sub in category.Subcategories.Where(s => filter.Group is null || s.Group == filter.Group))
                     {
-                        <option value="@sub.Key">@(filter.Group is null ? sub.DisplayName : sub.Name)</option>
+                        <option value="@sub.Key">@(filter.Group is null ? N(sub) : N(sub.Name))</option>
                     }
                 </select>
             </div>

@@ -3,7 +3,7 @@
 {
     <div class="card flex flex-col items-center gap-2 px-6 py-12 text-center" data-testid="empty">
         <Icon Name="inbox" Class="size-8 text-ink-300" />
-        <p class="text-sm text-ink-600">@EmptyText</p>
+        <p class="text-sm text-ink-600">@(EmptyText ?? T("Brak zgłoszeń.", "No tickets."))</p>
     </div>
 }
 else
@@ -12,18 +12,18 @@ else
         <table class="min-w-full divide-y divide-ink-100" data-testid="ticket-table">
             <thead class="bg-ink-50/60">
                 <tr>
-                    <th class="table-head">Zgłoszenie</th>
-                    <th class="table-head hidden md:table-cell">Kategoria</th>
-                    <th class="table-head">Priorytet</th>
-                    <th class="table-head hidden lg:table-cell">Zgłaszający</th>
+                    <th class="table-head">@T("Zgłoszenie", "Ticket")</th>
+                    <th class="table-head hidden md:table-cell">@T("Kategoria", "Category")</th>
+                    <th class="table-head">@T("Priorytet", "Priority")</th>
+                    <th class="table-head hidden lg:table-cell">@T("Zgłaszający", "Requester")</th>
                     @if (ShowAssignee)
                     {
-                        <th class="table-head hidden md:table-cell">Realizuje</th>
+                        <th class="table-head hidden md:table-cell">@T("Realizuje", "Assignee")</th>
                     }
-                    <th class="table-head hidden sm:table-cell">Pozostało</th>
+                    <th class="table-head hidden sm:table-cell">@T("Pozostało", "Time left")</th>
                     @if (Actions is not null)
                     {
-                        <th class="table-head"><span class="sr-only">Akcje</span></th>
+                        <th class="table-head"><span class="sr-only">@T("Akcje", "Actions")</span></th>
                     }
                 </tr>
             </thead>
@@ -31,7 +31,7 @@ else
                 @foreach (var ticket in Tickets)
                 {
                     var state = ticket.StateAt(CurrentTime);
-                    var (category, subcategory) = CategoryCatalog.Default.NamesFor(ticket.CategoryKey, ticket.SubcategoryKey);
+                    var (category, subcategory) = NamesFor(ticket);
                     <tr class="@RowClass(state)" data-testid="ticket-row" data-ticket="@ticket.Number" data-state="@state.ToString().ToLowerInvariant()">
                         <td class="cell">
                             <a href="zgloszenia/@ticket.Id" class="font-medium text-ink-900 hover:text-halcyon-700 hover:underline" data-testid="ticket-link">@ticket.Title</a>
@@ -87,7 +87,7 @@ else
     public RenderFragment<TicketView>? Actions { get; set; }
 
     [Parameter]
-    public string EmptyText { get; set; } = "Brak zgłoszeń.";
+    public string? EmptyText { get; set; }
 
     [CascadingParameter(Name = "Now")]
     public DateTimeOffset? Now { get; set; }
@@ -96,6 +96,14 @@ else
     private TimeProvider Time { get; set; } = null!;
 
     private DateTimeOffset CurrentTime => Now ?? Time.GetUtcNow();
+
+    /// <summary>The category and topic names in the UI's language; an unknown key is shown as it is.</summary>
+    private static (string Category, string Subcategory) NamesFor(TicketView ticket)
+    {
+        var category = CategoryCatalog.Default.FindCategory(ticket.CategoryKey);
+        var sub = category?.Subcategories.FirstOrDefault(s => s.Key == ticket.SubcategoryKey);
+        return (category is null ? ticket.CategoryKey : N(category.Name), sub is null ? ticket.SubcategoryKey : N(sub));
+    }
 
     private static string RowClass(DeadlineState state) =>
         state switch

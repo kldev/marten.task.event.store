@@ -3,6 +3,7 @@ using Halcyon.App.Features.Agents;
 using Halcyon.App.Features.Reports;
 using Halcyon.App.Features.Tickets;
 using Halcyon.App.Infrastructure;
+using Halcyon.App.Localization;
 using Halcyon.App.Monitoring;
 using Halcyon.App.Storage;
 using Halcyon.Database;
@@ -50,6 +51,7 @@ public static class HalcyonApp
         builder.AddHalcyonAuth();
         builder.AddHalcyonStorage(ReadyTag);
         builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+        builder.Services.AddHalcyonLanguages();
 
         builder.Services.AddSingleton<TicketWriter>();
         builder.Services.AddSingleton<PublicReportLimiter>();
@@ -92,6 +94,8 @@ public static class HalcyonApp
             http => HttpMethods.IsGet(http.Request.Method),
             pages => pages.UseStatusCodePagesWithReExecute("/nie-znaleziono", createScopeForStatusCodePages: true)
         );
+        // The culture of the request from the cookie (ADR-0012) - also of the circuit a page opens.
+        app.UseRequestLocalization();
         app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();
@@ -102,6 +106,7 @@ public static class HalcyonApp
             .AllowAnonymous();
 
         app.MapHalcyonAuth();
+        app.MapLanguageSwitch();
         app.MapAttachments();
         app.MapReportExports();
         app.MapStaticAssets().AllowAnonymous();

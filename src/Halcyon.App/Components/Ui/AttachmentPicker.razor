@@ -9,16 +9,16 @@
             <Icon Name="upload" Class="size-5" />
         </span>
         <span class="text-sm font-medium text-ink-800">
-            @(reading ? "Wczytywanie…" : "Przeciągnij pliki tutaj albo kliknij, żeby wybrać")
+            @(reading ? T("Wczytywanie…", "Loading…") : T("Przeciągnij pliki tutaj albo kliknij, żeby wybrać", "Drag files here or click to choose"))
         </span>
-        <span class="text-xs text-ink-500">@Hint · do @AttachmentRules.SizeText(AttachmentRules.MaxBytes) na plik, najwyżej @Room</span>
+        <span class="text-xs text-ink-500">@(Hint ?? T("Zrzuty ekranu, dokumenty, materiały", "Screenshots, documents, materials")) · @T($"do {AttachmentRules.SizeText(AttachmentRules.MaxBytes)} na plik, najwyżej {Room}", $"up to {AttachmentRules.SizeText(AttachmentRules.MaxBytes)} per file, at most {Room}")</span>
         <InputFile OnChange="OnPickedAsync" multiple accept="@AttachmentRules.Accept" disabled="@(reading || Room == 0)"
                    class="absolute inset-0 cursor-pointer opacity-0" data-testid="attachments-input" />
     </label>
 
     @foreach (var message in errors)
     {
-        <p class="flex items-start gap-1.5 text-xs text-red-700" data-testid="attachments-error"><Icon Name="alarm" Class="mt-px size-3.5 shrink-0" /> @message</p>
+        <p class="flex items-start gap-1.5 text-xs text-red-700" data-testid="attachments-error"><Icon Name="alarm" Class="mt-px size-3.5 shrink-0" /> @Err(message)</p>
     }
 
     @if (Files.Count > 0)
@@ -42,7 +42,7 @@
                         <span class="block truncate text-sm font-medium text-ink-800" title="@file.Name">@file.Name</span>
                         <span class="block text-xs text-ink-500">@AttachmentRules.SizeText(file.Content.Length)</span>
                     </span>
-                    <button type="button" class="btn btn-ghost btn-sm" title="Usuń" aria-label="Usuń @file.Name"
+                    <button type="button" class="btn btn-ghost btn-sm" title="@T("Usuń", "Remove")" aria-label="@T("Usuń", "Remove") @file.Name"
                             data-testid="attachment-remove" @onclick="() => RemoveAsync(file)">
                         <Icon Name="x" />
                     </button>
@@ -65,7 +65,7 @@
     public int Existing { get; set; }
 
     [Parameter]
-    public string Hint { get; set; } = "Zrzuty ekranu, dokumenty, materiały";
+    public string? Hint { get; set; }
 
     private const long PreviewMaxBytes = 2 * 1024 * 1024;
 
@@ -96,7 +96,7 @@
             {
                 if (Room == 0)
                 {
-                    errors.Add($"Pominięto „{picked.Name}” - limit to {AttachmentRules.MaxPerTicket} załączników na zgłoszenie.");
+                    errors.Add(T($"Pominięto „{picked.Name}” - limit to {AttachmentRules.MaxPerTicket} załączników na zgłoszenie.", $"Skipped “{picked.Name}” - the limit is {AttachmentRules.MaxPerTicket} attachments per ticket."));
                     continue;
                 }
                 try

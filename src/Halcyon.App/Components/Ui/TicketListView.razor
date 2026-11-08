@@ -13,7 +13,7 @@
 
     @if (tickets is null)
     {
-        <p class="text-sm text-ink-500">Wczytywanie…</p>
+        <p class="text-sm text-ink-500">@T("Wczytywanie…", "Loading…")</p>
     }
     else
     {
@@ -23,20 +23,20 @@
             <div class="flex flex-wrap items-center justify-between gap-3 text-sm" data-testid="pager">
                 <div class="flex items-center gap-2">
                     <button type="button" class="btn btn-secondary btn-sm" disabled="@(page == 0)" data-testid="page-prev" @onclick="() => GoToAsync(page - 1)">
-                        <Icon Name="chevron-left" /> Poprzednia
+                        <Icon Name="chevron-left" /> @T("Poprzednia", "Previous")
                     </button>
-                    <span class="text-ink-600" data-testid="page-number">Strona @(page + 1)@(total is { } t ? $" z {Math.Max(1, (t + TicketQueries.PageSize - 1) / TicketQueries.PageSize)}" : "")</span>
+                    <span class="text-ink-600" data-testid="page-number">@T("Strona", "Page") @(page + 1)@(total is { } t ? $" {T("z", "of")} {Math.Max(1, (t + TicketQueries.PageSize - 1) / TicketQueries.PageSize)}" : "")</span>
                     <button type="button" class="btn btn-secondary btn-sm" disabled="@(!hasMore)" data-testid="page-next" @onclick="() => GoToAsync(page + 1)">
-                        Następna <Icon Name="chevron-right" />
+                        @T("Następna", "Next") <Icon Name="chevron-right" />
                     </button>
                 </div>
                 @if (total is { } count)
                 {
-                    <span class="text-ink-600" data-testid="total">Razem: <strong>@count</strong></span>
+                    <span class="text-ink-600" data-testid="total">@T("Razem", "Total"): <strong>@count</strong></span>
                 }
                 else
                 {
-                    <button type="button" class="btn btn-ghost btn-sm" data-testid="count-total" @onclick="CountAsync">Policz wszystkie</button>
+                    <button type="button" class="btn btn-ghost btn-sm" data-testid="count-total" @onclick="CountAsync">@T("Policz wszystkie", "Count all")</button>
                 }
             </div>
         }
@@ -51,7 +51,7 @@
     public DeadlineFilter InitialDeadline { get; set; }
 
     [Parameter]
-    public string EmptyText { get; set; } = "Brak zgłoszeń.";
+    public string? EmptyText { get; set; }
 
     private IReadOnlyList<TicketView>? tickets;
     private string? category;
@@ -70,8 +70,8 @@
     private RenderFragment<TicketView>? ActionsFor =>
         Scope switch
         {
-            TicketScope.Pool => ticket => @<button type="button" class="btn btn-primary btn-sm" data-testid="take" title="Przejmij"
-                                                    @onclick="() => TakeAsync(ticket)"><Icon Name="flag" Class="size-3.5" /> <span class="sr-only sm:not-sr-only">Przejmij</span></button>,
+            TicketScope.Pool => ticket => @<button type="button" class="btn btn-primary btn-sm" data-testid="take" title="@T("Przejmij", "Take")"
+                                                    @onclick="() => TakeAsync(ticket)"><Icon Name="flag" Class="size-3.5" /> <span class="sr-only sm:not-sr-only">@T("Przejmij", "Take")</span></button>,
             TicketScope.Mine => ticket => @<WorkActions Ticket="ticket" Done="OnWorkDoneAsync" />,
             _ => null,
         };
@@ -139,11 +139,11 @@
         try
         {
             await Take.ExecuteAsync(ticket.Id, await CurrentAgent.GetAsync());
-            success = $"Przejęto zgłoszenie {ticket.Number} - jest teraz w „Moje zgłoszenia”.";
+            success = T($"Przejęto zgłoszenie {ticket.Number} - jest teraz w „Moje zgłoszenia”.", $"Ticket {ticket.Number} taken - it is now in “My tickets”.");
         }
         catch (DomainException exception)
         {
-            error = exception.Message;
+            error = Err(exception.Message);
         }
         total = null; // the list changed; a counted total would be stale
         await LoadAsync();
@@ -153,7 +153,7 @@
     private async Task OnWorkDoneAsync((bool Ok, string Message) result)
     {
         success = result.Ok ? result.Message : null;
-        error = result.Ok ? null : result.Message;
+        error = result.Ok ? null : Err(result.Message);
         total = null; // the list changed; a counted total would be stale
         await LoadAsync();
         await Changes.NotifyAsync();

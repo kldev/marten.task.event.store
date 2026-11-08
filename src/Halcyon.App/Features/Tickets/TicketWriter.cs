@@ -4,6 +4,7 @@ using Halcyon.Domain.Tickets;
 using JasperFx;
 using JasperFx.Events;
 using Marten;
+using static Halcyon.App.Localization.Tr;
 
 namespace Halcyon.App.Features.Tickets;
 
@@ -58,10 +59,18 @@ public sealed class TicketWriter(IDocumentStore store, TimeProvider time)
         var view = await session.LoadAsync<TicketView>(ticketId, ct);
         return view switch
         {
-            { Status: TicketStatus.InProgress, AssigneeName: { } name } =>
+            { Status: TicketStatus.InProgress, AssigneeName: { } name } => T(
                 $"Ktoś był szybszy: zgłoszenie jest teraz w realizacji u: {name}. Lista została odświeżona.",
-            { Status: TicketStatus.Done } => "Ktoś był szybszy: zgłoszenie zostało już zrealizowane.",
-            _ => "Ktoś zmienił to zgłoszenie w tym samym momencie. Odśwież i spróbuj ponownie.",
+                $"Someone was faster: the ticket is now being handled by: {name}. The list has been refreshed."
+            ),
+            { Status: TicketStatus.Done } => T(
+                "Ktoś był szybszy: zgłoszenie zostało już zrealizowane.",
+                "Someone was faster: the ticket has already been resolved."
+            ),
+            _ => T(
+                "Ktoś zmienił to zgłoszenie w tym samym momencie. Odśwież i spróbuj ponownie.",
+                "Someone changed this ticket at the same moment. Refresh and try again."
+            ),
         };
     }
 }

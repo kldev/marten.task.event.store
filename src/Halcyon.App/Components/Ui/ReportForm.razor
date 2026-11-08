@@ -9,8 +9,8 @@
     <div class="grid gap-8 lg:grid-cols-5">
         <div class="space-y-8 lg:col-span-3">
             <section>
-                <StepTitle Number="1" Text="Czego dotyczy sprawa?" />
-                <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3" role="radiogroup" aria-label="Kategoria">
+                <StepTitle Number="1" Text="@T("Czego dotyczy sprawa?", "What is it about?")" />
+                <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3" role="radiogroup" aria-label="@T("Kategoria", "Category")">
                     @foreach (var category in CategoryCatalog.Default.Categories)
                     {
                         var look = CategoryLook.For(category.Key);
@@ -23,7 +23,7 @@
                                 <Icon Name="@look.Icon" Class="size-5" />
                             </span>
                             <span class="min-w-0">
-                                <span class="block text-sm leading-snug font-semibold text-ink-900">@category.Name</span>
+                                <span class="block text-sm leading-snug font-semibold text-ink-900">@N(category.Name)</span>
                                 <span class="mt-0.5 block truncate text-xs text-ink-500">@CategoryLook.Hint(category)</span>
                             </span>
                         </label>
@@ -33,18 +33,18 @@
             </section>
 
             <section>
-                <StepTitle Number="2" Text="Doprecyzuj" />
+                <StepTitle Number="2" Text="@T("Doprecyzuj", "Narrow it down")" />
                 @if (SelectedCategory is { } selected)
                 {
                     var look = CategoryLook.For(selected.Key);
-                    <div class="space-y-4" role="radiogroup" aria-label="Podkategoria" data-testid="subcategories">
+                    <div class="space-y-4" role="radiogroup" aria-label="@T("Podkategoria", "Topic")" data-testid="subcategories">
                         @foreach (var group in selected.ActiveSubcategories.GroupBy(s => s.Group))
                         {
                             <div>
                                 @if (group.Key is not null)
                                 {
                                     <p class="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-ink-500 uppercase">
-                                        <Icon Name="map-pin" Class="size-3.5" /> @group.Key
+                                        <Icon Name="map-pin" Class="size-3.5" /> @N(group.Key)
                                     </p>
                                 }
                                 <div class="flex flex-wrap gap-2">
@@ -56,7 +56,7 @@
                                             <input type="radio" class="sr-only" name="@(FormName)-subcategory" value="@sub.Key"
                                                    checked="@chosen" @onchange="() => model.SubcategoryKey = sub.Key" />
                                             <Icon Name="@CategoryLook.SubcategoryIcon(sub.Key)" Class="size-4 opacity-70" />
-                                            @sub.Name
+                                            @N(sub.Name)
                                         </label>
                                     }
                                 </div>
@@ -67,7 +67,7 @@
                 else
                 {
                     <p class="rounded-xl border border-dashed border-ink-200 px-4 py-5 text-center text-sm text-ink-500" data-testid="subcategory-empty">
-                        Najpierw wybierz kategorię - pokażemy pasujące tematy.
+                        @T("Najpierw wybierz kategorię - pokażemy pasujące tematy.", "Choose a category first - we will show the matching topics.")
                     </p>
                 }
                 <ValidationMessage For="() => model.SubcategoryKey" />
@@ -75,8 +75,8 @@
                 {
                     <div class="mt-5 rounded-xl border border-ink-200 bg-ink-50/60 p-4" data-testid="report-fields-section">
                         <p class="mb-3 flex items-center gap-1.5 text-sm font-semibold text-ink-800">
-                            <Icon Name="file-spreadsheet" Class="size-4 text-ink-500" /> Dane do raportu
-                            <span class="font-normal text-ink-500">(pola z * są wymagane, resztę można uzupełnić później)</span>
+                            <Icon Name="file-spreadsheet" Class="size-4 text-ink-500" /> @T("Dane do raportu", "Report data")
+                            <span class="font-normal text-ink-500">@T("(pola z * są wymagane, resztę można uzupełnić później)", "(fields marked * are required, the rest can be filled in later)")</span>
                         </p>
                         <ReportFieldInputs Definitions="SelectedFields" Values="fieldValues" IdPrefix="@($"{FormName}-field")" />
                     </div>
@@ -84,28 +84,28 @@
             </section>
 
             <section class="space-y-4">
-                <StepTitle Number="3" Text="Opisz sprawę" />
+                <StepTitle Number="3" Text="@T("Opisz sprawę", "Describe the issue")" />
                 <div>
-                    <label class="label" for="title">Tytuł</label>
+                    <label class="label" for="title">@T("Tytuł", "Title")</label>
                     <InputText id="title" class="input" @bind-Value="model.Title" maxlength="@TicketLimits.TitleMax"
-                               placeholder="Krótko, np. „Nie działa drukarka na 2 piętrze”" data-testid="title" />
+                               placeholder="@T("Krótko, np. „Nie działa drukarka na 2 piętrze”", "In short, e.g. “The printer on the 2nd floor does not work”")" data-testid="title" />
                     <ValidationMessage For="() => model.Title" />
                 </div>
                 <div>
-                    <label class="label" for="description">Opis</label>
+                    <label class="label" for="description">@T("Opis", "Description")</label>
                     <InputTextArea id="description" class="input min-h-32" @bind-Value="model.Description"
                                    maxlength="@TicketLimits.DescriptionMax"
-                                   placeholder="Co się stało, od kiedy, czego potrzebujesz?" data-testid="description" />
+                                   placeholder="@T("Co się stało, od kiedy, czego potrzebujesz?", "What happened, since when, what do you need?")" data-testid="description" />
                     <ValidationMessage For="() => model.Description" />
                 </div>
                 <div>
-                    <p class="label flex items-center gap-1.5"><Icon Name="paperclip" Class="size-4 text-ink-500" /> Załączniki <span class="font-normal text-ink-500">(opcjonalnie)</span></p>
+                    <p class="label flex items-center gap-1.5"><Icon Name="paperclip" Class="size-4 text-ink-500" /> @T("Załączniki", "Attachments") <span class="font-normal text-ink-500">@T("(opcjonalnie)", "(optional)")</span></p>
                     <AttachmentPicker @ref="picker" Files="files" Hint="@AttachmentHint" />
                 </div>
             </section>
 
             <fieldset>
-                <legend class="contents"><StepTitle Number="4" Text="Jak pilne?" /></legend>
+                <legend class="contents"><StepTitle Number="4" Text="@T("Jak pilne?", "How urgent?")" /></legend>
                 <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                     @foreach (var priority in Enum.GetValues<Priority>())
                     {
@@ -119,8 +119,8 @@
                                 <Icon Name="@look.Icon" Class="size-4" />
                             </span>
                             <span>
-                                <span class="block font-semibold text-ink-900">@PriorityNames.Name(priority)</span>
-                                <span class="block text-xs text-ink-500">@PriorityNames.SlaText(priority)</span>
+                                <span class="block font-semibold text-ink-900">@N(PriorityNames.Name(priority))</span>
+                                <span class="block text-xs text-ink-500">@N(PriorityNames.SlaText(priority))</span>
                             </span>
                         </label>
                     }
@@ -131,15 +131,15 @@
 
         <div class="space-y-6 lg:col-span-2">
             <section class="rounded-xl border border-ink-200 bg-ink-50/60 p-4">
-                <StepTitle Number="5" Text="Kto zgłasza?" />
+                <StepTitle Number="5" Text="@T("Kto zgłasza?", "Who is reporting?")" />
                 @if (ForAgent)
                 {
                     <div class="mb-4">
-                        <label class="label" for="reported-at">Data i godzina zgłoszenia</label>
+                        <label class="label" for="reported-at">@T("Data i godzina zgłoszenia", "Report date and time")</label>
                         <DateTimePicker Id="reported-at" TestId="reported-at" @bind-Value="model.ReportedAt"
                                         Max="MaxReportedAt" Min="MinReportedAt" />
                         <ValidationMessage For="() => model.ReportedAt" />
-                        <p class="mt-1 text-xs text-ink-500">Można cofnąć do 30 dni, nie w przyszłość.</p>
+                        <p class="mt-1 text-xs text-ink-500">@T("Można cofnąć do 30 dni, nie w przyszłość.", "Up to 30 days back, never in the future.")</p>
                     </div>
                 }
 
@@ -153,7 +153,7 @@
                         <Icon Name="clock" Class="size-5" />
                     </span>
                     <span>
-                        <span class="block text-xs text-ink-600">Termin realizacji</span>
+                        <span class="block text-xs text-ink-600">@T("Termin realizacji", "Deadline")</span>
                         <strong class="font-mono text-ink-900" data-testid="deadline-preview-value">@LocalTime.Format(deadline)</strong>
                         <span class="ml-1"><TimeLeft Deadline="deadline" Status="TicketStatus.InPool" /></span>
                     </span>
@@ -186,7 +186,7 @@
     public EventCallback<ReportTicketCommand> OnSubmit { get; set; }
 
     [Parameter]
-    public string SubmitText { get; set; } = "Wyślij zgłoszenie";
+    public string SubmitText { get; set; } = T("Wyślij zgłoszenie", "Send the ticket");
 
     [Parameter]
     public string FormName { get; set; } = "report";
@@ -206,14 +206,14 @@
     private string AttachmentHint =>
         model.CategoryKey switch
         {
-            "it" => "Np. zrzut ekranu z błędem aplikacji albo plik z logiem",
-            "marketing" => "Np. brief, logo, zdjęcia, materiały do kampanii",
-            "legal" => "Np. projekt umowy, korespondencja, pismo",
-            "hr-abroad" or "hr-poland" => "Np. skan dokumentu, zaświadczenie, formularz",
-            "recruitment" => "Np. opis stanowiska, zamówienie klienta, CV kandydata",
-            "finance" => "Np. skan faktury, rachunek, potwierdzenie przelewu",
-            "legalization" => "Np. skan paszportu, wizy, umowy najmu, decyzji urzędu",
-            _ => "Zrzuty ekranu, dokumenty, materiały",
+            "it" => T("Np. zrzut ekranu z błędem aplikacji albo plik z logiem", "E.g. a screenshot of the application error or a log file"),
+            "marketing" => T("Np. brief, logo, zdjęcia, materiały do kampanii", "E.g. a brief, logo, photos, campaign materials"),
+            "legal" => T("Np. projekt umowy, korespondencja, pismo", "E.g. a draft contract, correspondence, a letter"),
+            "hr-abroad" or "hr-poland" => T("Np. skan dokumentu, zaświadczenie, formularz", "E.g. a scanned document, a certificate, a form"),
+            "recruitment" => T("Np. opis stanowiska, zamówienie klienta, CV kandydata", "E.g. a job description, the client's order, a candidate's CV"),
+            "finance" => T("Np. skan faktury, rachunek, potwierdzenie przelewu", "E.g. a scanned invoice, a bill, a transfer confirmation"),
+            "legalization" => T("Np. skan paszportu, wizy, umowy najmu, decyzji urzędu", "E.g. a scan of the passport, visa, tenancy agreement, office decision"),
+            _ => T("Zrzuty ekranu, dokumenty, materiały", "Screenshots, documents, materials"),
         };
     private string? error;
     private bool busy;
@@ -299,7 +299,7 @@
         }
         catch (DomainException exception)
         {
-            error = exception.Message;
+            error = Err(exception.Message);
         }
         finally
         {
@@ -309,21 +309,21 @@
 
     private sealed class ReportModel
     {
-        [Required(ErrorMessage = "Podaj tytuł.")]
-        [MaxLength(TicketLimits.TitleMax, ErrorMessage = "Tytuł jest za długi.")]
+        [Required(ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.TitleRequired))]
+        [MaxLength(TicketLimits.TitleMax, ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.TitleTooLong))]
         public string? Title { get; set; }
 
-        [Required(ErrorMessage = "Opisz sprawę.")]
-        [MaxLength(TicketLimits.DescriptionMax, ErrorMessage = "Opis jest za długi.")]
+        [Required(ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.DescriptionRequired))]
+        [MaxLength(TicketLimits.DescriptionMax, ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.DescriptionTooLong))]
         public string? Description { get; set; }
 
-        [Required(ErrorMessage = "Wybierz kategorię.")]
+        [Required(ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.CategoryRequired))]
         public string? CategoryKey { get; set; }
 
-        [Required(ErrorMessage = "Wybierz podkategorię.")]
+        [Required(ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.SubcategoryRequired))]
         public string? SubcategoryKey { get; set; }
 
-        [Required(ErrorMessage = "Wybierz priorytet.")]
+        [Required(ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.PriorityRequired))]
         public Priority? Priority { get; set; }
 
         public DateTimeOffset? ReportedAt { get; set; }
@@ -331,5 +331,18 @@
         public Guid? RequesterPersonId { get; set; }
 
         public bool Incognito { get; set; }
+    }
+
+    /// <summary>The model's validation messages in the UI's language: read through the attributes' resource lookup on
+    /// every validation, so the circuit's culture decides.</summary>
+    private static class Messages
+    {
+        public static string TitleRequired => T("Podaj tytuł.", "Enter a title.");
+        public static string TitleTooLong => T("Tytuł jest za długi.", "The title is too long.");
+        public static string DescriptionRequired => T("Opisz sprawę.", "Describe the issue.");
+        public static string DescriptionTooLong => T("Opis jest za długi.", "The description is too long.");
+        public static string CategoryRequired => T("Wybierz kategorię.", "Choose a category.");
+        public static string SubcategoryRequired => T("Wybierz podkategorię.", "Choose a topic.");
+        public static string PriorityRequired => T("Wybierz priorytet.", "Choose a priority.");
     }
 }

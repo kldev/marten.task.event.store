@@ -1,6 +1,7 @@
 using Halcyon.Database.Monitoring;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using static Halcyon.App.Localization.Tr;
 
 namespace Halcyon.App.Monitoring;
 
@@ -60,7 +61,11 @@ public sealed class MonitoringCleanup(
         var result = new CleanupResult(cutoff, requests, logs);
         jobs.Cleanup.Succeeded(
             time.GetUtcNow(),
-            $"Usunięto: {requests} odpowiedzi HTTP, {logs} wpisów logu (starsze niż {cutoff:yyyy-MM-dd HH:mm} UTC)",
+            () =>
+                T(
+                    $"Usunięto: {requests} odpowiedzi HTTP, {logs} wpisów logu (starsze niż {cutoff:yyyy-MM-dd HH:mm} UTC)",
+                    $"Removed: {requests} HTTP responses, {logs} log entries (older than {cutoff:yyyy-MM-dd HH:mm} UTC)"
+                ),
             DateTimeOffset.UtcNow + settings.CleanupInterval
         );
         if (requests + logs > 0)

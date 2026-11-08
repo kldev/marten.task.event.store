@@ -1,11 +1,11 @@
 @* Priority and status badges in one component: Kind = "priority" | "status". *@
 @if (Priority is { } priority)
 {
-    <span class="badge @PriorityClass(priority)" data-testid="priority">@PriorityNames.Name(priority)</span>
+    <span class="badge @PriorityClass(priority)" data-testid="priority">@N(PriorityNames.Name(priority))</span>
 }
 @if (Status is { } status)
 {
-    <span class="badge @StatusClass(status)" data-testid="status">@PriorityNames.Status(status)</span>
+    <span class="badge @StatusClass(status)" data-testid="status">@N(PriorityNames.Status(status))</span>
 }
 
 @code {

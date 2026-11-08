@@ -1,24 +1,24 @@
 @* Who the ticket is from (spec 002): a person from the list (searchable) xor incognito. *@
 <fieldset class="space-y-3" data-testid="requester">
-    <legend class="label">Zgłaszający</legend>
+    <legend class="label">@T("Zgłaszający", "Requester")</legend>
 
     <label class="flex cursor-pointer items-center gap-2 text-sm text-ink-700">
         <input type="checkbox" class="size-4 rounded border-ink-300 text-halcyon-700" data-testid="requester-incognito"
                checked="@Incognito" @onchange="OnIncognitoChanged" />
         <Icon Name="eye-off" Class="size-4 text-ink-400" />
-        Incognito - bez danych zgłaszającego
+        @T("Incognito - bez danych zgłaszającego", "Incognito - without the requester's details")
     </label>
 
     @if (!Incognito)
     {
         <div class="relative">
             <Icon Name="search" Class="pointer-events-none absolute top-2.5 left-3 size-4 text-ink-400" />
-            <input type="search" class="input pl-9" placeholder="Szukaj po imieniu, nazwisku lub dziale…"
-                   aria-label="Szukaj zgłaszającego" data-testid="requester-search"
+            <input type="search" class="input pl-9" placeholder="@T("Szukaj po imieniu, nazwisku lub dziale…", "Search by first name, last name or department…")"
+                   aria-label="@T("Szukaj zgłaszającego", "Search for the requester")" data-testid="requester-search"
                    value="@search" @oninput="e => search = e.Value?.ToString() ?? string.Empty" />
         </div>
         <ul class="max-h-56 divide-y divide-ink-100 overflow-y-auto rounded-lg border border-ink-200 bg-white" role="listbox"
-            aria-label="Lista osób" data-testid="requester-list">
+            aria-label="@T("Lista osób", "List of people")" data-testid="requester-list">
             @foreach (var person in Filtered)
             {
                 var selected = person.Id == PersonId;
@@ -28,7 +28,7 @@
                             @onclick="() => SelectAsync(person.Id)">
                         <span>
                             <span class="font-medium">@person.FullName</span>
-                            <span class="ml-1 text-xs text-ink-500">@person.Department</span>
+                            <span class="ml-1 text-xs text-ink-500">@N(person.Department)</span>
                         </span>
                         @if (selected)
                         {
@@ -39,12 +39,12 @@
             }
             @if (!Filtered.Any())
             {
-                <li class="px-3 py-2 text-sm text-ink-500">Nikogo nie znaleziono.</li>
+                <li class="px-3 py-2 text-sm text-ink-500">@T("Nikogo nie znaleziono.", "No one found.")</li>
             }
         </ul>
         @if (Selected is { } chosen)
         {
-            <p class="text-sm text-ink-600" data-testid="requester-selected">Wybrano: <strong>@chosen.FullName</strong></p>
+            <p class="text-sm text-ink-600" data-testid="requester-selected">@T("Wybrano:", "Selected:") <strong>@chosen.FullName</strong></p>
         }
     }
 </fieldset>
@@ -75,6 +75,7 @@
             : People.Where(p =>
                 p.FullName.Contains(search.Trim(), StringComparison.CurrentCultureIgnoreCase)
                 || p.Department.Contains(search.Trim(), StringComparison.CurrentCultureIgnoreCase)
+                || N(p.Department).Contains(search.Trim(), StringComparison.CurrentCultureIgnoreCase)
             );
 
     private async Task SelectAsync(Guid id)

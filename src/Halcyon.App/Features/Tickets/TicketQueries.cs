@@ -2,6 +2,7 @@ using Halcyon.Database.Documents;
 using Halcyon.Domain.Categories;
 using Halcyon.Domain.Tickets;
 using Marten;
+using static Halcyon.App.Localization.Tr;
 
 namespace Halcyon.App.Features.Tickets;
 
@@ -247,61 +248,89 @@ public sealed class TicketQueries(IDocumentStore store, TimeProvider time)
                 TimelineKind.Reported,
                 r.RegisteredBy?.FullName ?? r.Requester.DisplayName,
                 r.Channel == ReportChannel.SelfService
-                    ? $"Zgłoszenie wysłane samodzielnie, priorytet {PriorityNames.Name(r.Priority)}"
-                    : $"Zgłoszenie zarejestrowane przez agenta w imieniu: {r.Requester.DisplayName}, priorytet {PriorityNames.Name(r.Priority)}",
+                    ? T(
+                        $"Zgłoszenie wysłane samodzielnie, priorytet {PriorityNames.Name(r.Priority)}",
+                        $"Reported by the requester, priority {N(PriorityNames.Name(r.Priority))}"
+                    )
+                    : T(
+                        $"Zgłoszenie zarejestrowane przez agenta w imieniu: {r.Requester.DisplayName}, priorytet {PriorityNames.Name(r.Priority)}",
+                        $"Registered by an agent on behalf of: {r.Requester.DisplayName}, priority {N(PriorityNames.Name(r.Priority))}"
+                    ),
                 null
             ),
-            TicketTaken t => new TimelineEntry(t.At, TimelineKind.Taken, t.Agent.FullName, "Przejęcie z puli", null),
+            TicketTaken t => new TimelineEntry(
+                t.At,
+                TimelineKind.Taken,
+                t.Agent.FullName,
+                T("Przejęcie z puli", "Taken from the pool"),
+                null
+            ),
             TicketHandedOver h => new TimelineEntry(
                 h.At,
                 TimelineKind.HandedOver,
                 h.From.FullName,
-                $"Przekazanie do: {h.To.FullName}",
+                T($"Przekazanie do: {h.To.FullName}", $"Handed over to: {h.To.FullName}"),
                 h.Reason
             ),
             TicketReturnedToPool p => new TimelineEntry(
                 p.At,
                 TimelineKind.Returned,
                 p.Agent.FullName,
-                "Oddanie do puli",
+                T("Oddanie do puli", "Returned to the pool"),
                 p.Reason
             ),
             TicketPriorityChanged c => new TimelineEntry(
                 c.At,
                 TimelineKind.PriorityChanged,
                 c.Agent.FullName,
-                $"Zmiana priorytetu: {PriorityNames.Name(c.From)} → {PriorityNames.Name(c.To)}",
+                T(
+                    $"Zmiana priorytetu: {PriorityNames.Name(c.From)} → {PriorityNames.Name(c.To)}",
+                    $"Priority changed: {N(PriorityNames.Name(c.From))} → {N(PriorityNames.Name(c.To))}"
+                ),
                 c.Reason
             ),
             TicketResolved d => new TimelineEntry(
                 d.At,
                 TimelineKind.Resolved,
                 d.Agent.FullName,
-                d.Late ? "Zrealizowane po terminie" : "Zrealizowane w terminie",
+                d.Late
+                    ? T("Zrealizowane po terminie", "Resolved late")
+                    : T("Zrealizowane w terminie", "Resolved on time"),
                 null
             ),
-            TicketCommented m => new TimelineEntry(m.At, TimelineKind.Commented, m.Agent.FullName, "Komentarz", m.Text),
+            TicketCommented m => new TimelineEntry(
+                m.At,
+                TimelineKind.Commented,
+                m.Agent.FullName,
+                T("Komentarz", "Comment"),
+                m.Text
+            ),
             TicketAttachmentAdded a => new TimelineEntry(
                 a.At,
                 TimelineKind.AttachmentAdded,
                 a.AddedBy,
-                $"Załącznik: {a.FileName}",
+                T($"Załącznik: {a.FileName}", $"Attachment: {a.FileName}"),
                 null
             ),
             TicketHandlerAssigned h => new TimelineEntry(
                 h.At,
                 TimelineKind.HandlerAssigned,
                 h.Agent.FullName,
-                h.Person is { } person ? $"Do realizacji: {person.FullName}" : "Bez osoby realizującej",
+                h.Person is { } person
+                    ? T($"Do realizacji: {person.FullName}", $"Person doing the work: {person.FullName}")
+                    : T("Bez osoby realizującej", "No person doing the work"),
                 h.Reason
             ),
             TicketFieldsUpdated f => new TimelineEntry(
                 f.At,
                 TimelineKind.FieldsUpdated,
                 f.Agent.FullName,
-                "Dane do raportu",
-                string.Join("; ", f.Changes.Select(c => $"{c.Label}: {c.From ?? "-"} → {c.To ?? "-"}"))
+                T("Dane do raportu", "Report data"),
+                string.Join("; ", f.Changes.Select(c => $"{N(c.Label)}: {Shown(c.From)} → {Shown(c.To)}"))
             ),
             _ => null,
         };
+
+    /// <summary>A report field's value as the reader sees it: a choice in their language, nothing as "-".</summary>
+    private static string Shown(string? value) => string.IsNullOrEmpty(value) ? "-" : N(value);
 }

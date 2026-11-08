@@ -1,3 +1,5 @@
+using static Halcyon.App.Localization.Tr;
+
 namespace Halcyon.App.Monitoring;
 
 /// <summary>What the queues page shows about a job running in the background of this process.</summary>
@@ -14,15 +16,18 @@ public sealed record BackgroundJobState(
     DateTimeOffset? NextRunAt
 );
 
-/// <summary>One job's record of its runs; written by the job, read by the page.</summary>
-public sealed class BackgroundJob(string name, string description, TimeSpan interval)
+/// <summary>
+/// One job's record of its runs; written by the job, read by the page. The description and the last result are
+/// functions: a job runs with no reader's language, the page asks for the text in its own (ADR-0012).
+/// </summary>
+public sealed class BackgroundJob(string name, Func<string> description, TimeSpan interval)
 {
     private readonly Lock gate = new();
     private long runs;
     private long failures;
     private DateTimeOffset? lastStartedAt;
     private DateTimeOffset? lastFinishedAt;
-    private string? lastResult;
+    private Func<string>? lastResult;
     private string? lastError;
     private DateTimeOffset? nextRunAt;
 
@@ -34,7 +39,7 @@ public sealed class BackgroundJob(string name, string description, TimeSpan inte
             lastStartedAt = at;
     }
 
-    public void Succeeded(DateTimeOffset at, string result, DateTimeOffset? next)
+    public void Succeeded(DateTimeOffset at, Func<string> result, DateTimeOffset? next)
     {
         lock (gate)
         {
@@ -69,13 +74,13 @@ public sealed class BackgroundJob(string name, string description, TimeSpan inte
         lock (gate)
             return new BackgroundJobState(
                 name,
-                description,
+                description(),
                 interval,
                 runs,
                 failures,
                 lastStartedAt,
                 lastFinishedAt,
-                lastResult,
+                lastResult?.Invoke(),
                 lastError,
                 nextRunAt
             );
@@ -88,14 +93,22 @@ public sealed class BackgroundJobs(Microsoft.Extensions.Options.IOptions<Monitor
     public BackgroundJob Writer { get; } =
         new(
             "monitoring-writer",
-            "Przenosi kolejki odpowiedzi HTTP i logów do bazy (COPY, partiami).",
+            () =>
+                T(
+                    "Przenosi kolejki odpowiedzi HTTP i logów do bazy (COPY, partiami).",
+                    "Moves the queues of HTTP responses and log entries to the database (COPY, in batches)."
+                ),
             options.Value.FlushInterval
         );
 
     public BackgroundJob Cleanup { get; } =
         new(
             "monitoring-cleanup",
-            $"Usuwa odpowiedzi HTTP i wpisy logu starsze niż {options.Value.Retention.TotalDays:0.##} dni.",
+            () =>
+                T(
+                    $"Usuwa odpowiedzi HTTP i wpisy logu starsze niż {options.Value.Retention.TotalDays:0.##} dni.",
+                    $"Removes HTTP responses and log entries older than {options.Value.Retention.TotalDays:0.##} days."
+                ),
             options.Value.CleanupInterval
         );
 

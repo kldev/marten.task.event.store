@@ -6,9 +6,10 @@ namespace Halcyon.App.Monitoring;
 /// <summary>How the system pages write numbers, sizes, times, levels and statuses.</summary>
 public static class SystemText
 {
-    private static readonly CultureInfo Polish = CultureInfo.GetCultureInfo("pl-PL");
+    /// <summary>The reader's number format (ADR-0012): "1 234" in Polish, "1,234" in English.</summary>
+    private static CultureInfo Reader => Localization.Language.Culture;
 
-    public static string N(long value) => value.ToString("N0", Polish);
+    public static string N(long value) => value.ToString("N0", Reader);
 
     public static string Bytes(long bytes) =>
         bytes switch
@@ -39,10 +40,10 @@ public static class SystemText
         };
 
     public static string Time(DateTimeOffset? at) =>
-        at is { } value ? LocalTime.ToLocal(value).ToString("dd.MM.yyyy HH:mm:ss", Polish) : "-";
+        at is { } value ? LocalTime.ToLocal(value).ToString("dd.MM.yyyy HH:mm:ss", Reader) : "-";
 
     public static string Share(long part, long total) =>
-        total == 0 ? "-" : (part * 100.0 / total).ToString("0.#", Polish) + " %";
+        total == 0 ? "-" : (part * 100.0 / total).ToString("0.#", Reader) + " %";
 
     public static string LevelName(int level) =>
         level switch

@@ -5,7 +5,7 @@
 
 @if (Rows.All(r => r.Count == 0))
 {
-    <p class="py-6 text-center text-sm text-ink-500" data-testid="sla-chart-empty">Nic nie zrealizowano w tym okresie.</p>
+    <p class="py-6 text-center text-sm text-ink-500" data-testid="sla-chart-empty">@T("Nic nie zrealizowano w tym okresie.", "Nothing was resolved in this period.")</p>
 }
 else
 {
@@ -23,8 +23,8 @@ else
         {
             <div class="grid grid-cols-[minmax(6rem,9rem)_1fr] items-center gap-3 text-sm" data-testid="sla-row" data-priority="@row.Priority">
                 <span class="text-ink-700">
-                    @PriorityNames.Name(row.Priority)
-                    <span class="block text-xs text-ink-500">SLA @PriorityNames.SlaText(row.Priority) · @Tickets(row.Count)</span>
+                    @N(PriorityNames.Name(row.Priority))
+                    <span class="block text-xs text-ink-500">SLA @N(PriorityNames.SlaText(row.Priority)) · @TicketCount(row.Count)</span>
                 </span>
                 <span class="relative h-6" aria-hidden="true">
                     @foreach (var tick in Ticks)
@@ -41,21 +41,21 @@ else
                     }
                     @if (Math.Max(row.Median ?? 0, row.P90 ?? 0) > Max)
                     {
-                        <span class="absolute -right-1 top-1/2 -translate-y-1/2 translate-x-full text-xs font-semibold text-ink-700" title="Poza skalą">›</span>
+                        <span class="absolute -right-1 top-1/2 -translate-y-1/2 translate-x-full text-xs font-semibold text-ink-700" title="@T("Poza skalą", "Off the scale")">›</span>
                     }
                 </span>
                 <span class="col-start-2 -mt-2 text-xs text-ink-600" data-testid="sla-text">
                     @if (row.Median is { } m)
                     {
-                        <span>mediana <strong class="text-ink-900">@Duration(row.MedianTime)</strong> (@Percent(m) SLA)</span>
+                        <span>@T("mediana", "median") <strong class="text-ink-900">@Duration(row.MedianTime)</strong> (@Percent(m) SLA)</span>
                         @if (row.P90 is { } p)
                         {
-                            <span> · 90 % zgłoszeń w @Percent(p) SLA</span>
+                            <span> · @T("90 % zgłoszeń w", "90 % of tickets within") @Percent(p) SLA</span>
                         }
                     }
                     else
                     {
-                        <span>brak zrealizowanych</span>
+                        <span>@T("brak zrealizowanych", "none resolved")</span>
                     }
                 </span>
             </div>
@@ -82,6 +82,9 @@ else
     private string Pos(double share) =>
         (Math.Min(share, Max) / Max * 100).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + "%";
 
+    /// <summary>"1 zgłoszenie", "5 zgłoszeń"; "1 ticket", "5 tickets".</summary>
+    private static string TicketCount(int n) => T(Tickets(n), $"{N(n)} {(n == 1 ? "ticket" : "tickets")}");
+
     private static string Duration(TimeSpan? time) =>
-        time is not { } t ? "-" : t < TimeSpan.FromMinutes(1) ? "< 1 min" : TimeLeftText.Duration(t);
+        time is not { } t ? "-" : t < TimeSpan.FromMinutes(1) ? "< 1 min" : TimeLeft.Duration(t);
 }

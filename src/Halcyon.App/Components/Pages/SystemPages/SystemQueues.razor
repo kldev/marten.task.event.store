@@ -6,19 +6,19 @@
 @inject MonitoringCleanup Cleanup
 @inject DatabaseActivity Activity
 
-<PageTitle>Kolejki · Halcyon</PageTitle>
+<PageTitle>@T("Kolejki", "Queues") · Halcyon</PageTitle>
 
 <div class="space-y-5" data-testid="system-queues-page">
     <div class="flex flex-wrap items-end justify-between gap-3">
         <div>
             <p class="text-xs text-ink-500"><a href="system/status" class="hover:underline">System</a> /</p>
-            <h1>Kolejki i zadania w tle</h1>
+            <h1>@T("Kolejki i zadania w tle", "Queues and background jobs")</h1>
             <p class="mt-1 text-sm text-ink-500">
-                Halcyon nie używa brokera: zapis zgłoszeń idzie prosto do magazynu zdarzeń. Kolejki to bufory w pamięci tej instancji
-                między żądaniem a bazą; zadania w tle przenoszą je do bazy i sprzątają po upływie retencji.
+                @T("Halcyon nie używa brokera: zapis zgłoszeń idzie prosto do magazynu zdarzeń. Kolejki to bufory w pamięci tej instancji między żądaniem a bazą; zadania w tle przenoszą je do bazy i sprzątają po upływie retencji.",
+                   "Halcyon uses no message broker: tickets are written straight to the event store. The queues are in-memory buffers of this instance between a request and the database; background jobs move them to the database and clean up once the retention has passed.")
             </p>
         </div>
-        <button type="button" class="btn btn-secondary btn-sm" data-testid="refresh" @onclick="LoadAsync"><Icon Name="refresh" /> Odśwież</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-testid="refresh" @onclick="LoadAsync"><Icon Name="refresh" /> @T("Odśwież", "Refresh")</button>
     </div>
 
     <Notice Kind="success" Message="@success" />
@@ -26,16 +26,16 @@
 
     <section class="card overflow-hidden" data-testid="queues">
         <div class="px-4 pt-4 sm:px-5">
-            <h2 class="text-base">Kolejki w pamięci</h2>
-            <p class="mt-0.5 text-xs text-ink-500">Liczniki od startu tej instancji. Pełna kolejka odrzuca nowe wpisy, żeby niedostępna baza nie zabrała aplikacji pamięci.</p>
+            <h2 class="text-base">@T("Kolejki w pamięci", "In-memory queues")</h2>
+            <p class="mt-0.5 text-xs text-ink-500">@T("Liczniki od startu tej instancji. Pełna kolejka odrzuca nowe wpisy, żeby niedostępna baza nie zabrała aplikacji pamięci.", "Counters since this instance started. A full queue drops new entries, so an unavailable database cannot eat the application's memory.")</p>
         </div>
         <div class="overflow-x-auto">
             <table class="mt-3 min-w-full divide-y divide-ink-100">
                 <thead>
                     <tr>
-                        <th class="table-head">Kolejka</th><th class="table-head text-right">Czeka</th><th class="table-head text-right">Przyjęte</th>
-                        <th class="table-head text-right">Zapisane</th><th class="table-head text-right">Odrzucone</th><th class="table-head text-right">Błąd zapisu</th>
-                        <th class="table-head">Ostatni zapis</th>
+                        <th class="table-head">@T("Kolejka", "Queue")</th><th class="table-head text-right">@T("Czeka", "Pending")</th><th class="table-head text-right">@T("Przyjęte", "Accepted")</th>
+                        <th class="table-head text-right">@T("Zapisane", "Written")</th><th class="table-head text-right">@T("Odrzucone", "Dropped")</th><th class="table-head text-right">@T("Błąd zapisu", "Write failed")</th>
+                        <th class="table-head">@T("Ostatni zapis", "Last write")</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-ink-100">
@@ -61,8 +61,8 @@
 
     <section class="card overflow-hidden" data-testid="jobs">
         <div class="px-4 pt-4 sm:px-5">
-            <h2 class="text-base">Zadania w tle</h2>
-            <p class="mt-0.5 text-xs text-ink-500">Działają w każdej instancji aplikacji; sprzątanie jest idempotentne, więc dwie repliki nie przeszkadzają sobie.</p>
+            <h2 class="text-base">@T("Zadania w tle", "Background jobs")</h2>
+            <p class="mt-0.5 text-xs text-ink-500">@T("Działają w każdej instancji aplikacji; sprzątanie jest idempotentne, więc dwie repliki nie przeszkadzają sobie.", "They run in every instance of the application; the cleanup is idempotent, so two replicas do not get in each other's way.")</p>
         </div>
         <ul class="mt-2 divide-y divide-ink-100">
             @foreach (var job in jobs)
@@ -73,23 +73,23 @@
                             <span class="font-mono text-sm font-medium text-ink-900">@job.Name</span>
                             @if (job.LastError is not null)
                             {
-                                <span class="badge bg-red-100 text-red-800">błąd</span>
+                                <span class="badge bg-red-100 text-red-800">@T("błąd", "error")</span>
                             }
                             else if (job.Runs > 0)
                             {
                                 <span class="badge bg-emerald-100 text-emerald-800">OK</span>
                             }
                         </p>
-                        <p class="text-xs text-ink-500">@job.Description co @Span(job.Interval)</p>
-                        <p class="mt-1 text-xs text-ink-700" data-testid="job-result">@(job.LastError ?? job.LastResult ?? "Jeszcze nie działało.")</p>
+                        <p class="text-xs text-ink-500">@job.Description @T("co", "every") @Span(job.Interval)</p>
+                        <p class="mt-1 text-xs text-ink-700" data-testid="job-result">@(job.LastError ?? job.LastResult ?? T("Jeszcze nie działało.", "Has not run yet."))</p>
                     </div>
                     <dl class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
-                        <dt class="text-ink-500">Uruchomienia</dt><dd class="tabular-nums">@N(job.Runs) <span class="text-ink-400">(błędy: @N(job.Failures))</span></dd>
-                        <dt class="text-ink-500">Ostatnio</dt><dd>@SystemText.Time(job.LastFinishedAt)</dd>
-                        <dt class="text-ink-500">Następne</dt><dd>@(job.NextRunAt is null ? $"co {Span(job.Interval)}" : SystemText.Time(job.NextRunAt))</dd>
+                        <dt class="text-ink-500">@T("Uruchomienia", "Runs")</dt><dd class="tabular-nums">@N(job.Runs) <span class="text-ink-400">(@T("błędy", "errors"): @N(job.Failures))</span></dd>
+                        <dt class="text-ink-500">@T("Ostatnio", "Last run")</dt><dd>@SystemText.Time(job.LastFinishedAt)</dd>
+                        <dt class="text-ink-500">@T("Następne", "Next run")</dt><dd>@(job.NextRunAt is null ? $"{T("co", "every")} {Span(job.Interval)}" : SystemText.Time(job.NextRunAt))</dd>
                     </dl>
                     <button type="button" class="btn btn-secondary btn-sm" disabled="@busy" data-testid="job-run" @onclick="() => RunAsync(job.Name)">
-                        Uruchom teraz
+                        @T("Uruchom teraz", "Run now")
                     </button>
                 </li>
             }
@@ -98,21 +98,21 @@
 
     <section class="card overflow-hidden" data-testid="event-progress">
         <div class="px-4 pt-4 sm:px-5">
-            <h2 class="text-base">Magazyn zdarzeń (Marten)</h2>
+            <h2 class="text-base">@T("Magazyn zdarzeń (Marten)", "Event store (Marten)")</h2>
             <p class="mt-0.5 text-xs text-ink-500">
-                Postęp odczytu zdarzeń (<span class="font-mono">events.mt_event_progression</span>). Projekcje są inline (ADR-0002) i liczą się w tej samej
-                transakcji co zdarzenia, więc nie mają tu zaległości; tabela zwykle trzyma tylko znacznik najwyższego numeru albo jest pusta.
+                @T("Postęp odczytu zdarzeń", "Event processing progress") (<span class="font-mono">events.mt_event_progression</span>). @T("Projekcje są inline (ADR-0002) i liczą się w tej samej transakcji co zdarzenia, więc nie mają tu zaległości; tabela zwykle trzyma tylko znacznik najwyższego numeru albo jest pusta.",
+                   "Projections are inline (ADR-0002) and are computed in the same transaction as the events, so they have no backlog here; the table usually holds only the high-water mark or is empty.")
             </p>
         </div>
         @if (progress.Count == 0)
         {
-            <p class="px-4 py-4 text-sm text-ink-500 sm:px-5" data-testid="event-progress-empty">Brak wpisów postępu - nic nie czeka na przetworzenie w tle.</p>
+            <p class="px-4 py-4 text-sm text-ink-500 sm:px-5" data-testid="event-progress-empty">@T("Brak wpisów postępu - nic nie czeka na przetworzenie w tle.", "No progress entries - nothing is waiting to be processed in the background.")</p>
         }
         else
         {
             <div class="overflow-x-auto">
                 <table class="mt-3 min-w-full divide-y divide-ink-100">
-                    <thead><tr><th class="table-head">Nazwa</th><th class="table-head text-right">Ostatni numer</th><th class="table-head">Aktualizacja</th></tr></thead>
+                    <thead><tr><th class="table-head">@T("Nazwa", "Name")</th><th class="table-head text-right">@T("Ostatni numer", "Last sequence")</th><th class="table-head">@T("Aktualizacja", "Updated")</th></tr></thead>
                     <tbody class="divide-y divide-ink-100">
                         @foreach (var p in progress)
                         {
@@ -149,7 +149,7 @@
         }
         catch (Npgsql.NpgsqlException e)
         {
-            error = $"Nie udało się odczytać postępu zdarzeń: {e.Message}";
+            error = $"{T("Nie udało się odczytać postępu zdarzeń", "Could not read the event progress")}: {e.Message}";
         }
     }
 
@@ -163,17 +163,20 @@
             if (name == Jobs.Writer.Name)
             {
                 var written = await Writer.FlushAsync();
-                success = $"Zapisano do bazy: {written}.";
+                success = $"{T("Zapisano do bazy", "Written to the database")}: {written}.";
             }
             else if (name == Jobs.Cleanup.Name)
             {
                 var result = await Cleanup.RunOnceAsync();
-                success = $"Usunięto: {result.Requests} odpowiedzi HTTP i {result.Logs} wpisów logu starszych niż {SystemText.Time(result.Cutoff)}.";
+                success = T(
+                    $"Usunięto: {result.Requests} odpowiedzi HTTP i {result.Logs} wpisów logu starszych niż {SystemText.Time(result.Cutoff)}.",
+                    $"Deleted: {result.Requests} HTTP responses and {result.Logs} log entries older than {SystemText.Time(result.Cutoff)}."
+                );
             }
         }
         catch (Npgsql.NpgsqlException e)
         {
-            error = $"Zadanie nie powiodło się: {e.Message}";
+            error = $"{T("Zadanie nie powiodło się", "The job failed")}: {e.Message}";
         }
         finally
         {

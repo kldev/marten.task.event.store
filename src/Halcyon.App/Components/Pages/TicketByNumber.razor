@@ -8,8 +8,8 @@
 @if (missing)
 {
     <div class="card p-8 text-center" data-testid="ticket-missing">
-        <h1>Nie ma zgłoszenia @Number</h1>
-        <a href="" class="mt-3 inline-block text-sm text-halcyon-700 hover:underline">Wróć do puli</a>
+        <h1>@T($"Nie ma zgłoszenia {Number}", $"There is no ticket {Number}")</h1>
+        <a href="" class="mt-3 inline-block text-sm text-halcyon-700 hover:underline">@T("Wróć do puli", "Back to the pool")</a>
     </div>
 }
 

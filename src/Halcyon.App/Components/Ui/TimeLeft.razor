@@ -6,32 +6,32 @@
         @if (ResolvedLate)
         {
             <span class="badge bg-red-50 text-red-800 ring-1 ring-red-200" data-testid="@TestId" data-state="done-late">
-                <Icon Name="check" Class="size-3.5" /> Zrealizowane po terminie
+                <Icon Name="check" Class="size-3.5" /> @T("Zrealizowane po terminie", "Resolved late")
             </span>
         }
         else
         {
             <span class="badge bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200" data-testid="@TestId" data-state="done">
-                <Icon Name="check" Class="size-3.5" /> Zrealizowane
+                <Icon Name="check" Class="size-3.5" /> @T("Zrealizowane", "Resolved")
             </span>
         }
         break;
     case DeadlineState.Overdue:
         <span class="time-overdue inline-flex items-center gap-1 text-sm" data-testid="@TestId" data-state="overdue"
-              title="Termin: @LocalTime.Format(Deadline)">
-            <Icon Name="alarm" Class="size-3.5" /> @TimeLeftText.Format(Deadline, CurrentTime)
+              title="@T("Termin", "Deadline"): @LocalTime.Format(Deadline)">
+            <Icon Name="alarm" Class="size-3.5" /> @Text(Deadline, CurrentTime)
         </span>
         break;
     case DeadlineState.DueSoon:
         <span class="time-duesoon inline-flex items-center gap-1 text-sm" data-testid="@TestId" data-state="duesoon"
-              title="Termin: @LocalTime.Format(Deadline)">
-            <Icon Name="clock" Class="size-3.5" /> zostało @TimeLeftText.Format(Deadline, CurrentTime)
+              title="@T("Termin", "Deadline"): @LocalTime.Format(Deadline)">
+            <Icon Name="clock" Class="size-3.5" /> @T($"zostało {Text(Deadline, CurrentTime)}", $"{Text(Deadline, CurrentTime)} left")
         </span>
         break;
     default:
         <span class="time-ontime inline-flex items-center gap-1 text-sm" data-testid="@TestId" data-state="ontime"
-              title="Termin: @LocalTime.Format(Deadline)">
-            @TimeLeftText.Format(Deadline, CurrentTime)
+              title="@T("Termin", "Deadline"): @LocalTime.Format(Deadline)">
+            @Text(Deadline, CurrentTime)
         </span>
         break;
 }
@@ -58,4 +58,31 @@
     private DateTimeOffset CurrentTime => Now ?? Time.GetUtcNow();
 
     private DeadlineState State => Deadlines.Evaluate(Status, Deadline, CurrentTime);
+
+    /// <summary><see cref="TimeLeftText.Format(DateTimeOffset, DateTimeOffset)"/> in the UI's language.</summary>
+    public static string Text(DateTimeOffset deadline, DateTimeOffset now)
+    {
+        if (!Language.IsEnglish)
+            return TimeLeftText.Format(deadline, now);
+        var left = deadline - now;
+        if (left > TimeSpan.Zero)
+            return Duration(left);
+        var late = left.Negate();
+        return late < TimeSpan.FromMinutes(1) ? "overdue" : $"overdue by {Duration(late)}";
+    }
+
+    /// <summary><see cref="TimeLeftText.Duration"/> in the UI's language.</summary>
+    public static string Duration(TimeSpan duration)
+    {
+        if (!Language.IsEnglish)
+            return TimeLeftText.Duration(duration);
+        var totalMinutes = Math.Max(0, (long)Math.Floor(duration.TotalMinutes));
+        const long minutesPerDay = 24 * 60;
+        if (totalMinutes >= minutesPerDay)
+        {
+            var days = totalMinutes / minutesPerDay;
+            return $"{days} {(days == 1 ? "day" : "days")} {totalMinutes % minutesPerDay / 60} h";
+        }
+        return totalMinutes >= 60 ? $"{totalMinutes / 60} h {totalMinutes % 60} min" : $"{totalMinutes} min";
+    }
 }

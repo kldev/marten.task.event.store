@@ -6,7 +6,7 @@
         var id = $"{IdPrefix}-{field.Key}";
         <div data-testid="report-field-@field.Key">
             <label class="label" for="@id">
-                @field.Label
+                @N(field.Label)
                 @if (field.Required)
                 {
                     <span class="text-rufous-600" aria-hidden="true">*</span>
@@ -19,14 +19,14 @@
                     break;
                 case FieldKind.MultiChoice:
                     var picked = ReportFields.SplitMulti(Get(field.Key));
-                    <div class="flex flex-wrap gap-1.5" role="group" aria-label="@field.Label" id="@id" data-testid="field-@field.Key">
+                    <div class="flex flex-wrap gap-1.5" role="group" aria-label="@N(field.Label)" id="@id" data-testid="field-@field.Key">
                         @foreach (var option in field.Options ?? [])
                         {
                             var on = picked.Contains(option);
                             <button type="button" aria-pressed="@(on ? "true" : "false")"
                                     class="rounded-full border px-2.5 py-1 text-sm transition @(on ? "border-halcyon-500 bg-halcyon-50 font-medium text-halcyon-800 ring-1 ring-halcyon-500" : "border-ink-200 bg-white text-ink-700 hover:border-ink-300")"
                                     data-testid="field-@(field.Key)-@option" @onclick="() => Toggle(field, option)">
-                                @option
+                                @N(option)
                             </button>
                         }
                     </div>
@@ -34,19 +34,19 @@
                 case FieldKind.Choice:
                     <select id="@id" class="input" data-testid="field-@field.Key" value="@(Get(field.Key) ?? "")"
                             @onchange="e => Set(field.Key, e.Value?.ToString())">
-                        <option value="">- wybierz -</option>
+                        <option value="">@T("- wybierz -", "- choose -")</option>
                         @if (field.Favorites is { Count: > 0 } favorites)
                         {
-                            <optgroup label="Najczęściej">
+                            <optgroup label="@T("Najczęściej", "Most common")">
                                 @foreach (var option in favorites)
                                 {
-                                    <option value="@option">@option</option>
+                                    <option value="@option">@N(option)</option>
                                 }
                             </optgroup>
-                            <optgroup label="Pozostałe">
+                            <optgroup label="@T("Pozostałe", "Others")">
                                 @foreach (var option in (field.Options ?? []).Except(favorites))
                                 {
-                                    <option value="@option">@option</option>
+                                    <option value="@option">@N(option)</option>
                                 }
                             </optgroup>
                         }
@@ -54,7 +54,7 @@
                         {
                             @foreach (var option in field.Options ?? [])
                             {
-                                <option value="@option">@option</option>
+                                <option value="@option">@N(option)</option>
                             }
                         }
                     </select>
@@ -62,7 +62,7 @@
                 default:
                     <input id="@id" class="input @(field.Kind is FieldKind.Amount or FieldKind.Iban or FieldKind.Count or FieldKind.TicketNumber ? "font-mono" : "")" type="@(field.Kind == FieldKind.Email ? "email" : "text")"
                            inputmode="@(field.Kind switch { FieldKind.Amount => "decimal", FieldKind.Count => "numeric", _ => null })"
-                           maxlength="@ReportFields.ValueMax" placeholder="@field.Placeholder" data-testid="field-@field.Key"
+                           maxlength="@ReportFields.ValueMax" placeholder="@N(field.Placeholder)" data-testid="field-@field.Key"
                            value="@Get(field.Key)" @onchange="e => Set(field.Key, e.Value?.ToString())" />
                     break;
             }

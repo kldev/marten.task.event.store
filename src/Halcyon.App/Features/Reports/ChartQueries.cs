@@ -4,6 +4,7 @@ using Halcyon.Domain.Categories;
 using Halcyon.Domain.Tickets;
 using Halcyon.Domain.Time;
 using Marten;
+using static Halcyon.App.Localization.Tr;
 
 namespace Halcyon.App.Features.Reports;
 
@@ -68,7 +69,7 @@ public sealed class ChartQueries(IDocumentStore store, TimeProvider time)
     public async Task<ChartData> RunAsync(ChartFilter filter, CancellationToken ct = default)
     {
         var now = time.GetUtcNow();
-        var buckets = ChartBuckets.For(filter.Range, ReportPeriods.Today(now));
+        var buckets = ChartBuckets.For(filter.Range, ReportPeriods.Today(now), Localization.Language.Culture);
         var from = buckets[0].From;
         var until = buckets[^1].Until;
 
@@ -217,11 +218,11 @@ public sealed class ChartQueries(IDocumentStore store, TimeProvider time)
         categoryKey switch
         {
             "it" => "IT",
-            "legal" => "Dział Prawny",
+            "legal" => T("Dział Prawny", "Legal"),
             "marketing" => "Marketing",
-            "recruitment" => "Rekrutacja",
-            "finance" => "Finanse",
-            _ => CategoryCatalog.Default.FindCategory(categoryKey)?.Name ?? categoryKey,
+            "recruitment" => N("Rekrutacja"),
+            "finance" => N("Finanse"),
+            _ => CategoryCatalog.Default.FindCategory(categoryKey) is { } category ? N(category.Name) : categoryKey,
         };
 
     public static double? Median(IEnumerable<double> values)

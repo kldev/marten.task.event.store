@@ -52,8 +52,11 @@ public static class CategoryLook
     {
         var active = category.ActiveSubcategories.ToList();
         var groups = active.Select(s => s.Group).OfType<string>().Distinct().ToList();
+        // In the reader's language (ADR-0012): the names are joined here, after which they cannot be told apart.
         var parts =
-            groups.Count > 0 ? groups : active.Where(s => s.Name != "Feedback").Select(s => s.Name).Take(3).ToList();
+            groups.Count > 0
+                ? groups.Select(Localization.Tr.N).ToList()
+                : active.Where(s => s.Name != "Feedback").Select(s => Localization.Tr.N(s.Name)).Take(3).ToList();
         return string.Join(", ", parts);
     }
 
