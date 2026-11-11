@@ -1,6 +1,6 @@
 # ADR-0002: Marten in production mode - schema only through the migrator, one pool, inline projections
 
-- **Status:** Accepted (Marten 9.57.0)
+- **Status:** Accepted (Marten 9.58.0, with Wolverine since ADR-0016)
 - **Date:** 2026-11-03
 - **Evidence:** `src/Halcyon.Database/HalcyonStore.cs`, `DatabaseStartup.cs`, `src/Halcyon.DbMigrator/Program.cs`
 - **Specs:** 007-database-and-seed

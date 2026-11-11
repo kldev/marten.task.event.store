@@ -16,6 +16,7 @@ test. A changed decision updates the spec and its ADR in the same commit.
 | [009](done/009-charts.md) | Charts: flow, backlog, deadlines kept, SLA use, queue now, categories, agents, heatmap | Domain `ChartBucketsTests`; integration `ChartNumbersTests`, `ChartTests`; e2e `ChartsTests` |
 | [010](done/010-system-status-logs-database-queues.md) | System menu: status with HTTP statistics (200 / 403 / 500), the log, the database, the queues; 14-day retention | Integration `MonitoringTests`, `MigratorTests`; e2e `SystemPagesTests` |
 | [012](done/012-ported-from-ambit.md) | Configurable SLA with the deadline stored in the events; unique ticket number (from Ambit) | Domain `SlaPolicyTests`; integration `SlaAndNumberTests`; e2e `SlaTests` |
+| [013](done/013-email-notifications.md) | E-mail notifications (confirmation, handover, resolved, deadline warning and alert) over Wolverine handlers and Marten's outbox | Integration `NotificationTests`, `MailpitTests`, `MigratorTests`, `ConcurrencyTests`; e2e `NotificationTests` |
 
 ## Requirement → spec
 
@@ -45,3 +46,4 @@ test. A changed decision updates the spec and its ADR in the same commit.
 | 200 tickets in the seed, paging, "count total" button | 008 |
 | Charts besides the reports | 009 |
 | SLA windows per deployment; a deadline already given never moves; numbers never repeat | 012 |
+| Mail to the requester and the agents; deadline warnings that survive a restart; production SMTP configuration | 013 |

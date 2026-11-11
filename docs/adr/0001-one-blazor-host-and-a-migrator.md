@@ -1,6 +1,6 @@
 # ADR-0001: One Blazor Server host with the logic inside it, and a separate schema migrator
 
-- **Status:** Accepted
+- **Status:** Accepted; the "no Wolverine, no background worker" part superseded by [ADR-0016](0016-wolverine-handlers-and-the-outbox.md)
 - **Date:** 2026-11-03
 - **Evidence:** `src/Halcyon.App`, `src/Halcyon.DbMigrator`
 - **Specs:** all

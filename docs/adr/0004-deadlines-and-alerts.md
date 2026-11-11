@@ -25,7 +25,8 @@ to run out and what already has, without reloading the page.
   under 1 h "45 min" (warning style), overdue "po terminie o 2 h 10 min" (alert style). Colors are never the only
   signal: each state also has its own icon and text.
 - Times are stored in UTC and shown in `Europe/Warsaw`; because deadlines are absolute, a DST change does not move them.
-- Alerts are UI only (no mail).
+- Alerts are UI only (no mail). Since spec 013 / ADR-0016 the same two moments - an hour before and at the deadline -
+  are also mailed, from messages scheduled when the deadline is given; the UI states are still computed when read.
 
 ## Alternatives considered
 - **Business hours SLA:** not requested; needs a holiday calendar. Rejected for now.

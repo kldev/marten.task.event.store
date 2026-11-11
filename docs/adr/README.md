@@ -17,5 +17,6 @@
 | [0013](0013-deadline-is-a-fact-sla-from-configuration.md) | The deadline is a fact in the ticket's events; the SLA windows come from the configuration |
 | [0014](0014-unique-ticket-number.md) | A ticket's number is unique by a unique index; a report that meets a given number is made again |
 | [0015](0015-value-objects.md) | Values with rules (title, e-mail, phone, PESEL, IBAN, amount, ticket number, file name) are value objects, as in Ambit |
+| [0016](0016-wolverine-handlers-and-the-outbox.md) | Ticket commands go through Wolverine handlers; mail leaves through Marten's transactional outbox |
 
 New ADR: copy `TEMPLATE.md`, next number, add a line here.

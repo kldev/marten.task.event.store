@@ -41,8 +41,13 @@ straight from the event stream. All screens are real, produced by the e2e run, i
 - **Decide, then fold.** The aggregate is plain C#: decisions such as `Take` or `Resolve` check the rules and return an
   event, and private `On` methods fold events without ever refusing one. Marten folds the stream through the domain's own
   `Evolve`, so the domain project has no Marten dependency.
-- **Two agents, one click.** Writes go through `FetchForWriting` with Marten's version check. The slower agent is not
-  silently overwritten: they get *"Ktoś był szybszy: zgłoszenie jest teraz w realizacji u: …"*.
+- **Commands through Wolverine, the way Ambit does it** (ADR-0016). Every click is a command with a static handler;
+  the handler locks the ticket's stream, lets the domain decide and returns the event with the mails it causes, and
+  Wolverine commits events, read model and outbox in one transaction. Two agents at once are served one after the
+  other: the slower one hears *"Zgłoszenie jest już w realizacji u: …"*, never overwrites.
+- **Mail that cannot get ahead of the data** (spec 013). The requester's confirmation and resolution, the handover to
+  an agent, the warning an hour before the deadline and the alert at it leave through Marten's transactional outbox and
+  a durable queue in PostgreSQL - nothing for a rolled-back change, nothing lost on a restart, at most once per message.
 - **The read model is consistent right after the click.** `TicketView` is an inline projection written in the same
   transaction as the events, with indexed columns for the lists (status, assignee, deadline, category).
 - **Deadlines are calendar time from the report date** (ADR-0004): Critical 3 h, High 8 h, Medium 3 days, Low 1 week
@@ -104,7 +109,8 @@ flowchart TB
     subgraph host["Halcyon.App (one Blazor Server host)"]
         direction LR
         pages["Razor pages + components<br/>Tailwind v4 · Lucide icons"]
-        features["Features/Tickets<br/>ReportTicket · TicketWriter · TicketQueries<br/>AddTicketAttachments<br/>Features/Reports<br/>CategoryReports · AgentReport · ChartQueries"]
+        features["Features/Tickets<br/>commands + static Wolverine handlers<br/>TakeTicket · ReportTicket · … · TicketQueries<br/>Features/Reports<br/>CategoryReports · AgentReport · ChartQueries"]
+        mail["Notifications<br/>mail handlers · durable queue 'mail'<br/>scheduled deadline mails"]
         endpoints["/auth/login · /auth/login-default<br/>/zalaczniki/{ticket}/{file}<br/>/raporty/{slug}/eksport.{xlsx|pdf|csv}"]
     end
 
@@ -123,7 +129,9 @@ flowchart TB
     pages --> features
     agent --> endpoints
     features --> domain
-    features -- "FetchForWriting · append<br/>one SaveChanges · version check" --> events
+    features -- "InvokeAsync → handler<br/>FetchForExclusiveWriting · append<br/>events + outbox, one transaction" --> events
+    events -. "outbox (schema wolverine)" .-> mail
+    mail -- "SMTP" --> smtp[("Mailpit locally<br/>company SMTP in production")]
     events -- "inline projection<br/>same transaction" --> docs
     features -- "files first, then events" --> s3
     endpoints -- "stream to signed-in agents<br/>nosniff · sandbox" --> s3
@@ -131,8 +139,8 @@ flowchart TB
 
     classDef proc fill:#ecfbfd,stroke:#0b7a95,color:#132226
     classDef store fill:#f4f7f8,stroke:#4f6e77,color:#132226
-    class pages,features,endpoints,domain,migrator proc
-    class events,docs,s3 store
+    class pages,features,endpoints,domain,migrator,mail proc
+    class events,docs,s3,smtp store
 ```
 
 The pages inject the feature classes directly, with no HTTP calls to their own host. The sign-in form, the attachment
@@ -162,27 +170,26 @@ stateDiagram-v2
 sequenceDiagram
     autonumber
     actor A as Agent (Blazor circuit)
-    participant W as TicketWriter
+    participant W as TakeTicket → Wolverine bus
+    participant H as TakeTicketHandler
     participant M as Marten
     participant T as Ticket (domain)
     participant DB as PostgreSQL
 
     A->>W: Take(ticket, agent)
-    W->>M: FetchForWriting(ticket id)
-    M->>DB: stream events + current version
+    W->>H: InvokeAsync(TakeTicketCommand)
+    H->>M: FetchForExclusiveWriting(ticket id)
+    M->>DB: lock the stream, read its events
     M->>T: Evolve(events) → Ticket
-    W->>T: ticket.Take(agent, now)
+    H->>T: ticket.Take(agent, now)
     alt the rules allow it
-        T-->>W: TicketTaken
-        W->>M: append + SaveChanges (expected version)
-        M->>DB: event + TicketView row, one transaction
+        T-->>H: TicketTaken
+        H-->>W: (TicketTaken, mails)
+        W->>DB: event + TicketView row + outbox, one transaction (AutoApplyTransactions)
         W-->>A: "Przejęto zgłoszenie."
-    else already taken / done / not yours
-        T-->>W: DomainException (Polish message)
-        W-->>A: shown above the button
-    else someone was faster (version moved)
-        DB-->>W: concurrency error
-        W-->>A: "Ktoś był szybszy: … w realizacji u: Piotr Kowalski"
+    else already taken / done / not yours (also the slower of two clicks, after the lock)
+        T-->>H: DomainException (Polish message)
+        H-->>A: "Zgłoszenie jest już w realizacji u: Piotr Kowalski"
     end
 ```
 
@@ -314,7 +321,8 @@ flowchart LR
 | Area | Choice |
 |---|---|
 | Host & UI | .NET 10, ASP.NET Core, Blazor interactive server (no prerender), Tailwind CSS v4 (output committed), Lucide icons inline, custom date-time picker |
-| Data | Marten 9.57 on PostgreSQL 18: event store (one stream per ticket, quick append), documents, inline `TicketView` projection, `System.Text.Json` with enums as strings |
+| Messaging | Wolverine 6.62 over Marten (ADR-0016): static handlers, `AutoApplyTransactions`, transactional outbox, a durable local mail queue and scheduled messages in PostgreSQL (schema `wolverine`), handler code generated in the image; MailKit over SMTP (Mailpit locally) |
+| Data | Marten 9.58 on PostgreSQL 18: event store (one stream per ticket, quick append), documents, inline `TicketView` projection, `System.Text.Json` with enums as strings |
 | Reports | ClosedXML 0.105 (XLSX, MIT), QuestPDF 2026.9 (PDF, Community licence - free below USD 1M annual revenue, ADR-0009), CSV for a Polish Excel |
 | Files | RustFS (S3 API) via AWSSDK.S3 4 (path style, checksums only when required), private bucket, a one-shot init container |
 | Auth | Cookie session (sliding 8 h), one shared team password from the environment (demo, ADR-0005), rate-limited sign-in, one-click demo agent |
@@ -333,7 +341,7 @@ tests/Halcyon.Domain.Tests/  rules only, no I/O
 tests/Halcyon.IntegrationTests/  features, host, migrator and seed on PostgreSQL 18; S3 against RustFS
 tests/Halcyon.E2E/           Playwright against the real app process (own PostgreSQL + RustFS), screenshots + portal tour
 deploy/rustfs/               the bucket init script
-docs/adr/  docs/specs/done/  decisions 0001-0015, specs 001-012 (each criterion names its test)
+docs/adr/  docs/specs/done/  decisions 0001-0016, specs 001-013 (each criterion names its test)
 docs/Portal.md               the portal in screenshots, with diagrams; docs/screens/ holds the images
 ```
 
@@ -354,6 +362,7 @@ Needs the .NET SDK 10 and Docker.
 | App | http://localhost:8080 - click **"Zaloguj się jako domyślny agent"**, or sign in as any agent (e.g. `anna.nowak@company.io`) with `AGENT_PASSWORD` |
 | Public form | http://localhost:8080/zglos - requesters report without signing in |
 | RustFS console | http://localhost:9011/rustfs/console/ - `S3_ACCESS_KEY` / `S3_SECRET_KEY` |
+| Mailpit | http://localhost:8025 - every mail the app sends (`MAILPIT_UI_PORT`) |
 | PostgreSQL | `localhost:5433` - `halcyon` / `POSTGRES_PASSWORD` |
 
 The seed has 10 agents, 40 people (10 of them recruiters), 38 hand-written tickets across every team - many with report
@@ -402,6 +411,13 @@ Everything comes from the environment; required values make the host refuse to s
 | `Storage__Bucket` / `Storage__Region` | `halcyon-attachments` / `us-east-1` | |
 | `Sla__CriticalHours` / `__HighHours` / `__MediumHours` / `__LowHours` | 3 / 8 / 72 / 168 | SLA windows (ADR-0013); positive, Critical <= High <= Medium <= Low, else the host refuses to start |
 | `Database__ApplyChangesOnStartup` | Development only | a release host checks the schema and refuses a stale one |
+| `Mail__Provider` | `Log` | `Smtp` sends; `Log` writes the mails to the log only (spec 013) |
+| `Mail__Smtp__Host` / `__Port` / `__Security` | - / 587 / `StartTls` | required with `Smtp`; `None` (Mailpit), `StartTls`, `SslOnConnect` (465) |
+| `Mail__Smtp__Username` / `__Password` | empty | together or not at all |
+| `Mail__FromAddress` / `Mail__FromName` | `halcyon@company.io` / `Halcyon` | a mailbox the SMTP server lets the app send from |
+| `Mail__BaseUrl` | - | required with `Smtp`: the app's public address, for the links in the agents' mails |
+| `Mail__PoolAddress` | empty | who hears the deadline mails of a ticket nobody has taken |
+| `Messaging__Durability` / `Messaging__MailParallelism` | `Solo` / 2 | `Balanced` when several instances share the database (ADR-0016) |
 | `Monitoring__Retention` | `14.00:00:00` | how long HTTP answers and log entries stay in the database (ADR-0011) |
 | `Monitoring__CleanupInterval` / `__CleanupBatchSize` | `01:00:00` / 5000 | how often the cleanup runs, rows per DELETE |
 | `Monitoring__FlushInterval` / `__WriteBatchSize` / `__QueueCapacity` | `00:00:02` / 500 / 10000 | the in-memory queues and their writer |
