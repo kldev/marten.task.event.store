@@ -45,8 +45,9 @@ straight from the event stream. All screens are real, produced by the e2e run, i
   silently overwritten: they get *"Ktoś był szybszy: zgłoszenie jest teraz w realizacji u: …"*.
 - **The read model is consistent right after the click.** `TicketView` is an inline projection written in the same
   transaction as the events, with indexed columns for the lists (status, assignee, deadline, category).
-- **Deadlines are calendar time from the report date** (ADR-0004): Critical 3 h, High 8 h, Medium 3 days, Low 1 week.
-  A priority change moves the deadline from the *report* date. The "due soon / overdue" state is computed when read,
+- **Deadlines are calendar time from the report date** (ADR-0004): Critical 3 h, High 8 h, Medium 3 days, Low 1 week
+  by default, `Sla__*Hours` per deployment. A priority change moves the deadline from the *report* date. The deadline
+  is stored in the event that gives it (ADR-0013), so a changed SLA never moves a ticket already there. The "due soon / overdue" state is computed when read,
   so no background job can be late.
 - **Attachments that cannot hurt** (ADR-0008). The bytes go to a private RustFS bucket, and the record is an event. Files
   are stored first and the events saved next; a failed save removes the files again. The type comes from the extension,
@@ -67,7 +68,8 @@ straight from the event stream. All screens are real, produced by the e2e run, i
   queue now, categories, agents and a weekday × hour heatmap, drawn on the server as SVG and HTML from one query on the
   projection; hover values by CSS alone and the same numbers as a table under each chart.
 - **Paged lists, totals on request.** Pages are read in the database (open by deadline, then resolved), the next page
-  is known from one extra row, and the total is a separate `COUNT` behind a button; a search finds a title or a number.
+  is known from one extra row, and the total is a separate `COUNT` behind a button; a search finds a title or a number. A number is
+  never given twice: a unique index guards it, and a report that meets one is made again (ADR-0014).
 - **Polish and English** (ADR-0012). A PL / EN switch on every page; texts sit in both languages where they are used,
   the domain keeps its Polish catalog and refusals and the app translates them for display - stored data never changes.
 - **Spec-driven.** Every feature has a spec in `docs/specs/`, and every acceptance criterion names its test.
@@ -330,7 +332,7 @@ tests/Halcyon.Domain.Tests/  rules only, no I/O
 tests/Halcyon.IntegrationTests/  features, host, migrator and seed on PostgreSQL 18; S3 against RustFS
 tests/Halcyon.E2E/           Playwright against the real app process (own PostgreSQL + RustFS), screenshots + portal tour
 deploy/rustfs/               the bucket init script
-docs/adr/  docs/specs/done/  decisions 0001-0010, specs 001-009 (each criterion names its test)
+docs/adr/  docs/specs/done/  decisions 0001-0014, specs 001-012 (each criterion names its test)
 docs/Portal.md               the portal in screenshots, with diagrams; docs/screens/ holds the images
 ```
 
@@ -397,6 +399,7 @@ Everything comes from the environment; required values make the host refuse to s
 | `Auth__SessionHours` / `Auth__SignInAttemptsPerMinute` | 8 / 10 | |
 | `Storage__ServiceUrl` / `__AccessKey` / `__SecretKey` | - | required, the S3 endpoint and keys |
 | `Storage__Bucket` / `Storage__Region` | `halcyon-attachments` / `us-east-1` | |
+| `Sla__CriticalHours` / `__HighHours` / `__MediumHours` / `__LowHours` | 3 / 8 / 72 / 168 | SLA windows (ADR-0013); positive, Critical <= High <= Medium <= Low, else the host refuses to start |
 | `Database__ApplyChangesOnStartup` | Development only | a release host checks the schema and refuses a stale one |
 | `Monitoring__Retention` | `14.00:00:00` | how long HTTP answers and log entries stay in the database (ADR-0011) |
 | `Monitoring__CleanupInterval` / `__CleanupBatchSize` | `01:00:00` / 5000 | how often the cleanup runs, rows per DELETE |

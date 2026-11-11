@@ -14,5 +14,7 @@
 | [0010](0010-charts-drawn-on-the-server.md) | Charts are drawn on the server as SVG and HTML from one query on the projection; no chart library |
 | [0011](0011-http-answers-and-log-in-the-database.md) | HTTP answers and the application's log go to the database for 14 days; the app cleans them itself |
 | [0012](0012-polish-and-english-ui.md) | The UI speaks Polish and English (cookie, `/jezyk/{pl\|en}`); the domain and the data stay Polish |
+| [0013](0013-deadline-is-a-fact-sla-from-configuration.md) | The deadline is a fact in the ticket's events; the SLA windows come from the configuration |
+| [0014](0014-unique-ticket-number.md) | A ticket's number is unique by a unique index; a report that meets a given number is made again |
 
 New ADR: copy `TEMPLATE.md`, next number, add a line here.

@@ -33,6 +33,8 @@ to run out and what already has, without reloading the page.
   could lag. Rejected.
 
 ## Consequences
+- Since ADR-0013 the windows come from the configuration (defaults as above) and the deadline is stored in the event
+  that gives it; events stored before it are read with the default windows.
 - Lists filter "overdue / due soon" on the indexed `Deadline` column against "now" at query time.
 
 ## Revisit when

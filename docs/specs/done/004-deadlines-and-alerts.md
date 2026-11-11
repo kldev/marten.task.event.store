@@ -6,7 +6,8 @@
 A critical ticket has 3 hours. Agents must see at a glance what is about to run out and what already has.
 
 ## What it promises
-- SLA: Critical 3 h, High 8 h, Medium 3 days, Low 1 week; deadline = report date + SLA, 24/7.
+- SLA: Critical 3 h, High 8 h, Medium 3 days, Low 1 week; deadline = report date + SLA, 24/7. Since spec 012 these
+  are the defaults of a configurable policy, and the deadline is stored in the event.
 - An agent can change the priority of an unresolved ticket; the deadline is recomputed **from the report date**.
   Same priority = no change, no event. Resolved ticket: refused. The original priority stays in the history.
 - Time left shown in hours: "2 dni 5 h", "5 h 20 min"; under 1 h "45 min" in the warning style.
@@ -16,7 +17,7 @@ A critical ticket has 3 hours. Agents must see at a glance what is about to run 
 - DST does not move a deadline.
 
 ## Surface
-- Domain: `Sla`, `DeadlineState`, `TimeLeftText`, `Ticket.ChangePriority`. App: `Components/Ui/TimeLeft.razor`,
+- Domain: `SlaPolicy` (spec 012), `DeadlineState`, `TimeLeftText`, `Ticket.ChangePriority`. App: `Components/Ui/TimeLeft.razor`,
   `Layout/AlertCounters.razor`.
 
 ## Acceptance criteria

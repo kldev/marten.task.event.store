@@ -111,6 +111,11 @@ services:
       Monitoring__Retention: ${MONITORING_RETENTION:-14.00:00:00}
       Monitoring__CleanupInterval: ${MONITORING_CLEANUP_INTERVAL:-01:00:00}
       Monitoring__LogLevel: ${MONITORING_LOG_LEVEL:-Information}
+      # SLA windows in hours (ADR-0013); the defaults are the owner's 3 h / 8 h / 3 days / 1 week.
+      Sla__CriticalHours: ${SLA_CRITICAL_HOURS:-3}
+      Sla__HighHours: ${SLA_HIGH_HOURS:-8}
+      Sla__MediumHours: ${SLA_MEDIUM_HOURS:-72}
+      Sla__LowHours: ${SLA_LOW_HOURS:-168}
     ports:
       - "${APP_PORT:-8080}:8080"
     depends_on:

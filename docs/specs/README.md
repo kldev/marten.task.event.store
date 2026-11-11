@@ -15,6 +15,7 @@ test. A changed decision updates the spec and its ADR in the same commit.
 | [008](done/008-report-fields-and-reports.md) | Report fields, recruitment and campaigns, handler from the department, paged lists with search, reports with XLSX / PDF / CSV | Domain `ReportFieldsTests`, `ReportPeriodsTests`, `HandlerTests`; integration `ReportTests`, `PagingTests`; e2e `ReportFieldsTests`, `RecruitmentCampaignTests`, `PagingAndHandlerTests` |
 | [009](done/009-charts.md) | Charts: flow, backlog, deadlines kept, SLA use, queue now, categories, agents, heatmap | Domain `ChartBucketsTests`; integration `ChartNumbersTests`, `ChartTests`; e2e `ChartsTests` |
 | [010](done/010-system-status-logs-database-queues.md) | System menu: status with HTTP statistics (200 / 403 / 500), the log, the database, the queues; 14-day retention | Integration `MonitoringTests`, `MigratorTests`; e2e `SystemPagesTests` |
+| [012](done/012-ported-from-ambit.md) | Configurable SLA with the deadline stored in the events; unique ticket number (from Ambit) | Domain `SlaPolicyTests`; integration `SlaAndNumberTests`; e2e `SlaTests` |
 
 ## Requirement → spec
 
@@ -43,3 +44,4 @@ test. A changed decision updates the spec and its ADR in the same commit.
 | Agent names a person from HR (the department) to do the work | 008 |
 | 200 tickets in the seed, paging, "count total" button | 008 |
 | Charts besides the reports | 009 |
+| SLA windows per deployment; a deadline already given never moves; numbers never repeat | 012 |
