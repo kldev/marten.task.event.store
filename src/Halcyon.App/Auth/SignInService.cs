@@ -2,7 +2,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Halcyon.Database.Documents;
-using Halcyon.Domain.People;
+using Halcyon.Domain.ValueObjects;
 using Marten;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Options;
@@ -22,7 +22,7 @@ public sealed class SignInService(IDocumentStore store, IOptions<AuthOptions> op
         Agent? agent = null;
         if (!string.IsNullOrWhiteSpace(email))
         {
-            var normalized = Emails.Normalize(email);
+            var normalized = Email.Normalize(email);
             await using var session = store.QuerySession();
             agent = await session.Query<Agent>().FirstOrDefaultAsync(a => a.EmailNormalized == normalized, ct);
         }
@@ -45,7 +45,7 @@ public sealed class SignInService(IDocumentStore store, IOptions<AuthOptions> op
             return null;
         }
 
-        var normalized = Emails.Normalize(options.Value.DefaultAgentEmail!);
+        var normalized = Email.Normalize(options.Value.DefaultAgentEmail!);
         await using var session = store.QuerySession();
         var agent = await session.Query<Agent>().FirstOrDefaultAsync(a => a.EmailNormalized == normalized, ct);
         if (agent is null)

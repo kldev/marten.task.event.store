@@ -1,4 +1,5 @@
 using Halcyon.Domain.Tickets;
+using Halcyon.Domain.ValueObjects;
 
 namespace Halcyon.Database.Seed;
 
@@ -717,7 +718,7 @@ public static class SeedData
                 ("period-to", "2026-11-29"),
                 ("position", "Spawacz MIG/MAG"),
                 ("headcount", "12"),
-                ("related-ticket", Ticket.NumberOf(StableId.Ticket("seed-34-spawacze-niemcy")))
+                ("related-ticket", TicketNumber.For(StableId.Ticket("seed-34-spawacze-niemcy")).Value)
             )
         ),
         new(

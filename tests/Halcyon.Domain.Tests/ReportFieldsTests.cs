@@ -116,13 +116,6 @@ public class ReportFieldsTests
             country.Options!.ShouldContain(favorite);
     }
 
-    [Theory]
-    [InlineData("92031501232", true)]
-    [InlineData("92031501233", false)]
-    [InlineData("9203150123", false)]
-    [InlineData("9203150123a", false)]
-    public void Pesel_HasItsCheckDigit(string value, bool valid) => ReportFields.IsValidPesel(value).ShouldBe(valid);
-
     [Fact]
     public void Pesel_MustBeGiven_AndValid()
     {
@@ -338,13 +331,6 @@ public class FinanceFieldsTests
                 ReportFields.Check(Payment, new Dictionary<string, string?> { ["amount"] = value })
             )
             .Message.ShouldContain("kwotą");
-
-    [Theory]
-    [InlineData("PL61 1090 1014 0000 0712 1981 2874", "PL61109010140000071219812874")]
-    [InlineData("61109010140000071219812874", "PL61109010140000071219812874")]
-    [InlineData("de89 3704 0044 0532 0130 00", "DE89370400440532013000")]
-    public void Iban_IsCheckedAndWrittenCompact(string value, string stored) =>
-        ReportFields.NormalizeIban(value).ShouldBe(stored);
 
     [Theory]
     [InlineData("PL62 1090 1014 0000 0712 1981 2874")]

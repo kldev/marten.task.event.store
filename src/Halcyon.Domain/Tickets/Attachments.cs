@@ -1,3 +1,5 @@
+using Halcyon.Domain.ValueObjects;
+
 namespace Halcyon.Domain.Tickets;
 
 /// <summary>
@@ -8,7 +10,6 @@ public static class AttachmentRules
 {
     public const long MaxBytes = 20 * 1024 * 1024;
     public const int MaxPerTicket = 10;
-    private const int FileNameMax = 200;
 
     /// <summary>Extension → content type. SVG and HTML are missing on purpose: shown inline they can run scripts.</summary>
     private static readonly Dictionary<string, string> Types = new(StringComparer.OrdinalIgnoreCase)
@@ -35,8 +36,7 @@ public static class AttachmentRules
     /// <summary>For the file picker's <c>accept</c> attribute.</summary>
     public static string Accept { get; } = string.Join(",", Types.Keys);
 
-    private static string AllowedText { get; } =
-        "obrazy (PNG, JPG, GIF, WEBP), PDF, dokumenty Office, TXT/CSV, ZIP, MP4/MOV";
+    public const string AllowedText = "obrazy (PNG, JPG, GIF, WEBP), PDF, dokumenty Office, TXT/CSV, ZIP, MP4/MOV";
 
     public static string? ContentTypeFor(string fileName) => Types.GetValueOrDefault(Path.GetExtension(fileName));
 
@@ -49,17 +49,12 @@ public static class AttachmentRules
     public static string SizeText(long bytes) =>
         bytes >= 1024 * 1024 ? $"{bytes / 1024d / 1024d:0.#} MB" : $"{Math.Max(1, bytes / 1024)} KB";
 
-    /// <summary>The name as stored: no folders, no control characters, not too long; refuses what is not allowed.</summary>
+    /// <summary>The name as stored and its type (<see cref="AttachmentFileName"/>), then the size; refuses what is not allowed.</summary>
     public static (string FileName, string ContentType) Check(string? fileName, long size)
     {
-        var name = new string(Path.GetFileName(fileName ?? "").Where(c => !char.IsControl(c)).ToArray()).Trim();
-        if (name.Length == 0)
-            throw new DomainException("Plik nie ma nazwy.");
-        if (name.Length > FileNameMax)
-            name = name[..(FileNameMax - Path.GetExtension(name).Length)] + Path.GetExtension(name);
-        var type =
-            ContentTypeFor(name)
-            ?? throw new DomainException($"Plik „{name}” ma niedozwolony typ. Dozwolone: {AllowedText}.");
+        var file = AttachmentFileName.Create(fileName);
+        var name = file.Value;
+        var type = file.ContentType;
         if (size <= 0)
             throw new DomainException($"Plik „{name}” jest pusty.");
         if (size > MaxBytes)

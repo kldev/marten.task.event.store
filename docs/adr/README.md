@@ -16,5 +16,6 @@
 | [0012](0012-polish-and-english-ui.md) | The UI speaks Polish and English (cookie, `/jezyk/{pl\|en}`); the domain and the data stay Polish |
 | [0013](0013-deadline-is-a-fact-sla-from-configuration.md) | The deadline is a fact in the ticket's events; the SLA windows come from the configuration |
 | [0014](0014-unique-ticket-number.md) | A ticket's number is unique by a unique index; a report that meets a given number is made again |
+| [0015](0015-value-objects.md) | Values with rules (title, e-mail, phone, PESEL, IBAN, amount, ticket number, file name) are value objects, as in Ambit |
 
 New ADR: copy `TEMPLATE.md`, next number, add a line here.

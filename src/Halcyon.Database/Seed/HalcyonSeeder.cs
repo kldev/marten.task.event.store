@@ -1,6 +1,7 @@
 using Halcyon.Database.Documents;
 using Halcyon.Domain.People;
 using Halcyon.Domain.Tickets;
+using Halcyon.Domain.ValueObjects;
 using Marten;
 using Microsoft.Extensions.Logging;
 
@@ -40,9 +41,10 @@ public sealed class HalcyonSeeder(IDocumentStore store, TimeProvider time, ILogg
                 Id = StableId.Agent(a.Email),
                 FirstName = a.FirstName,
                 LastName = a.LastName,
-                Phone = a.Phone,
-                Email = a.Email,
-                EmailNormalized = Emails.Normalize(a.Email),
+                // The seed goes through the same value objects as any input: a typo stops the seed, naming it.
+                Phone = PhoneNumber.Create(a.Phone).Value,
+                Email = Email.Create(a.Email).Value,
+                EmailNormalized = Email.Create(a.Email).Normalized,
             }),
             x => x.Id,
             ct
@@ -56,9 +58,9 @@ public sealed class HalcyonSeeder(IDocumentStore store, TimeProvider time, ILogg
                 FirstName = p.FirstName,
                 LastName = p.LastName,
                 Department = p.Department,
-                Email = p.Email,
-                EmailNormalized = Emails.Normalize(p.Email),
-                Phone = p.Phone,
+                Email = Email.Create(p.Email).Value,
+                EmailNormalized = Email.Create(p.Email).Normalized,
+                Phone = p.Phone is null ? null : PhoneNumber.Create(p.Phone).Value,
             }),
             x => x.Id,
             ct
@@ -119,18 +121,18 @@ public sealed class HalcyonSeeder(IDocumentStore store, TimeProvider time, ILogg
     )
     {
         AgentRef Agent(string email) =>
-            agents.TryGetValue(Emails.Normalize(email), out var a)
+            agents.TryGetValue(Email.Normalize(email), out var a)
                 ? a.ToRef()
                 : throw new InvalidOperationException($"Seed ticket {seed.Key}: unknown agent {email}.");
 
         Person Person(string email) =>
-            people.TryGetValue(Emails.Normalize(email), out var p)
+            people.TryGetValue(Email.Normalize(email), out var p)
                 ? p
                 : throw new InvalidOperationException($"Seed ticket {seed.Key}: unknown person {email}.");
 
         var requester =
             seed.RequesterEmail is null ? Requester.Anonymous
-            : people.TryGetValue(Emails.Normalize(seed.RequesterEmail), out var person) ? Requester.For(person.ToRef())
+            : people.TryGetValue(Email.Normalize(seed.RequesterEmail), out var person) ? Requester.For(person.ToRef())
             : throw new InvalidOperationException($"Seed ticket {seed.Key}: unknown person {seed.RequesterEmail}.");
 
         var category =

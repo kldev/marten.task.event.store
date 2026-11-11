@@ -1,4 +1,4 @@
-using Halcyon.Domain.Tickets;
+using Halcyon.Domain.ValueObjects;
 using static Halcyon.Domain.Tests.TestData;
 
 namespace Halcyon.Domain.Tests;
@@ -29,7 +29,7 @@ public class CommentTests
     [Fact]
     public void TooLongComment_IsRefused() =>
         Should.Throw<DomainException>(() =>
-            Reported().Comment(CommentId, Anna, new string('x', TicketLimits.CommentMax + 1), Now)
+            Reported().Comment(CommentId, Anna, new string('x', CommentText.MaxLength + 1), Now)
         );
 
     [Fact]

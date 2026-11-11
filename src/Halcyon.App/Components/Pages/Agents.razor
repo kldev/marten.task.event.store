@@ -24,7 +24,7 @@
                     </span>
                     <div class="min-w-0 text-sm">
                         <h2 class="text-base" data-testid="agent-name">@a.FullName</h2>
-                        <a href="tel:@a.Phone.Replace(" ", "")" class="block text-ink-600 hover:text-halcyon-700" data-testid="agent-phone">@a.Phone</a>
+                        <a href="tel:@PhoneNumber.FromStored(a.Phone).Dial" class="block text-ink-600 hover:text-halcyon-700" data-testid="agent-phone">@a.Phone</a>
                         <a href="mailto:@a.Email" class="block truncate text-ink-600 hover:text-halcyon-700" data-testid="agent-email">@a.Email</a>
                         <p class="mt-1 text-xs text-ink-500" data-testid="agent-load">@T("W realizacji:", "In progress:") <strong class="text-ink-800">@a.InProgress</strong></p>
                     </div>

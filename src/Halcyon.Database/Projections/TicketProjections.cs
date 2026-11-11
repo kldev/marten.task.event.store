@@ -1,5 +1,6 @@
 using Halcyon.Database.Documents;
 using Halcyon.Domain.Tickets;
+using Halcyon.Domain.ValueObjects;
 using JasperFx.Events;
 using Marten.Events.Aggregation;
 
@@ -35,7 +36,7 @@ public sealed class TicketViewProjection : SingleStreamProjection<TicketView, Gu
         {
             case TicketReported r:
                 view.Id = r.TicketId;
-                view.Number = Ticket.NumberOf(r.TicketId);
+                view.Number = TicketNumber.For(r.TicketId).Value;
                 view.Title = r.Title;
                 view.Description = r.Description;
                 view.CategoryKey = r.CategoryKey;

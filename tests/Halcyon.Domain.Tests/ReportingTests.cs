@@ -1,5 +1,6 @@
 using Halcyon.Domain.Categories;
 using Halcyon.Domain.Tickets;
+using Halcyon.Domain.ValueObjects;
 using static Halcyon.Domain.Tests.TestData;
 
 namespace Halcyon.Domain.Tests;
@@ -46,19 +47,19 @@ public class ReportingTests
     [Fact]
     public void Report_TooLongTitle_IsRefused() =>
         Should.Throw<DomainException>(() =>
-            Ticket.Report(Id, Draft(title: new string('x', TicketLimits.TitleMax + 1)), Now)
+            Ticket.Report(Id, Draft(title: new string('x', TicketTitle.MaxLength + 1)), Now)
         );
 
     [Fact]
     public void Report_TitleOfMaxLength_IsAccepted() =>
         Ticket
-            .Report(Id, Draft(title: new string('x', TicketLimits.TitleMax)), Now)
-            .Title.Length.ShouldBe(TicketLimits.TitleMax);
+            .Report(Id, Draft(title: new string('x', TicketTitle.MaxLength)), Now)
+            .Title.Length.ShouldBe(TicketTitle.MaxLength);
 
     [Fact]
     public void Report_TooLongDescription_IsRefused() =>
         Should.Throw<DomainException>(() =>
-            Ticket.Report(Id, Draft(description: new string('x', TicketLimits.DescriptionMax + 1)), Now)
+            Ticket.Report(Id, Draft(description: new string('x', TicketDescription.MaxLength + 1)), Now)
         );
 
     [Fact]
@@ -167,7 +168,7 @@ public class ReportingTests
 
     [Fact]
     public void Number_IsShortAndStable() =>
-        Ticket.NumberOf(Guid.Parse("0a1b2c3d-0000-0000-0000-000000000000")).ShouldBe("HAL-0A1B2C3D");
+        TicketNumber.For(Guid.Parse("0a1b2c3d-0000-0000-0000-000000000000")).Value.ShouldBe("HAL-0A1B2C3D");
 
     /// <summary>Regression: version 7 ids made within the same ~65 s share their first 8 digits (the timestamp).</summary>
     [Fact]
@@ -176,7 +177,7 @@ public class ReportingTests
         var at = new DateTimeOffset(2026, 11, 3, 12, 0, 0, TimeSpan.Zero);
         var numbers = Enumerable
             .Range(0, 200)
-            .Select(i => Ticket.NumberOf(Guid.CreateVersion7(at.AddSeconds(i % 60))))
+            .Select(i => TicketNumber.For(Guid.CreateVersion7(at.AddSeconds(i % 60))).Value)
             .ToList();
         numbers.Distinct().Count().ShouldBe(200);
         numbers.ShouldAllBe(n => n.Length == 12 && n.StartsWith("HAL-"));

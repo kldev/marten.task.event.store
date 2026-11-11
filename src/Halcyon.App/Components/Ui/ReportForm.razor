@@ -86,14 +86,14 @@
                 <StepTitle Number="3" Text="@T("Opisz sprawę", "Describe the issue")" />
                 <div>
                     <label class="label" for="title">@T("Tytuł", "Title")</label>
-                    <InputText id="title" class="input" @bind-Value="model.Title" maxlength="@TicketLimits.TitleMax"
+                    <InputText id="title" class="input" @bind-Value="model.Title" maxlength="@TicketTitle.MaxLength"
                                placeholder="@T("Krótko, np. „Nie działa drukarka na 2 piętrze”", "In short, e.g. “The printer on the 2nd floor does not work”")" data-testid="title" />
                     <ValidationMessage For="() => model.Title" />
                 </div>
                 <div>
                     <label class="label" for="description">@T("Opis", "Description")</label>
                     <InputTextArea id="description" class="input min-h-32" @bind-Value="model.Description"
-                                   maxlength="@TicketLimits.DescriptionMax"
+                                   maxlength="@TicketDescription.MaxLength"
                                    placeholder="@T("Co się stało, od kiedy, czego potrzebujesz?", "What happened, since when, what do you need?")" data-testid="description" />
                     <ValidationMessage For="() => model.Description" />
                 </div>
@@ -312,11 +312,11 @@
     private sealed class ReportModel
     {
         [Required(ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.TitleRequired))]
-        [MaxLength(TicketLimits.TitleMax, ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.TitleTooLong))]
+        [MaxLength(TicketTitle.MaxLength, ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.TitleTooLong))]
         public string? Title { get; set; }
 
         [Required(ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.DescriptionRequired))]
-        [MaxLength(TicketLimits.DescriptionMax, ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.DescriptionTooLong))]
+        [MaxLength(TicketDescription.MaxLength, ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.DescriptionTooLong))]
         public string? Description { get; set; }
 
         [Required(ErrorMessageResourceType = typeof(Messages), ErrorMessageResourceName = nameof(Messages.CategoryRequired))]

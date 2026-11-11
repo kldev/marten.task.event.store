@@ -1,4 +1,5 @@
 using Halcyon.Domain.Tickets;
+using Halcyon.Domain.ValueObjects;
 using static Halcyon.Domain.Tests.TestData;
 
 namespace Halcyon.Domain.Tests;
@@ -111,7 +112,7 @@ public class WorkflowTests
     [Fact]
     public void HandOver_TooLongReason_IsRefused() =>
         Should.Throw<DomainException>(() =>
-            TakenBy(Anna).HandOver(Anna, Piotr, new string('x', TicketLimits.ReasonMax + 1), Now)
+            TakenBy(Anna).HandOver(Anna, Piotr, new string('x', Reason.MaxLength + 1), Now)
         );
 
     [Fact]

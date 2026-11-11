@@ -49,6 +49,6 @@
     private async Task SendAsync(ReportTicketCommand command)
     {
         var reported = await Reporting.SelfServiceAsync(command);
-        sent = Ticket.NumberOf(reported.TicketId);
+        sent = TicketNumber.For(reported.TicketId).Value;
     }
 }

@@ -3,6 +3,7 @@ using Halcyon.App.Storage;
 using Halcyon.Database.Documents;
 using Halcyon.Database.Seed;
 using Halcyon.Domain.People;
+using Halcyon.Domain.ValueObjects;
 using Marten;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
@@ -107,7 +108,7 @@ public sealed class TestApp : IAsyncDisposable
     public async Task<AgentRef> AgentAsync(string email)
     {
         await using var session = Store.QuerySession();
-        var normalized = Emails.Normalize(email);
+        var normalized = Email.Normalize(email);
         var agent = await session.Query<Agent>().SingleAsync(a => a.EmailNormalized == normalized);
         return agent.ToRef();
     }
@@ -115,7 +116,7 @@ public sealed class TestApp : IAsyncDisposable
     public async Task<Person> PersonAsync(string email)
     {
         await using var session = Store.QuerySession();
-        var normalized = Emails.Normalize(email);
+        var normalized = Email.Normalize(email);
         return await session.Query<Person>().SingleAsync(p => p.EmailNormalized == normalized);
     }
 

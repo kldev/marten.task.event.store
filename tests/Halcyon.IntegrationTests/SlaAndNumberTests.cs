@@ -2,6 +2,7 @@ using Halcyon.App.Features.Tickets;
 using Halcyon.Database;
 using Halcyon.Database.Documents;
 using Halcyon.Domain.Tickets;
+using Halcyon.Domain.ValueObjects;
 using Halcyon.IntegrationTests.Infrastructure;
 using Marten;
 using Microsoft.Extensions.DependencyInjection;
@@ -176,7 +177,7 @@ public class SlaAndNumberTests(PostgresContainer postgres) : IAsyncLifetime
     {
         var hex = Guid.CreateVersion7().ToString("N");
         var other = Guid.ParseExact(hex[..24] + id.ToString("N")[24..], "N");
-        Ticket.NumberOf(other).ShouldBe(Ticket.NumberOf(id));
+        TicketNumber.For(other).Value.ShouldBe(TicketNumber.For(id).Value);
         other.ShouldNotBe(id);
         return other;
     }
@@ -195,7 +196,7 @@ public class SlaAndNumberTests(PostgresContainer postgres) : IAsyncLifetime
         one.TicketId.ShouldBe(first);
         two.TicketId.ShouldNotBe(clash);
         ids.Handed.ShouldBe(3);
-        (await ViewAsync(app, two.TicketId)).Number.ShouldNotBe(Ticket.NumberOf(first));
+        (await ViewAsync(app, two.TicketId)).Number.ShouldNotBe(TicketNumber.For(first).Value);
         await using var session = app.Store.QuerySession();
         (await session.Events.FetchStreamStateAsync(clash)).ShouldBeNull("the failed attempt left nothing behind");
         (await session.Query<TicketView>().CountAsync()).ShouldBe(2);

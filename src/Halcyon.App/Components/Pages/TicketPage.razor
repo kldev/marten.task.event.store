@@ -113,7 +113,7 @@ else if (details is { } d)
                         }
                     </ul>
                     <label class="label" for="comment">@T("Dodaj komentarz", "Add a comment")</label>
-                    <textarea id="comment" class="input min-h-20" maxlength="@TicketLimits.CommentMax" data-testid="comment-input" @bind="commentText"></textarea>
+                    <textarea id="comment" class="input min-h-20" maxlength="@CommentText.MaxLength" data-testid="comment-input" @bind="commentText"></textarea>
                     <div class="mt-2 flex justify-end">
                         <button type="button" class="btn btn-secondary" data-testid="comment-submit" @onclick="CommentAsync">
                             <Icon Name="message" /> @T("Dodaj komentarz", "Add a comment")
@@ -173,7 +173,7 @@ else if (details is { } d)
                                 <option value="@person.Id">@person.FirstName @person.LastName (@N(person.Department))</option>
                             }
                         </select>
-                        <input class="input" placeholder="@T("Powód, np. brak uprawnień w systemie kadrowym", "Reason, e.g. no permissions in the HR system")" maxlength="@TicketLimits.ReasonMax" data-testid="handler-reason" @bind="handlerReason" />
+                        <input class="input" placeholder="@T("Powód, np. brak uprawnień w systemie kadrowym", "Reason, e.g. no permissions in the HR system")" maxlength="@Reason.MaxLength" data-testid="handler-reason" @bind="handlerReason" />
                         <button type="button" class="btn btn-secondary w-full" data-testid="handler-submit" @onclick="AssignHandlerAsync">@T("Zapisz osobę realizującą", "Save the person doing the work")</button>
                     </section>
                 }
@@ -240,9 +240,9 @@ else if (details is { } d)
                                             {
                                                 <span> · @MultiText(channels)</span>
                                             }
-                                            @if (c.Fields.GetValueOrDefault("amount") is { } amount && ReportFields.ParseAmount(amount) is { } money)
+                                            @if (c.Fields.GetValueOrDefault("amount") is { } amount && Amount.TryCreate(amount).value is { } money)
                                             {
-                                                <span> · @money.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pl-PL")) @c.Fields.GetValueOrDefault("currency")</span>
+                                                <span> · @money.Value.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pl-PL")) @c.Fields.GetValueOrDefault("currency")</span>
                                             }
                                         </div>
                                     </li>
@@ -269,7 +269,7 @@ else if (details is { } d)
                             @T("Nowy termin", "New deadline"): <strong class="font-mono">@LocalTime.Format(Sla.DeadlineFor(t.ReportedAt, newPriority))</strong>
                             @T("(liczony od daty zgłoszenia)", "(counted from the report date)")
                         </p>
-                        <input class="input" placeholder="@T("Powód (opcjonalnie)", "Reason (optional)")" maxlength="@TicketLimits.ReasonMax" data-testid="priority-reason" @bind="priorityReason" />
+                        <input class="input" placeholder="@T("Powód (opcjonalnie)", "Reason (optional)")" maxlength="@Reason.MaxLength" data-testid="priority-reason" @bind="priorityReason" />
                         <button type="button" class="btn btn-secondary w-full" data-testid="priority-submit" @onclick="ChangePriorityAsync">@T("Zapisz priorytet", "Save priority")</button>
                     </section>
                 }
@@ -333,8 +333,8 @@ else if (details is { } d)
         {
             FieldKind.Date when DateOnly.TryParseExact(value, ReportFields.DateFormat, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var day) =>
                 day.ToString("dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture),
-            FieldKind.Amount when ReportFields.ParseAmount(value) is { } amount =>
-                amount.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pl-PL")),
+            FieldKind.Amount when Amount.TryCreate(value).value is { } amount =>
+                amount.Value.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pl-PL")),
             FieldKind.Choice => N(value),
             FieldKind.MultiChoice => MultiText(value),
             _ => value,

@@ -324,7 +324,8 @@ flowchart LR
 ## Repository
 
 ```text
-src/Halcyon.Domain/          Ticket aggregate + events, SLA, deadline states, categories, attachment rules - plain C#
+src/Halcyon.Domain/          Ticket aggregate + events, SLA, deadline states, categories, attachment rules,
+                             value objects (ValueObjects/: e-mail, phone, PESEL, IBAN, amount, ticket number...) - plain C#
 src/Halcyon.Database/        HalcyonStore (the store described once), documents, projections, migrations, idempotent seed
 src/Halcyon.App/             the host: Components/ (pages, UI), Features/<Area>/, Auth/, Storage/ (S3)
 src/Halcyon.DbMigrator/      apply / --dry-run / seed, exit code 0 or 1
@@ -332,7 +333,7 @@ tests/Halcyon.Domain.Tests/  rules only, no I/O
 tests/Halcyon.IntegrationTests/  features, host, migrator and seed on PostgreSQL 18; S3 against RustFS
 tests/Halcyon.E2E/           Playwright against the real app process (own PostgreSQL + RustFS), screenshots + portal tour
 deploy/rustfs/               the bucket init script
-docs/adr/  docs/specs/done/  decisions 0001-0014, specs 001-012 (each criterion names its test)
+docs/adr/  docs/specs/done/  decisions 0001-0015, specs 001-012 (each criterion names its test)
 docs/Portal.md               the portal in screenshots, with diagrams; docs/screens/ holds the images
 ```
 

@@ -1,6 +1,7 @@
 using Halcyon.Database.Documents;
 using Halcyon.Domain.Categories;
 using Halcyon.Domain.Tickets;
+using Halcyon.Domain.ValueObjects;
 using Marten;
 using static Halcyon.App.Localization.Tr;
 
@@ -207,8 +208,11 @@ public sealed class TicketQueries(IDocumentStore store, TimeProvider time)
     /// <summary>A ticket by its short number (a linked ticket in the report data).</summary>
     public async Task<Guid?> FindByNumberAsync(string number, CancellationToken ct = default)
     {
+        // Not a number at all (TicketNumber, ADR-0015): nothing to look for.
+        if (TicketNumber.TryCreate(number).value is not { } valid)
+            return null;
         await using var session = store.QuerySession();
-        var upper = number.Trim().ToUpperInvariant();
+        var upper = valid.Value;
         var found = await session.Query<TicketView>().Where(t => t.Number == upper).Select(t => t.Id).ToListAsync(ct);
         return found.Count == 0 ? null : found[0];
     }

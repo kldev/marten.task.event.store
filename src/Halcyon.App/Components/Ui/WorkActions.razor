@@ -33,7 +33,7 @@
             }
             <div>
                 <label class="label" for="work-reason">@T("Powód", "Reason") <span class="font-normal text-ink-400">@T("(opcjonalnie)", "(optional)")</span></label>
-                <textarea id="work-reason" class="input min-h-20" maxlength="@TicketLimits.ReasonMax" data-testid="work-reason" @bind="reason"></textarea>
+                <textarea id="work-reason" class="input min-h-20" maxlength="@Reason.MaxLength" data-testid="work-reason" @bind="reason"></textarea>
             </div>
             <p class="text-xs text-ink-500">@T("Termin realizacji się nie zmienia.", "The deadline does not change.")</p>
             <Notice Message="@dialogError" />

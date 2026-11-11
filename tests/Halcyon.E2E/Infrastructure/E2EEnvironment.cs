@@ -12,6 +12,7 @@ using Halcyon.Database;
 using Halcyon.Database.Documents;
 using Halcyon.Domain.People;
 using Halcyon.Domain.Tickets;
+using Halcyon.Domain.ValueObjects;
 using Halcyon.E2E.Infrastructure;
 using JasperFx;
 using Marten;
@@ -254,7 +255,7 @@ public sealed class E2EEnvironment : IAsyncLifetime
                 false
             )
         );
-        return (reported.TicketId, Ticket.NumberOf(reported.TicketId));
+        return (reported.TicketId, TicketNumber.For(reported.TicketId).Value);
     }
 
     /// <summary>A ticket's list row, read straight from the database.</summary>
@@ -267,7 +268,7 @@ public sealed class E2EEnvironment : IAsyncLifetime
     public async Task<AgentRef> AgentAsync(string email)
     {
         await using var session = Store.QuerySession();
-        var normalized = Emails.Normalize(email);
+        var normalized = Email.Normalize(email);
         return (await session.Query<Agent>().FirstAsync(a => a.EmailNormalized == normalized)).ToRef();
     }
 

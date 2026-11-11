@@ -8,9 +8,3 @@ public sealed record PersonRef(Guid Id, string FirstName, string LastName)
 {
     public string FullName => $"{FirstName} {LastName}";
 }
-
-public static class Emails
-{
-    /// <summary>The form every e-mail is compared and indexed in: trimmed, lower case.</summary>
-    public static string Normalize(string email) => email.Trim().ToLowerInvariant();
-}

@@ -1,5 +1,6 @@
 using Halcyon.Domain.Categories;
 using Halcyon.Domain.People;
+using Halcyon.Domain.ValueObjects;
 
 namespace Halcyon.Domain.Tickets;
 
@@ -28,8 +29,8 @@ public sealed record TicketDraft(
 public sealed class Ticket
 {
     public Guid Id { get; private set; }
-    public string Title { get; private set; } = "";
-    public string Description { get; private set; } = "";
+    public TicketTitle Title { get; private set; } = TicketTitle.FromStored("");
+    public TicketDescription Description { get; private set; } = TicketDescription.FromStored("");
     public string CategoryKey { get; private set; } = "";
     public string SubcategoryKey { get; private set; } = "";
     public Priority Priority { get; private set; }
@@ -69,8 +70,8 @@ public sealed class Ticket
         SlaPolicy? sla = null
     )
     {
-        var title = TicketLimits.Required(draft.Title, "Tytuł", TicketLimits.TitleMax);
-        var description = TicketLimits.Required(draft.Description, "Opis", TicketLimits.DescriptionMax);
+        var title = TicketTitle.Create(draft.Title);
+        var description = TicketDescription.Create(draft.Description);
         catalog ??= CategoryCatalog.Default;
         catalog.EnsureSelectable(draft.CategoryKey, draft.SubcategoryKey);
         var fields = ReportFields.Check(
@@ -98,8 +99,8 @@ public sealed class Ticket
 
         return new TicketReported(
             ticketId,
-            title,
-            description,
+            title.Value,
+            description.Value,
             draft.CategoryKey!,
             draft.SubcategoryKey!,
             priority,
@@ -165,7 +166,7 @@ public sealed class Ticket
             throw new DomainException($"Wybierz osobę z działu {department}.");
         if (person?.Id == Handler?.Id)
             return null;
-        var why = TicketLimits.Optional(reason, "Powód", TicketLimits.ReasonMax);
+        var why = Reason.Create(reason)?.Value;
         return new TicketHandlerAssigned(Id, person, agent, why, now.ToUniversalTime());
     }
 
@@ -186,14 +187,14 @@ public sealed class Ticket
         EnsureAssignedTo(from, "przekazać");
         if (to.Id == from.Id)
             throw new DomainException("Nie można przekazać zgłoszenia samemu sobie.");
-        var why = TicketLimits.Optional(reason, "Powód", TicketLimits.ReasonMax);
+        var why = Reason.Create(reason)?.Value;
         return new TicketHandedOver(Id, from, to, why, now.ToUniversalTime());
     }
 
     public TicketReturnedToPool ReturnToPool(AgentRef agent, string? reason, DateTimeOffset now)
     {
         EnsureAssignedTo(agent, "oddać do puli");
-        var why = TicketLimits.Optional(reason, "Powód", TicketLimits.ReasonMax);
+        var why = Reason.Create(reason)?.Value;
         return new TicketReturnedToPool(Id, agent, why, now.ToUniversalTime());
     }
 
@@ -212,7 +213,7 @@ public sealed class Ticket
             throw new DomainException("Wybierz priorytet.");
         if (to == Priority)
             return null;
-        var why = TicketLimits.Optional(reason, "Powód", TicketLimits.ReasonMax);
+        var why = Reason.Create(reason)?.Value;
         return new TicketPriorityChanged(
             Id,
             Priority,
@@ -234,8 +235,8 @@ public sealed class Ticket
 
     public TicketCommented Comment(Guid commentId, AgentRef agent, string? text, DateTimeOffset now)
     {
-        var body = TicketLimits.Required(text, "Komentarz", TicketLimits.CommentMax);
-        return new TicketCommented(Id, commentId, agent, body, now.ToUniversalTime());
+        var body = CommentText.Create(text);
+        return new TicketCommented(Id, commentId, agent, body.Value, now.ToUniversalTime());
     }
 
     /// <summary>
@@ -330,8 +331,8 @@ public sealed class Ticket
     private void On(TicketReported e)
     {
         Id = e.TicketId;
-        Title = e.Title;
-        Description = e.Description;
+        Title = TicketTitle.FromStored(e.Title);
+        Description = TicketDescription.FromStored(e.Description);
         CategoryKey = e.CategoryKey;
         SubcategoryKey = e.SubcategoryKey;
         Priority = e.Priority;
@@ -396,17 +397,5 @@ public sealed class Ticket
                 fields.Remove(change.Key);
             else
                 fields[change.Key] = change.To;
-    }
-
-    /// <summary>
-    /// The short number a requester is given: "HAL-" and 8 hex digits of the id. For a version 7 id (every reported
-    /// ticket) the first digits are its timestamp - two tickets within ~65 s shared a number - so its last 8 (random)
-    /// digits are used; other ids (the seed's name-based ones) keep their first 8. Stored in the view at the report, so
-    /// a number already given never changes.
-    /// </summary>
-    public static string NumberOf(Guid id)
-    {
-        var hex = id.ToString("N").ToUpperInvariant();
-        return "HAL-" + (id.Version == 7 ? hex[^8..] : hex[..8]);
     }
 }
