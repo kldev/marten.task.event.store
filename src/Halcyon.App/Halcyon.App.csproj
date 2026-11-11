@@ -22,7 +22,9 @@
   </ItemGroup>
 
   <!-- Tailwind CSS: rebuilds wwwroot/css/app.css (committed) when the styles or the markup change. Runs only where
-       `npm install` was done in this folder; images and CI use the committed file (SkipTailwind=true to force). -->
+       `npm install` was done in this folder; images and CI use the committed file (SkipTailwind=true to force).
+       Without npm on the PATH (an IDE started outside a shell that loads nvm) the build warns and keeps the committed
+       file instead of failing. -->
   <ItemGroup>
     <TailwindInput Include="Styles/app.css;Components/**/*.razor" />
   </ItemGroup>
@@ -33,6 +35,19 @@
     Inputs="@(TailwindInput)"
     Outputs="wwwroot/css/app.css"
   >
-    <Exec Command="npm run build:css --silent" />
+    <Exec
+      Command="npm --version"
+      EchoOff="true"
+      IgnoreExitCode="true"
+      StandardOutputImportance="low"
+      StandardErrorImportance="low"
+    >
+      <Output TaskParameter="ExitCode" PropertyName="NpmExitCode" />
+    </Exec>
+    <Warning
+      Condition="'$(NpmExitCode)' != '0'"
+      Text="npm is not on the PATH: wwwroot/css/app.css was not rebuilt (the committed file is used). Put Node on the PATH of this process (nvm: load it in ~/.profile) or run `npm run build:css` in src/Halcyon.App."
+    />
+    <Exec Condition="'$(NpmExitCode)' == '0'" Command="npm run build:css --silent" />
   </Target>
 </Project>
