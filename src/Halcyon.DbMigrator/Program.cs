@@ -1,7 +1,6 @@
 using Halcyon.Database;
 using Halcyon.Database.Migrations;
 using Halcyon.Database.Seed;
-using JasperFx;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -39,7 +38,7 @@ public static class Program
         }
 
         // The store changes nothing by itself: every change goes through SchemaMigrator, so a dry run really is dry.
-        builder.Services.AddHalcyonDatabase(connectionString, AutoCreate.None);
+        builder.AddHalcyonMigration(connectionString);
 
         using var host = builder.Build();
         var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Halcyon.DbMigrator");

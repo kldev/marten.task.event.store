@@ -1,10 +1,13 @@
 using System.Threading.RateLimiting;
+using Halcyon.App.Notifications;
 using Halcyon.Database;
 using Halcyon.Database.Documents;
 using Halcyon.Domain;
 using Halcyon.Domain.People;
 using Halcyon.Domain.Tickets;
 using Marten;
+using Wolverine;
+using Wolverine.Runtime;
 
 namespace Halcyon.App.Features.Tickets;
 
@@ -86,21 +89,24 @@ public class TicketIds
 }
 
 /// <summary>
-/// Reports a new ticket into the pool, by an agent or by the requester themselves (spec 002). The deadline comes from
-/// the configured SLA and is stored in the event (ADR-0013); the number is unique by a unique index, and a report that
-/// meets a number already given is made again under a new id (ADR-0014).
+/// Reports a new ticket into the pool, by an agent or by the requester themselves (spec 002), through
+/// <see cref="RegisterTicketHandler"/>. The deadline comes from the configured SLA and is stored in the event
+/// (ADR-0013); the requester's confirmation and the deadline mails leave through the outbox (spec 013). The number is
+/// unique by a unique index, and a report that meets a number already given is made again under a new id (ADR-0014).
 /// </summary>
 public sealed class ReportTicket(
-    IDocumentStore store,
+    IWolverineRuntime runtime,
     TimeProvider time,
     PublicReportLimiter limiter,
     AttachmentFiles files,
-    SlaPolicy sla,
     TicketIds ids
 )
 {
     /// <summary>Two 8-digit numbers meeting is rare; three times in a row means something else is wrong.</summary>
     private const int NumberAttempts = 3;
+
+    private const string ReportedAtRequired = "Podaj datę i godzinę zgłoszenia.";
+    private const string TooManyReports = "Zbyt wiele zgłoszeń w krótkim czasie. Spróbuj ponownie za minutę.";
 
     public async Task<TicketReported> ByAgentAsync(
         AgentRef agent,
@@ -109,7 +115,7 @@ public sealed class ReportTicket(
     )
     {
         if (command.ReportedAt is null)
-            throw new DomainException("Podaj datę i godzinę zgłoszenia.");
+            throw new DomainException(ReportedAtRequired);
         return await ReportAsync(command, command.ReportedAt.Value, ReportChannel.Agent, agent, ct);
     }
 
@@ -118,7 +124,7 @@ public sealed class ReportTicket(
     {
         using var lease = limiter.TryAcquire();
         if (!lease.IsAcquired)
-            throw new DomainException("Zbyt wiele zgłoszeń w krótkim czasie. Spróbuj ponownie za minutę.");
+            throw new DomainException(TooManyReports);
         return await ReportAsync(command, time.GetUtcNow(), ReportChannel.SelfService, null, ct);
     }
 
@@ -132,83 +138,113 @@ public sealed class ReportTicket(
     {
         for (var attempt = 1; ; attempt++)
         {
+            var ticketId = ids.Next();
             try
             {
-                return await ReportOnceAsync(ids.Next(), command, reportedAt, channel, registeredBy, ct);
+                return await files.SaveWithAsync(
+                    ticketId,
+                    command.Files ?? [],
+                    attachments =>
+                        new MessageBus(runtime).InvokeAsync<TicketReported>(
+                            new RegisterTicketCommand(
+                                ticketId,
+                                command,
+                                reportedAt,
+                                channel,
+                                registeredBy,
+                                attachments
+                            ),
+                            ct
+                        ),
+                    ct
+                );
             }
             catch (Exception exception) when (attempt < NumberAttempts && HalcyonStore.IsNumberTaken(exception)) { }
         }
     }
+}
 
-    private async Task<TicketReported> ReportOnceAsync(
-        Guid id,
-        ReportTicketCommand command,
-        DateTimeOffset reportedAt,
-        ReportChannel channel,
-        AgentRef? registeredBy,
+/// <summary>A new ticket as the handler takes it: the form, the moment it counts from, who wrote it down, its files.</summary>
+public sealed record RegisterTicketCommand(
+    Guid TicketId,
+    ReportTicketCommand Form,
+    DateTimeOffset ReportedAt,
+    ReportChannel Channel,
+    AgentRef? RegisteredBy,
+    IReadOnlyList<NewAttachment> Files
+);
+
+public static class RegisterTicketHandler
+{
+    private const string AgentAsRequester = "Agent nie może być zgłaszającym - wybierz osobę z listy.";
+    private const string NoSuchRequester = "Nie ma takiej osoby na liście zgłaszających.";
+
+    public static async Task<(TicketReported, OutgoingMessages)> Handle(
+        RegisterTicketCommand command,
+        IDocumentSession session,
+        SlaPolicy sla,
+        TimeProvider time,
         CancellationToken ct
     )
     {
-        await using var session = store.LightweightSession();
-        var requester = await RequesterAsync(session, command, ct);
-
+        var form = command.Form;
+        var requester = await RequesterAsync(session, form, ct);
         var now = time.GetUtcNow();
         var reported = Ticket.Report(
-            id,
+            command.TicketId,
             new TicketDraft(
-                command.Title,
-                command.Description,
-                command.CategoryKey,
-                command.SubcategoryKey,
-                command.Priority,
-                reportedAt,
+                form.Title,
+                form.Description,
+                form.CategoryKey,
+                form.SubcategoryKey,
+                form.Priority,
+                command.ReportedAt,
                 requester,
-                channel,
-                registeredBy,
-                command.Fields
+                command.Channel,
+                command.RegisteredBy,
+                form.Fields
             ),
             now,
             sla: sla
         );
 
-        // The domain checks every file (type, size, how many) before anything is stored.
+        // The domain checks every file (type, size, how many); the bytes are already stored under these ids.
         var ticket = Ticket.FromEvents([reported]);
-        var attached = new List<(TicketAttachmentAdded, PendingFile)>();
-        foreach (var file in command.Files ?? [])
+        var events = new List<object> { reported };
+        foreach (var file in command.Files)
         {
             var e = ticket.AddAttachment(
-                Guid.CreateVersion7(),
-                file.Name,
-                file.Content.Length,
-                registeredBy,
+                file.AttachmentId,
+                file.FileName,
+                file.Size,
+                command.RegisteredBy,
                 requester.DisplayName,
                 now
             );
             ticket = Ticket.Evolve(ticket, e);
-            attached.Add((e, file));
+            events.Add(e);
         }
 
-        session.Events.StartStream<Ticket>(id, [reported, .. attached.Select(a => (object)a.Item1)]);
-        await files.SaveWithAsync(attached, () => session.SaveChangesAsync(ct), ct);
-        return reported;
+        session.Events.StartStream<Ticket>(command.TicketId, [.. events]);
+        return (reported, TicketMailPlan.Reported(reported, now));
     }
 
     private static async Task<Requester> RequesterAsync(
         IQuerySession session,
-        ReportTicketCommand command,
+        ReportTicketCommand form,
         CancellationToken ct
     )
     {
-        if (command.RequesterPersonId is not { } personId)
-            return new Requester(command.Incognito, null);
+        if (form.RequesterPersonId is not { } personId)
+            return new Requester(form.Incognito, null);
 
         var person = await session.LoadAsync<Person>(personId, ct);
         if (person is not null)
-            return new Requester(command.Incognito, person.ToRef());
+            return new Requester(form.Incognito, person.ToRef());
 
         if (await session.LoadAsync<Agent>(personId, ct) is not null)
-            throw new DomainException("Agent nie może być zgłaszającym - wybierz osobę z listy.");
-        throw new DomainException("Nie ma takiej osoby na liście zgłaszających.");
+            throw new DomainException(AgentAsRequester);
+        throw new DomainException(NoSuchRequester);
     }
 }
 

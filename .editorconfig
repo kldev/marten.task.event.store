@@ -38,3 +38,9 @@ resharper_unused_parameter_local_highlighting = none
 # Query results keep the row as it was read (ids, the generation time, the page asked for); a page shows a subset.
 [{src/Halcyon.App/Features/Reports/ChartQueries.cs,src/Halcyon.App/Features/Tickets/TicketQueries.cs,src/Halcyon.App/Monitoring/BackgroundJobs.cs,src/Halcyon.App/Monitoring/MonitoringQueries.cs}]
 resharper_not_accessed_positional_property_global_highlighting = none
+
+# Wolverine handlers (ADR-0016): static classes named "...Handler" with a Handle method, found by Wolverine's convention
+# and called through the bus - never from code JetBrains can see (Ambit switches the same off for its *Handler.cs).
+[{src/Halcyon.App/Features/Tickets/*.cs,src/Halcyon.App/Notifications/MailHandlers.cs}]
+resharper_unused_type_global_highlighting = none
+resharper_unused_member_global_highlighting = none

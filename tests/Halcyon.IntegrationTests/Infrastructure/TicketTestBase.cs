@@ -11,6 +11,9 @@ public abstract class TicketTestBase(PostgresContainer postgres) : IAsyncLifetim
     protected static readonly DateTimeOffset Now = new(2026, 11, 3, 10, 0, 0, TimeSpan.Zero);
 
     protected TestApp App { get; private set; } = null!;
+
+    /// <summary>The run's PostgreSQL, for a test that starts a second host.</summary>
+    protected PostgresContainer Postgres => postgres;
     protected AgentRef Anna { get; private set; } = null!;
     protected AgentRef Piotr { get; private set; } = null!;
     protected AgentRef Kasia { get; private set; } = null!;
@@ -26,7 +29,7 @@ public abstract class TicketTestBase(PostgresContainer postgres) : IAsyncLifetim
         Adam = await App.PersonAsync("adam.mazur@company.io");
     }
 
-    public async ValueTask DisposeAsync() => await App.DisposeAsync();
+    public virtual async ValueTask DisposeAsync() => await App.DisposeAsync();
 
     protected ReportTicketCommand Command(
         Priority? priority = Priority.Medium,

@@ -8,3 +8,6 @@ obj/
 TestResults/
 node_modules/
 playwright-traces/
+
+# Wolverine handler code from `codegen write` - generated in the image build, never committed (ADR-0016).
+**/Internal/Generated/

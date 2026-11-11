@@ -7,3 +7,5 @@
 .env
 tests/
 docs/
+# Wolverine code generated on a machine: the image generates its own (ADR-0016).
+**/Internal/Generated/

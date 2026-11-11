@@ -12,7 +12,11 @@ namespace Halcyon.IntegrationTests.Infrastructure;
 /// </summary>
 public sealed class PostgresContainer : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer container = new PostgreSqlBuilder("postgres:18").Build();
+    // Test classes run in parallel, each with its own host, and every host keeps a few connections for Wolverine's
+    // durability agent (ADR-0016): more than PostgreSQL's default 100 at once.
+    private readonly PostgreSqlContainer container = new PostgreSqlBuilder("postgres:18")
+        .WithCommand("-c", "max_connections=500")
+        .Build();
 
     public async ValueTask InitializeAsync() => await container.StartAsync();
 

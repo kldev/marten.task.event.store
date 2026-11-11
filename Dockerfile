@@ -11,10 +11,19 @@ COPY src/Halcyon.App/Halcyon.App.csproj src/Halcyon.App/
 COPY src/Halcyon.DbMigrator/Halcyon.DbMigrator.csproj src/Halcyon.DbMigrator/
 RUN dotnet restore src/Halcyon.App/Halcyon.App.csproj && dotnet restore src/Halcyon.DbMigrator/Halcyon.DbMigrator.csproj
 COPY src/ src/
+# Wolverine's handler code is generated here and compiled into the image (ADR-0016), so the app loads it by name
+# (TypeLoadMode.Static) instead of compiling it with Roslyn on first use - those assemblies are never unloaded, and
+# Ambit's API grew into an OOM kill. `codegen write` opens no connection: the address only satisfies the configuration.
+# -p:WolverineStaticCode=true then switches Static on and leaves Roslyn out (Directory.Build.props); it changes the
+# package references, so that publish restores again (from the cache).
+RUN ASPNETCORE_ENVIRONMENT=Production \
+    ConnectionStrings__Postgres="Host=codegen.invalid;Database=codegen;Username=codegen;Password=codegen" \
+    dotnet run --project src/Halcyon.App/Halcyon.App.csproj --no-restore --no-launch-profile -p:SkipTailwind=true \
+    -- codegen write
 # No .git in the context: the commit shown in the app comes from here (up.sh passes `git rev-parse HEAD`).
 ARG GIT_SHA=""
-RUN dotnet publish src/Halcyon.App/Halcyon.App.csproj -c Release -o /out/app --no-restore -p:SkipTailwind=true \
-    -p:SourceRevisionId="${GIT_SHA}" \
+RUN dotnet publish src/Halcyon.App/Halcyon.App.csproj -c Release -o /out/app -p:SkipTailwind=true \
+    -p:WolverineStaticCode=true -p:SourceRevisionId="${GIT_SHA}" \
  && dotnet publish src/Halcyon.DbMigrator/Halcyon.DbMigrator.csproj -c Release -o /out/migrator --no-restore
 
 FROM mcr.microsoft.com/dotnet/runtime:10.0 AS migrator

@@ -1,4 +1,5 @@
 using Halcyon.App;
+using Halcyon.App.Notifications;
 using Halcyon.App.Storage;
 using Halcyon.Database.Documents;
 using Halcyon.Database.Seed;
@@ -28,6 +29,9 @@ public sealed class TestApp : IAsyncDisposable
     }
 
     private WebApplication App { get; }
+
+    /// <summary>The mails the app sent (spec 013), unless the test brought a real SMTP server.</summary>
+    public RecordingEmailSender Mail => Services.GetRequiredService<RecordingEmailSender>();
     public FakeTimeProvider Clock { get; }
     public IServiceProvider Services => App.Services;
     public IDocumentStore Store => Services.GetRequiredService<IDocumentStore>();
@@ -96,6 +100,12 @@ public sealed class TestApp : IAsyncDisposable
                     values[key] = value;
                 builder.Configuration.AddInMemoryCollection(values);
                 builder.Services.AddSingleton<TimeProvider>(fake);
+                // Mails are recorded, unless the test sends them over SMTP (MailpitTests).
+                // Instances, not factories: Wolverine generates the mail handlers' code from these registrations.
+                var recorder = new RecordingEmailSender();
+                builder.Services.AddSingleton(recorder);
+                if (settings?.GetValueOrDefault("Mail:Provider") != "Smtp")
+                    builder.Services.AddSingleton<ISendEmail>(recorder);
                 services?.Invoke(builder.Services);
             }
         );

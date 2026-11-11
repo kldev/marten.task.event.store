@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Marten" />
+    <PackageReference Include="WolverineFx.Marten" />
     <PackageReference Include="Npgsql.DependencyInjection" />
   </ItemGroup>
   <ItemGroup>

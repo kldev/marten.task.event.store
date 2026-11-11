@@ -14,4 +14,13 @@
          of this size; CA1515 would make every type internal, which xUnit and Blazor do not want. -->
     <NoWarn>$(NoWarn);CA1707;CA1848;CA1873;CA2007;CA1515;CA1711;CA1716;CA1720;CA1724;CA1062;CA1303;CA1305;CA1307;CA1309;CA1310;CA1311;CA1304;CA1812;CA1852;CA2227;CA1002;CA1819;CA1056;CA1054;CA1055;CA1031;CA5394;CA1822;CA1819;CA1863;CA1805;CA1508;CA1034</NoWarn>
   </PropertyGroup>
+  <!--
+    Wolverine compiles its handler code with Roslyn the first time each handler runs (TypeLoadMode.Dynamic). Fine on a
+    laptop and in the tests; in a long running container every compiled assembly stays loaded for good (Ambit's API grew
+    into an OOM kill). The image runs `codegen write` and builds with -p:WolverineStaticCode=true: the generated code is
+    compiled in, the host loads it by name (TypeLoadMode.Static) and Roslyn is left out (ADR-0016).
+  -->
+  <PropertyGroup Condition="'$(WolverineStaticCode)' == 'true'">
+    <DefineConstants>$(DefineConstants);WOLVERINE_STATIC_CODE</DefineConstants>
+  </PropertyGroup>
 </Project>

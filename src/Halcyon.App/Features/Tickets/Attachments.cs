@@ -5,6 +5,7 @@ using Halcyon.Domain.People;
 using Halcyon.Domain.Tickets;
 using Marten;
 using Microsoft.Net.Http.Headers;
+using Wolverine;
 
 namespace Halcyon.App.Features.Tickets;
 
@@ -14,28 +15,52 @@ namespace Halcyon.App.Features.Tickets;
 /// </summary>
 public sealed record PendingFile(string Name, byte[] Content);
 
+/// <summary>A file the command attaches: its id (and so its storage key) is chosen before the bytes are stored.</summary>
+public sealed record NewAttachment(Guid AttachmentId, string FileName, long Size);
+
 /// <summary>
-/// Puts the files in the object storage before the events are saved, and takes them out again when the save fails -
-/// so an event never points at a missing file. A file left behind by a crash between the two is only an orphan.
+/// Puts the files in the object storage before the command saves its events, and takes them out again when the save
+/// fails - so an event never points at a missing file (ADR-0008). A file left behind by a crash between the two is only
+/// an orphan.
 /// </summary>
 public sealed class AttachmentFiles(IAttachmentStorage storage, ILogger<AttachmentFiles> logger)
 {
-    public async Task SaveWithAsync(
-        IReadOnlyList<(TicketAttachmentAdded Event, PendingFile File)> files,
-        Func<Task> save,
+    /// <summary>
+    /// Checks every file first (nothing is stored when one is refused), stores them under
+    /// <see cref="Ticket.StorageKeyFor"/>, then runs <paramref name="save"/> with what the command attaches.
+    /// </summary>
+    public async Task<T> SaveWithAsync<T>(
+        Guid ticketId,
+        IReadOnlyList<PendingFile> files,
+        Func<IReadOnlyList<NewAttachment>, Task<T>> save,
         CancellationToken ct
     )
     {
+        var planned = files
+            .Select(file =>
+            {
+                var (name, type) = AttachmentRules.Check(file.Name, file.Content.Length);
+                var attachment = new NewAttachment(Guid.CreateVersion7(), file.Name, file.Content.Length);
+                return (
+                    Attachment: attachment,
+                    Key: Ticket.StorageKeyFor(ticketId, attachment.AttachmentId),
+                    Name: name,
+                    Type: type,
+                    File: file
+                );
+            })
+            .ToList();
+
         var stored = new List<string>();
         try
         {
-            foreach (var (e, file) in files)
+            foreach (var p in planned)
             {
-                using var content = new MemoryStream(file.Content, writable: false);
-                await storage.PutAsync(e.StorageKey, content, e.ContentType, ct);
-                stored.Add(e.StorageKey);
+                using var content = new MemoryStream(p.File.Content, writable: false);
+                await storage.PutAsync(p.Key, content, p.Type, ct);
+                stored.Add(p.Key);
             }
-            await save();
+            return await save([.. planned.Select(p => p.Attachment)]);
         }
         catch
         {
@@ -56,8 +81,10 @@ public sealed class AttachmentFiles(IAttachmentStorage storage, ILogger<Attachme
 }
 
 /// <summary>An agent attaches files to an existing ticket, in any state (like a comment).</summary>
-public sealed class AddTicketAttachments(IDocumentStore store, AttachmentFiles files, TimeProvider time)
+public sealed class AddTicketAttachments(TicketCommands commands, AttachmentFiles files)
 {
+    private const string NothingPicked = "Wybierz plik do dodania.";
+
     public async Task<IReadOnlyList<TicketAttachmentAdded>> ExecuteAsync(
         Guid ticketId,
         AgentRef agent,
@@ -66,38 +93,54 @@ public sealed class AddTicketAttachments(IDocumentStore store, AttachmentFiles f
     )
     {
         if (picked.Count == 0)
-            throw new DomainException("Wybierz plik do dodania.");
+            throw new DomainException(NothingPicked);
+        var added = await files.SaveWithAsync(
+            ticketId,
+            picked,
+            attachments =>
+                commands.SendAsync<AttachmentsAdded>(
+                    ticketId,
+                    new AddTicketAttachmentsCommand(ticketId, agent, attachments),
+                    ct
+                ),
+            ct
+        );
+        return added?.Events ?? [];
+    }
+}
 
-        await using var session = store.LightweightSession();
-        var stream = await session.Events.FetchForWriting<Ticket>(ticketId, ct);
-        var ticket = stream.Aggregate ?? throw new DomainException("Nie ma takiego zgłoszenia.");
+public sealed record AddTicketAttachmentsCommand(Guid TicketId, AgentRef Agent, IReadOnlyList<NewAttachment> Files);
 
+/// <summary>The handler's answer: one event per file (a list is not an event, so it is wrapped).</summary>
+public sealed record AttachmentsAdded(IReadOnlyList<TicketAttachmentAdded> Events);
+
+public static class AddTicketAttachmentsHandler
+{
+    public static async Task<(AttachmentsAdded, OutgoingMessages)> Handle(
+        AddTicketAttachmentsCommand command,
+        IDocumentSession session,
+        TimeProvider time,
+        CancellationToken ct
+    )
+    {
+        var (stream, ticket) = await TicketStreams.LockAsync(session, command.TicketId, ct);
         var now = time.GetUtcNow();
-        var added = new List<(TicketAttachmentAdded, PendingFile)>();
-        foreach (var file in picked)
+        var events = new List<TicketAttachmentAdded>();
+        foreach (var file in command.Files)
         {
             var e = ticket.AddAttachment(
-                Guid.CreateVersion7(),
-                file.Name,
-                file.Content.Length,
-                agent,
-                agent.FullName,
+                file.AttachmentId,
+                file.FileName,
+                file.Size,
+                command.Agent,
+                command.Agent.FullName,
                 now
             );
             ticket = Ticket.Evolve(ticket, e);
-            added.Add((e, file));
+            events.Add(e);
         }
-
-        stream.AppendMany(added.Select(a => (object)a.Item1).ToArray());
-        try
-        {
-            await files.SaveWithAsync(added, () => session.SaveChangesAsync(ct), ct);
-        }
-        catch (Exception exception) when (TicketWriter.IsConcurrency(exception))
-        {
-            throw new DomainException("Ktoś zmienił to zgłoszenie w tym samym momencie. Spróbuj ponownie.", exception);
-        }
-        return added.Select(a => a.Item1).ToList();
+        stream.AppendMany([.. events]);
+        return (new AttachmentsAdded(events), []);
     }
 }
 

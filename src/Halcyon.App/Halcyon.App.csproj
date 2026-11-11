@@ -12,6 +12,12 @@
     <PackageReference Include="AWSSDK.S3" />
     <PackageReference Include="ClosedXML" />
     <PackageReference Include="QuestPDF" />
+    <PackageReference Include="WolverineFx" />
+    <PackageReference Include="WolverineFx.Marten" />
+    <PackageReference Include="MailKit" />
+    <!-- Roslyn for the handler code, only where it is compiled at runtime (dotnet run, tests); an image has it
+         generated and compiled in (ADR-0016). -->
+    <PackageReference Include="WolverineFx.RuntimeCompilation" Condition="'$(WolverineStaticCode)' != 'true'" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Halcyon.Database/Halcyon.Database.csproj" />

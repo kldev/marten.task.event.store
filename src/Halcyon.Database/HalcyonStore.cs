@@ -21,6 +21,9 @@ public static class HalcyonStore
     public const string DocumentSchema = "halcyon";
     public const string EventSchema = "events";
 
+    /// <summary>Wolverine's durable inbox, outbox and scheduled messages (ADR-0016).</summary>
+    public const string MessageSchema = "wolverine";
+
     /// <summary>The unique index that keeps a ticket's short number unique (ADR-0014).</summary>
     private const string TicketNumberIndex = "uidx_ticket_number";
 
@@ -61,6 +64,9 @@ public static class HalcyonStore
             .Index(x => x.CategoryKey)
             // A number is given once (ADR-0014): two reports that meet on one fail the slower save, which is made again.
             .UniqueIndex(UniqueIndexType.DuplicatedField, TicketNumberIndex, x => x.Number);
+
+        // The mails that left, by their message id (spec 013): the at-most-once claim.
+        options.Schema.For<SentMail>().Index(x => x.TicketId);
 
         // HTTP answers and the application's log, with retention (ADR-0011).
         MonitoringSchema.Register(options);

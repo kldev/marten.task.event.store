@@ -4,7 +4,9 @@ using Halcyon.App.Features.Reports;
 using Halcyon.App.Features.Tickets;
 using Halcyon.App.Infrastructure;
 using Halcyon.App.Localization;
+using Halcyon.App.Messaging;
 using Halcyon.App.Monitoring;
+using Halcyon.App.Notifications;
 using Halcyon.App.Storage;
 using Halcyon.Database;
 using Halcyon.Database.Migrations;
@@ -49,6 +51,8 @@ public static class HalcyonApp
             DatabaseStartup.SchemaCreation(builder.Configuration, builder.Environment)
         );
 
+        builder.AddHalcyonWolverine();
+        builder.AddHalcyonMail();
         builder.AddHalcyonAuth();
         builder.AddHalcyonStorage(ReadyTag);
         builder.Services.AddRazorComponents().AddInteractiveServerComponents();
@@ -57,7 +61,7 @@ public static class HalcyonApp
         builder.AddHalcyonSla();
         // Try: a test may have put its own in (spec 012, a number met twice).
         builder.Services.TryAddSingleton<TicketIds>();
-        builder.Services.AddSingleton<TicketWriter>();
+        builder.Services.AddSingleton<TicketCommands>();
         builder.Services.AddSingleton<PublicReportLimiter>();
         builder.Services.AddSingleton<ReportTicket>();
         builder.Services.AddSingleton<TakeTicket>();

@@ -6,27 +6,41 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Weasel.Core;
 using Weasel.Core.Migrations;
+using Wolverine.Persistence.Durability;
 
 namespace Halcyon.Database.Migrations;
 
 /// <summary>
-/// Brings the database in line with <see cref="HalcyonStore"/> (documents, event store, projections) in one patch, and
-/// tells what is pending. Applying twice is a no-op.
+/// Brings the database in line with <see cref="HalcyonStore"/> (documents, event store, projections) and - where
+/// Wolverine runs - with its inbox, outbox and scheduled messages (ADR-0016), and tells what is pending. Applying twice
+/// is a no-op.
 /// </summary>
-public sealed class SchemaMigrator(IDocumentStore store, ILogger<SchemaMigrator> logger)
+public sealed class SchemaMigrator(IDocumentStore store, ILogger<SchemaMigrator> logger, IMessageStore? messages = null)
 {
     private IDatabase Database => store.Storage.Database;
 
     /// <summary>The SQL that applying would run, or null when the database is up to date.</summary>
     public async Task<string?> PendingAsync(CancellationToken ct = default)
     {
-        var migration = await Database.CreateMigrationAsync(ct);
-        if (migration.Difference == SchemaPatchDifference.None)
-            return null;
+        var pending = new List<string>();
+        foreach (var database in Databases())
+        {
+            var migration = await database.CreateMigrationAsync(ct);
+            if (migration.Difference == SchemaPatchDifference.None)
+                continue;
+            await using var writer = new StringWriter();
+            migration.WriteAllUpdates(writer, database.Migrator, AutoCreate.CreateOrUpdate);
+            pending.Add(writer.ToString());
+        }
+        return pending.Count == 0 ? null : string.Join(Environment.NewLine, pending);
+    }
 
-        await using var writer = new StringWriter();
-        migration.WriteAllUpdates(writer, Database.Migrator, AutoCreate.CreateOrUpdate);
-        return writer.ToString();
+    /// <summary>Marten's database, then Wolverine's message store (a Weasel database too, on the same pool).</summary>
+    private IEnumerable<IDatabase> Databases()
+    {
+        yield return Database;
+        if (messages is IDatabase messageDatabase)
+            yield return messageDatabase;
     }
 
     /// <summary>Applies the pending changes and checks that nothing is left. Returns whether anything changed.</summary>
@@ -47,6 +61,10 @@ public sealed class SchemaMigrator(IDocumentStore store, ILogger<SchemaMigrator>
 
         logger.LogInformation("Schema: applying");
         await Database.ApplyAllConfiguredChangesToDatabaseAsync(AutoCreate.CreateOrUpdate, ct: ct);
+        // Explicitly CreateOrUpdate: without it the store follows AutoBuildMessageStorageOnStartup - None in the
+        // migrator and in a release - and quietly applies nothing.
+        if (messages is not null)
+            await messages.Admin.MigrateAsync(AutoCreate.CreateOrUpdate);
 
         // Trust, but check: a patch that reports success and leaves work behind would fail the first request instead.
         if (await PendingAsync(ct) is { } left)

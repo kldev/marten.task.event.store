@@ -1,11 +1,9 @@
 using Halcyon.Database;
 using Halcyon.Database.Migrations;
 using Halcyon.IntegrationTests.Infrastructure;
-using JasperFx;
-using Marten;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Hosting;
 using Npgsql;
 using Weasel.Postgresql;
 
@@ -14,14 +12,18 @@ namespace Halcyon.IntegrationTests;
 /// <summary>Spec 007 / ADR-0002: the schema changes only through the migrator.</summary>
 public class MigratorTests(PostgresContainer postgres)
 {
+    /// <summary>The store and Wolverine's message store, composed as the migrator composes them (ADR-0016).</summary>
+    private static IHost MigrationHost(string connectionString)
+    {
+        var builder = Host.CreateApplicationBuilder();
+        builder.AddHalcyonMigration(connectionString);
+        return builder.Build();
+    }
+
     private static async Task<string?> PendingAsync(string connectionString)
     {
-        var services = new ServiceCollection()
-            .AddLogging()
-            .AddHalcyonDatabase(connectionString, AutoCreate.None)
-            .BuildServiceProvider();
-        await using var _ = services;
-        return await services.GetRequiredService<SchemaMigrator>().PendingAsync();
+        using var host = MigrationHost(connectionString);
+        return await host.Services.GetRequiredService<SchemaMigrator>().PendingAsync();
     }
 
     [Fact]
@@ -115,7 +117,16 @@ public class MigratorTests(PostgresContainer postgres)
     [Fact]
     public async Task Readiness_OnADatabaseThatIsBehind_IsUnhealthy()
     {
+        // Migrated, then a table of this version goes missing: the host starts (Wolverine's tables are there - on an
+        // empty database it would not start at all) and readiness says the schema is behind.
         var connectionString = await postgres.CreateDatabaseAsync();
+        (await Migrator.RunAsync(connectionString)).ShouldBe(0);
+        await using (var connection = new NpgsqlConnection(connectionString))
+        {
+            await connection.OpenAsync();
+            await using var drop = new NpgsqlCommand("drop table halcyon.mt_doc_sentmail", connection);
+            await drop.ExecuteNonQueryAsync();
+        }
         await using var app = TestApp.Build(connectionString, null, null, out _);
         await app.StartAsync();
         using var client = app.GetTestClient();
@@ -130,15 +141,8 @@ public class MigratorTests(PostgresContainer postgres)
     public async Task SchemaMigrator_ApplyTwice_ReportsNoChangeTheSecondTime()
     {
         var connectionString = await postgres.CreateDatabaseAsync();
-        var services = new ServiceCollection()
-            .AddLogging()
-            .AddHalcyonDatabase(connectionString, AutoCreate.None)
-            .BuildServiceProvider();
-        await using var _ = services;
-        var migrator = new SchemaMigrator(
-            services.GetRequiredService<IDocumentStore>(),
-            NullLogger<SchemaMigrator>.Instance
-        );
+        using var host = MigrationHost(connectionString);
+        var migrator = host.Services.GetRequiredService<SchemaMigrator>();
 
         (await migrator.ApplyAsync(dryRun: false)).ShouldBeTrue();
         (await migrator.ApplyAsync(dryRun: false)).ShouldBeFalse();

@@ -73,6 +73,19 @@ services:
       rustfs:
         condition: service_healthy
 
+  # Catches every mail the app sends (spec 013): http://localhost:8025. Production sends through the company's SMTP.
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   migrator:
     profiles: [app]
     build:
@@ -116,6 +129,16 @@ services:
       Sla__HighHours: ${SLA_HIGH_HOURS:-8}
       Sla__MediumHours: ${SLA_MEDIUM_HOURS:-72}
       Sla__LowHours: ${SLA_LOW_HOURS:-168}
+      # Mail (spec 013, ADR-0016): to Mailpit here; production sets its own SMTP server, sender and address.
+      Mail__Provider: Smtp
+      Mail__BaseUrl: http://localhost:${APP_PORT:-8080}
+      Mail__FromAddress: ${MAIL_FROM_ADDRESS:-halcyon@company.io}
+      Mail__PoolAddress: ${MAIL_POOL_ADDRESS-}
+      Mail__Smtp__Host: mailpit
+      Mail__Smtp__Port: 1025
+      Mail__Smtp__Security: None
+      # One instance (ADR-0001): Wolverine recovers the inbox and outbox right here.
+      Messaging__Durability: Solo
     ports:
       - "${APP_PORT:-8080}:8080"
     depends_on:
@@ -123,6 +146,8 @@ services:
         condition: service_completed_successfully
       rustfs-init:
         condition: service_completed_successfully
+      mailpit:
+        condition: service_healthy
 
 volumes:
   postgres-data:

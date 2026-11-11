@@ -1,13 +1,13 @@
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http.Json;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json.Serialization;
 using Amazon.Runtime;
 using Amazon.S3;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
-using Halcyon.App.Features.Tickets;
-using Halcyon.App.Storage;
 using Halcyon.Database;
 using Halcyon.Database.Documents;
 using Halcyon.Domain.People;
@@ -17,8 +17,6 @@ using Halcyon.E2E.Infrastructure;
 using JasperFx;
 using Marten;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Testcontainers.PostgreSql;
 
 [assembly: AssemblyFixture(typeof(E2EEnvironment))]
@@ -54,6 +52,15 @@ public sealed class E2EEnvironment : IAsyncLifetime
         .WithPortBinding(9000, assignRandomHostPort: true)
         .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(r => r.ForPort(9000).ForPath("/health")))
         .Build();
+
+    // Mailpit, as in compose: the app sends its mails there over SMTP and the tests read them back (spec 013).
+    private readonly IContainer mailpit = new ContainerBuilder("axllent/mailpit:v1.31.6")
+        .WithPortBinding(1025, assignRandomHostPort: true)
+        .WithPortBinding(8025, assignRandomHostPort: true)
+        .WithWaitStrategy(
+            Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(r => r.ForPort(8025).ForPath("/api/v1/messages"))
+        )
+        .Build();
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(2) };
     private AmazonS3Client? s3;
     private readonly StringBuilder appLog = new();
@@ -68,7 +75,7 @@ public sealed class E2EEnvironment : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        await Task.WhenAll(postgres.StartAsync(), rustFs.StartAsync());
+        await Task.WhenAll(postgres.StartAsync(), rustFs.StartAsync(), mailpit.StartAsync());
         var connectionString = postgres.GetConnectionString();
         s3 = new AmazonS3Client(
             new BasicAWSCredentials(S3Key, S3Secret),
@@ -86,7 +93,7 @@ public sealed class E2EEnvironment : IAsyncLifetime
 
         services = new ServiceCollection()
             .AddLogging()
-            .AddHalcyonDatabase(connectionString, AutoCreate.None)
+            .AddHalcyonDatabase(connectionString, AutoCreate.None, wolverine: false)
             .BuildServiceProvider();
 
         StartApp(connectionString);
@@ -133,6 +140,14 @@ public sealed class E2EEnvironment : IAsyncLifetime
                 // Every test signs in, often twice: more than the default 10 attempts a minute from one address.
                 ["Auth__SignInAttemptsPerMinute"] = "1000",
                 ["Sla__LowHours"] = LowSlaHours.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                // Mail over real SMTP to Mailpit (spec 013), as in compose.
+                ["Mail__Provider"] = "Smtp",
+                ["Mail__BaseUrl"] = BaseUrl,
+                ["Mail__Smtp__Host"] = mailpit.Hostname,
+                ["Mail__Smtp__Port"] = mailpit
+                    .GetMappedPublicPort(1025)
+                    .ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["Mail__Smtp__Security"] = "None",
             },
         };
 
@@ -191,6 +206,7 @@ public sealed class E2EEnvironment : IAsyncLifetime
         s3?.Dispose();
         await postgres.DisposeAsync();
         await rustFs.DisposeAsync();
+        await mailpit.DisposeAsync();
     }
 
     /// <summary>A signed-in agent in a fresh browser context (own cookies).</summary>
@@ -226,7 +242,10 @@ public sealed class E2EEnvironment : IAsyncLifetime
         return await context.NewPageAsync();
     }
 
-    /// <summary>Arranges a ticket straight through the app's handler (for times a browser cannot fake).</summary>
+    /// <summary>
+    /// Arranges a ticket with the domain's own decision, straight into the store (for times a browser cannot fake). It
+    /// goes around the app's bus, so it sends no mail - the mail tests report through the pages.
+    /// </summary>
     public async Task<(Guid Id, string Number)> ReportAsync(
         string title,
         Priority priority,
@@ -236,26 +255,29 @@ public sealed class E2EEnvironment : IAsyncLifetime
     )
     {
         var anna = await AgentAsync("anna.nowak@company.io");
-        await using var session = Store.QuerySession();
+        await using var session = Store.LightweightSession();
         var person = await session.Query<Person>().FirstAsync(p => p.EmailNormalized == "adam.mazur@company.io");
-        using var limiter = new PublicReportLimiter();
-        var storage = new S3AttachmentStorage(s3!, Options.Create(new StorageOptions { Bucket = Bucket }));
-        var files = new AttachmentFiles(storage, NullLogger<AttachmentFiles>.Instance);
-        var report = new ReportTicket(Store, TimeProvider.System, limiter, files, Sla, new TicketIds());
-        var reported = await report.ByAgentAsync(
-            anna,
-            new ReportTicketCommand(
+        var id = Guid.CreateVersion7();
+        var now = DateTimeOffset.UtcNow;
+        var reported = Ticket.Report(
+            id,
+            new TicketDraft(
                 title,
                 description,
                 subcategory.Split('.')[0],
                 subcategory,
                 priority,
-                DateTimeOffset.UtcNow - ago,
-                person.Id,
-                false
-            )
+                now - ago,
+                Requester.For(person.ToRef()),
+                ReportChannel.Agent,
+                anna
+            ),
+            now,
+            sla: Sla
         );
-        return (reported.TicketId, TicketNumber.For(reported.TicketId).Value);
+        session.Events.StartStream<Ticket>(id, reported);
+        await session.SaveChangesAsync();
+        return (id, TicketNumber.For(id).Value);
     }
 
     /// <summary>A ticket's list row, read straight from the database.</summary>
@@ -274,9 +296,52 @@ public sealed class E2EEnvironment : IAsyncLifetime
 
     public async Task TakeAsync(Guid ticketId, string agentEmail)
     {
-        var writer = new TicketWriter(Store, TimeProvider.System);
-        await new TakeTicket(writer).ExecuteAsync(ticketId, await AgentAsync(agentEmail));
+        var agent = await AgentAsync(agentEmail);
+        await using var session = Store.LightweightSession();
+        var stream = await session.Events.FetchForWriting<Ticket>(ticketId);
+        stream.AppendOne(stream.Aggregate!.Take(agent, DateTimeOffset.UtcNow));
+        await session.SaveChangesAsync();
     }
+
+    /// <summary>The mails Mailpit got for <paramref name="to"/>, waiting until one has a subject with <paramref name="subject"/>.</summary>
+    public async Task<MailpitMail> MailAsync(string to, string subject)
+    {
+        using var http = new HttpClient();
+        http.BaseAddress = new Uri($"http://{mailpit.Hostname}:{mailpit.GetMappedPublicPort(8025)}");
+        var until = DateTime.UtcNow.AddSeconds(20);
+        while (true)
+        {
+            var list = await http.GetFromJsonAsync<MailpitList>("/api/v1/messages?limit=500");
+            var found = list?.Messages.FirstOrDefault(m =>
+                m.Subject.Contains(subject, StringComparison.Ordinal)
+                && m.To.Any(a => string.Equals(a.Address, to, StringComparison.OrdinalIgnoreCase))
+            );
+            if (found is not null)
+            {
+                var body = await http.GetFromJsonAsync<MailpitBody>($"/api/v1/message/{found.Id}");
+                return new MailpitMail(found.Subject, body?.Text ?? "");
+            }
+            if (DateTime.UtcNow > until)
+                throw new TimeoutException($"No mail to {to} with \"{subject}\" in Mailpit.");
+            await Task.Delay(200);
+        }
+    }
+
+    public sealed record MailpitMail(string Subject, string Text);
+
+    private sealed record MailpitList([property: JsonPropertyName("messages")] IReadOnlyList<MailpitMessage> Messages);
+
+    // ReSharper disable once ClassNeverInstantiated.Local - System.Text.Json creates it from Mailpit's answer.
+    private sealed record MailpitMessage(
+        [property: JsonPropertyName("ID")] string Id,
+        [property: JsonPropertyName("Subject")] string Subject,
+        [property: JsonPropertyName("To")] IReadOnlyList<MailpitAddress> To
+    );
+
+    // ReSharper disable once ClassNeverInstantiated.Local - System.Text.Json creates it from Mailpit's answer.
+    private sealed record MailpitAddress([property: JsonPropertyName("Address")] string Address);
+
+    private sealed record MailpitBody([property: JsonPropertyName("Text")] string Text);
 
     private static int FreePort()
     {

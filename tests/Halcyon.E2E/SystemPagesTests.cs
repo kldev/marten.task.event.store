@@ -50,7 +50,9 @@ public class SystemPagesTests(E2EEnvironment env)
         await page.GetByTestId("filter-search").FillAsync("commit");
         await page.GetByTestId("filter-search").PressAsync("Enter");
         await RefreshUntilAsync(page, async () => await page.GetByTestId("log-row").CountAsync() > 0);
-        await Expect(page.GetByTestId("log-message").First).ToContainTextAsync("Halcyon");
+        // The row itself, not the list's first one: the mails (spec 013) log while the filter is being applied.
+        await Expect(page.GetByTestId("log-message").Filter(new() { HasText = "commit" }).First)
+            .ToContainTextAsync("Halcyon");
 
         await page.GetByTestId("filter-level-error").ClickAsync();
         await Expect(page.GetByTestId("log-row").Filter(new() { HasText = "commit" })).ToHaveCountAsync(0);

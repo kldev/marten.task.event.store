@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using Halcyon.Domain.Tickets;
-using Microsoft.Extensions.Options;
 
 namespace Halcyon.App.Features.Tickets;
 
@@ -49,7 +48,10 @@ public static class SlaSetup
             .Bind(builder.Configuration.GetSection(SlaOptions.Section))
             .ValidateDataAnnotations()
             .ValidateOnStart();
-        builder.Services.AddSingleton(services => services.GetRequiredService<IOptions<SlaOptions>>().Value.ToPolicy());
+        // An instance, not a factory: the handlers take the policy, and Wolverine's generated code needs a plain
+        // registration (ADR-0016). Wrong windows still stop the host at start (ValidateOnStart above).
+        var options = builder.Configuration.GetSection(SlaOptions.Section).Get<SlaOptions>() ?? new SlaOptions();
+        builder.Services.AddSingleton(options.ToPolicy());
         return builder;
     }
 }
