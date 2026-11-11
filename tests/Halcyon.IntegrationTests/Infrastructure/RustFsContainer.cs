@@ -6,11 +6,12 @@ using DotNet.Testcontainers.Containers;
 namespace Halcyon.IntegrationTests.Infrastructure;
 
 /// <summary>The same RustFS as in compose, with the bucket created the way rustfs-init does (PUT bucket).</summary>
+// ReSharper disable once ClassNeverInstantiated.Global - xUnit creates it for IClassFixture<RustFsContainer>.
 public sealed class RustFsContainer : IAsyncLifetime
 {
-    public const string AccessKey = "halcyon-test";
-    public const string SecretKey = "halcyon-test-secret";
-    public const string Bucket = "halcyon-attachments";
+    private const string AccessKey = "halcyon-test";
+    private const string SecretKey = "halcyon-test-secret";
+    private const string Bucket = "halcyon-attachments";
 
     private readonly IContainer container = new ContainerBuilder("rustfs/rustfs:1.0.0")
         .WithEnvironment("RUSTFS_ACCESS_KEY", AccessKey)
@@ -21,7 +22,7 @@ public sealed class RustFsContainer : IAsyncLifetime
         .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(r => r.ForPort(9000).ForPath("/health")))
         .Build();
 
-    public string ServiceUrl => $"http://{container.Hostname}:{container.GetMappedPublicPort(9000)}";
+    private string ServiceUrl => $"http://{container.Hostname}:{container.GetMappedPublicPort(9000)}";
 
     public Dictionary<string, string?> Settings =>
         new()

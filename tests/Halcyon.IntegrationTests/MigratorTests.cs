@@ -1,4 +1,3 @@
-using Halcyon.App;
 using Halcyon.Database;
 using Halcyon.Database.Migrations;
 using Halcyon.IntegrationTests.Infrastructure;
@@ -96,7 +95,7 @@ public class MigratorTests(PostgresContainer postgres)
     {
         await using var app = await TestApp.StartAsync(postgres);
         var registered = app.Get<NpgsqlDataSource>();
-        var database = app.Store.Storage.Database.ShouldBeAssignableTo<PostgresqlDatabase>()!;
+        var database = app.Store.Storage.Database.ShouldBeAssignableTo<PostgresqlDatabase>();
 
         database.DataSource.ShouldBeSameAs(registered);
     }

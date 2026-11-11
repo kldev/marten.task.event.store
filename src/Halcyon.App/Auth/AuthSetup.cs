@@ -7,8 +7,8 @@ namespace Halcyon.App.Auth;
 
 public static class AuthSetup
 {
-    public const string SignInRateLimit = "sign-in";
-    public const string SignInPath = "/logowanie";
+    private const string SignInRateLimit = "sign-in";
+    private const string SignInPath = "/logowanie";
 
     public static WebApplicationBuilder AddHalcyonAuth(this WebApplicationBuilder builder)
     {
@@ -123,7 +123,7 @@ public static class AuthSetup
     }
 
     /// <summary>Only a local path; anything else (another site, "//x") becomes the start page.</summary>
-    public static string SafeReturnUrl(string? returnUrl) =>
+    private static string SafeReturnUrl(string? returnUrl) =>
         !string.IsNullOrEmpty(returnUrl)
         && returnUrl.StartsWith('/')
         && !returnUrl.StartsWith("//", StringComparison.Ordinal)

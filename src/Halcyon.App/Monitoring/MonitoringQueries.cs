@@ -89,7 +89,7 @@ public sealed record Slice<T>(IReadOnlyList<T> Rows, bool HasMore);
 /// <summary>Reads the HTTP answers and the log the app keeps for the retention (ADR-0011).</summary>
 public sealed class MonitoringQueries(NpgsqlDataSource dataSource, TimeProvider time)
 {
-    public const int PageSize = 50;
+    private const int PageSize = 50;
     private const string Zone = "Europe/Warsaw";
 
     public async Task<HttpStatistics> StatisticsAsync(StatusRange range, CancellationToken ct = default)
@@ -327,7 +327,7 @@ public sealed class MonitoringQueries(NpgsqlDataSource dataSource, TimeProvider 
     /// The columns of a range, oldest first, the last holding now: whole Warsaw hours or calendar days (a day that
     /// changes the clock is 23 or 25 hours long).
     /// </summary>
-    public static IReadOnlyList<HttpBucket> BucketsFor(StatusRange range, DateTimeOffset now)
+    private static List<HttpBucket> BucketsFor(StatusRange range, DateTimeOffset now)
     {
         var local = LocalTime.ToLocal(now);
         if (range == StatusRange.Hours24)

@@ -1,6 +1,5 @@
 @* Lines over time on one value axis (spec 009). Every bucket has a hover column: a crosshair and a tooltip with the
    exact values, by CSS only (.chart-hover in app.css), so nothing runs in the browser. *@
-@using Halcyon.Domain.Time
 @using static Halcyon.App.Components.Ui.Charts.ChartScale
 
 <svg viewBox="0 0 @W @H" class="h-auto w-full overflow-visible" role="img" aria-label="@Label" data-testid="@TestId">
@@ -8,8 +7,8 @@
     @foreach (var tick in Ticks)
     {
         var y = Y(tick);
-        <line x1="@ML" x2="@(W - MR)" y1="@F(y)" y2="@F(y)" stroke="@(tick == 0 ? ChartColors.Axis : ChartColors.Grid)" stroke-width="1" />
-        <g><text x="@(ML - 8)" y="@F(y + 4)" text-anchor="end" class="chart-axis">@N(tick)</text></g>
+        <line x1="@MarginLeft" x2="@(W - MarginRight)" y1="@F(y)" y2="@F(y)" stroke="@(tick == 0 ? ChartColors.Axis : ChartColors.Grid)" stroke-width="1" />
+        <g><text x="@(MarginLeft - 8)" y="@F(y + 4)" text-anchor="end" class="chart-axis">@N(tick)</text></g>
     }
     @for (var i = 0; i < Count; i++)
     {
@@ -41,14 +40,14 @@
         var tipHeight = 26 + 18 * lines.Count;
         var tipX = X(index) > W / 2.0 ? X(index) - 12 - tipWidth : X(index) + 12;
         <g class="chart-hover" tabindex="0" data-testid="@($"{TestId}-bucket")">
-            <rect x="@F(X(index) - Band / 2)" y="@MT" width="@F(Band)" height="@F(PlotHeight)" fill="transparent" />
-            <line class="chart-cross" x1="@F(X(index))" x2="@F(X(index))" y1="@MT" y2="@F(MT + PlotHeight)" stroke="@ChartColors.Axis" stroke-width="1" />
+            <rect x="@F(X(index) - Band / 2)" y="@MarginTop" width="@F(Band)" height="@F(PlotHeight)" fill="transparent" />
+            <line class="chart-cross" x1="@F(X(index))" x2="@F(X(index))" y1="@MarginTop" y2="@F(MarginTop + PlotHeight)" stroke="@ChartColors.Axis" stroke-width="1" />
             <g class="chart-tip">
-                <rect x="@F(tipX)" y="@MT" width="@F(tipWidth)" height="@tipHeight" rx="6" fill="@ChartColors.Surface" stroke="@ChartColors.Axis" />
-                <g><text x="@F(tipX + 10)" y="@(MT + 18)" class="chart-tip-title">@Buckets[index].LongLabel</text></g>
+                <rect x="@F(tipX)" y="@MarginTop" width="@F(tipWidth)" height="@tipHeight" rx="6" fill="@ChartColors.Surface" stroke="@ChartColors.Axis" />
+                <g><text x="@F(tipX + 10)" y="@(MarginTop + 18)" class="chart-tip-title">@Buckets[index].LongLabel</text></g>
                 @for (var s = 0; s < Series.Count; s++)
                 {
-                    var rowY = MT + 18 + 18 * (s + 1);
+                    var rowY = MarginTop + 18 + 18 * (s + 1);
                     <rect x="@F(tipX + 10)" y="@(rowY - 4)" width="10" height="2" rx="1" fill="@Series[s].Color" />
                     <g><text x="@F(tipX + 26)" y="@rowY" class="chart-tip-text">@lines[s]</text></g>
                 }
@@ -59,10 +58,10 @@
 
 @code {
     private const int H = 230;
-    private const int ML = 40;
-    private const int MR = 44;
-    private const int MT = 10;
-    private const int MB = 26;
+    private const int MarginLeft = 40;
+    private const int MarginRight = 44;
+    private const int MarginTop = 10;
+    private const int MarginBottom = 26;
 
     [Parameter, EditorRequired] public IReadOnlyList<ChartBucket> Buckets { get; set; } = [];
     [Parameter, EditorRequired] public IReadOnlyList<ChartSeries> Series { get; set; } = [];
@@ -74,14 +73,14 @@
     [Parameter] public string TestId { get; set; } = "line-chart";
 
     private int Count => Buckets.Count;
-    private double PlotWidth => W - ML - MR;
-    private double PlotHeight => H - MT - MB;
+    private double PlotWidth => W - MarginLeft - MarginRight;
+    private double PlotHeight => H - MarginTop - MarginBottom;
     private double Band => Count <= 1 ? PlotWidth : PlotWidth / (Count - 1);
     private (int Max, int Step) Scale => Nice(Series.SelectMany(s => s.Values).DefaultIfEmpty(0).Max());
     private IEnumerable<int> Ticks => Enumerable.Range(0, Scale.Max / Scale.Step + 1).Select(i => i * Scale.Step);
 
-    private double X(int i) => Count <= 1 ? ML + PlotWidth / 2 : ML + i * PlotWidth / (Count - 1);
-    private double Y(double value) => MT + PlotHeight - value / Scale.Max * PlotHeight;
+    private double X(int i) => Count <= 1 ? MarginLeft + PlotWidth / 2 : MarginLeft + i * PlotWidth / (Count - 1);
+    private double Y(double value) => MarginTop + PlotHeight - value / Scale.Max * PlotHeight;
 
     private string Points(ChartSeries series) =>
         string.Join(" ", series.Values.Select((v, i) => $"{F(X(i))},{F(Y(v))}"));

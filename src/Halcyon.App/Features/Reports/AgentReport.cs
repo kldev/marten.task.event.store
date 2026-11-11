@@ -20,7 +20,7 @@ public enum AgentPeriods
 /// </summary>
 public sealed class AgentReportQueries(IDocumentStore store, TimeProvider time)
 {
-    public const string Slug = "agenci";
+    private const string Slug = "agenci";
 
     public static string QueryFor(AgentPeriods periods) => periods == AgentPeriods.Previous ? "?okresy=poprzednie" : "";
 

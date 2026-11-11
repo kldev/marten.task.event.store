@@ -63,12 +63,6 @@ public sealed class BackgroundJob(string name, Func<string> description, TimeSpa
         }
     }
 
-    public void Scheduled(DateTimeOffset next)
-    {
-        lock (gate)
-            nextRunAt = next;
-    }
-
     public BackgroundJobState State()
     {
         lock (gate)

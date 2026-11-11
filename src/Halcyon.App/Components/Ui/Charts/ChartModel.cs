@@ -29,8 +29,6 @@ public static class ChartColors
     public const string P90 = "#a0e6f1"; // halcyon-200
     public const string Grid = "#e6edef"; // ink-100
     public const string Axis = "#cbd8dc"; // ink-200
-    public const string Muted = "#6f8d95"; // ink-400
-    public const string Ink = "#132226"; // ink-900
     public const string Surface = "#ffffff";
 }
 
@@ -56,8 +54,6 @@ public static class ChartScale
 
     public static string N(int value) => value.ToString("N0", Reader);
 
-    public static string N(double value) => value.ToString("0.#", CultureInfo.InvariantCulture);
-
     public static string Percent(double share) => (share * 100).ToString("0", Reader) + " %";
 
     /// <summary>"1 zgłoszenie", "3 zgłoszenia", "5 zgłoszeń".</summary>
@@ -66,7 +62,7 @@ public static class ChartScale
             ? $"{N(n)} {(n == 1 ? "ticket" : "tickets")}"
             : $"{N(n)} {Plural(n, "zgłoszenie", "zgłoszenia", "zgłoszeń")}";
 
-    public static string Plural(int n, string one, string few, string many)
+    private static string Plural(int n, string one, string few, string many)
     {
         if (n == 1)
             return one;

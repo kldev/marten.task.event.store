@@ -46,7 +46,8 @@ public class RustFsStorageTests(PostgresContainer postgres, RustFsContainer rust
         var details = await app.Get<TicketQueries>().DetailsAsync(reported.TicketId);
         var attachment = details!.Ticket.Attachments.Single();
         attachment.StorageKey.ShouldStartWith(key);
-        await using var stored = await app.Get<IAttachmentStorage>().OpenAsync(attachment.StorageKey, default);
+        await using var stored = await app.Get<IAttachmentStorage>()
+            .OpenAsync(attachment.StorageKey, CancellationToken.None);
         using var copy = new MemoryStream();
         await stored!.CopyToAsync(copy);
         copy.ToArray().ShouldBe(bytes);

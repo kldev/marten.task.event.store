@@ -10,16 +10,16 @@ public class ConcurrencyTests(PostgresContainer postgres) : TicketTestBase(postg
 {
     private static async Task<(int Won, List<string> Refusals)> RaceAsync(params Func<Task>[] actions)
     {
-        using var start = new ManualResetEventSlim();
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var tasks = actions
             .Select(action =>
                 Task.Run(async () =>
                 {
-                    start.Wait();
+                    await start.Task;
                     try
                     {
                         await action();
-                        return (string?)null;
+                        return null;
                     }
                     catch (DomainException exception)
                     {
@@ -28,7 +28,7 @@ public class ConcurrencyTests(PostgresContainer postgres) : TicketTestBase(postg
                 })
             )
             .ToList();
-        start.Set();
+        start.SetResult();
         var results = await Task.WhenAll(tasks);
         return (results.Count(r => r is null), results.OfType<string>().ToList());
     }

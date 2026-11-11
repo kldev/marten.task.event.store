@@ -2,7 +2,6 @@ using Halcyon.App.Features.Tickets;
 using Halcyon.Database.Documents;
 using Halcyon.Domain.People;
 using Halcyon.Domain.Tickets;
-using Marten;
 
 namespace Halcyon.IntegrationTests.Infrastructure;
 

@@ -1,6 +1,5 @@
 @* How much of the SLA resolving a ticket takes, per priority (spec 009): the light bar is the 90th percentile, the dark
    one the median, the vertical line is 100 % of the SLA - past it the ticket was late. *@
-@using Halcyon.Domain.Tickets
 @using static Halcyon.App.Components.Ui.Charts.ChartScale
 
 @if (Rows.All(r => r.Count == 0))
@@ -15,7 +14,7 @@ else
             <span class="relative h-3">
                 @foreach (var tick in Ticks)
                 {
-                    <span class="absolute whitespace-nowrap tabular-nums @(tick == 0 ? "" : tick >= Max ? "-translate-x-full" : "-translate-x-1/2") @(tick == 1 ? "font-semibold text-ink-700" : "")" style="left: @Pos(tick)">@Percent(tick)</span>
+                    <span class="absolute whitespace-nowrap tabular-nums @(tick is 0 ? "" : tick >= Max ? "-translate-x-full" : "-translate-x-1/2") @(tick is 1 ? "font-semibold text-ink-700" : "")" style="left: @Pos(tick)">@Percent(tick)</span>
                 }
             </span>
         </div>
@@ -29,7 +28,7 @@ else
                 <span class="relative h-6" aria-hidden="true">
                     @foreach (var tick in Ticks)
                     {
-                        <span class="absolute inset-y-0 w-px @(tick == 1 ? "bg-ink-700" : "bg-ink-100")" style="left: @Pos(tick)"></span>
+                        <span class="absolute inset-y-0 w-px @(tick is 1 ? "bg-ink-700" : "bg-ink-100")" style="left: @Pos(tick)"></span>
                     }
                     @if (row.P90 is { } p90)
                     {

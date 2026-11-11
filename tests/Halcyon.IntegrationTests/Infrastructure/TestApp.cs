@@ -1,12 +1,10 @@
 using Halcyon.App;
-using Halcyon.App.Features.Agents;
 using Halcyon.App.Storage;
 using Halcyon.Database.Documents;
 using Halcyon.Database.Seed;
 using Halcyon.Domain.People;
 using Marten;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,15 +20,13 @@ public sealed class TestApp : IAsyncDisposable
 {
     public const string Password = "test-password";
 
-    private TestApp(WebApplication app, string connectionString, FakeTimeProvider clock)
+    private TestApp(WebApplication app, FakeTimeProvider clock)
     {
         App = app;
-        ConnectionString = connectionString;
         Clock = clock;
     }
 
-    public WebApplication App { get; }
-    public string ConnectionString { get; }
+    private WebApplication App { get; }
     public FakeTimeProvider Clock { get; }
     public IServiceProvider Services => App.Services;
     public IDocumentStore Store => Services.GetRequiredService<IDocumentStore>();
@@ -54,7 +50,7 @@ public sealed class TestApp : IAsyncDisposable
 
         var app = Build(connectionString, settings, now, out var clock);
         await app.StartAsync();
-        return new TestApp(app, connectionString, clock);
+        return new TestApp(app, clock);
     }
 
     public static WebApplication Build(

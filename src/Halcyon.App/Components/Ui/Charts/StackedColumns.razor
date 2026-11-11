@@ -1,14 +1,13 @@
 @* Columns per bucket with stacked parts (spec 009): thin columns, a 2 px gap between parts, the top rounded. The
    tooltip shows every part and the total. *@
-@using Halcyon.Domain.Time
 @using static Halcyon.App.Components.Ui.Charts.ChartScale
 
 <svg viewBox="0 0 @W @H" class="h-auto w-full overflow-visible" role="img" aria-label="@Label" data-testid="@TestId">
     @foreach (var tick in Ticks)
     {
         var y = Y(tick);
-        <line x1="@ML" x2="@(W - MR)" y1="@F(y)" y2="@F(y)" stroke="@(tick == 0 ? ChartColors.Axis : ChartColors.Grid)" stroke-width="1" />
-        <g><text x="@(ML - 8)" y="@F(y + 4)" text-anchor="end" class="chart-axis">@N(tick)</text></g>
+        <line x1="@MarginLeft" x2="@(W - MarginRight)" y1="@F(y)" y2="@F(y)" stroke="@(tick == 0 ? ChartColors.Axis : ChartColors.Grid)" stroke-width="1" />
+        <g><text x="@(MarginLeft - 8)" y="@F(y + 4)" text-anchor="end" class="chart-axis">@N(tick)</text></g>
     }
     @for (var i = 0; i < Count; i++)
     {
@@ -49,13 +48,13 @@
         var tipHeight = 26 + 18 * lines.Count;
         var tipX = Center(index) > W / 2.0 ? Center(index) - Band / 2 - 6 - tipWidth : Center(index) + Band / 2 + 6;
         <g class="chart-hover" tabindex="0" data-testid="@($"{TestId}-bucket")">
-            <rect class="chart-band" x="@F(ML + Band * index)" y="@MT" width="@F(Band)" height="@F(PlotHeight)" />
+            <rect class="chart-band" x="@F(MarginLeft + Band * index)" y="@MarginTop" width="@F(Band)" height="@F(PlotHeight)" />
             <g class="chart-tip">
-                <rect x="@F(tipX)" y="@MT" width="@F(tipWidth)" height="@tipHeight" rx="6" fill="@ChartColors.Surface" stroke="@ChartColors.Axis" />
-                <g><text x="@F(tipX + 10)" y="@(MT + 18)" class="chart-tip-title">@Buckets[index].LongLabel</text></g>
+                <rect x="@F(tipX)" y="@MarginTop" width="@F(tipWidth)" height="@tipHeight" rx="6" fill="@ChartColors.Surface" stroke="@ChartColors.Axis" />
+                <g><text x="@F(tipX + 10)" y="@(MarginTop + 18)" class="chart-tip-title">@Buckets[index].LongLabel</text></g>
                 @for (var s = 0; s < lines.Count; s++)
                 {
-                    var rowY = MT + 18 + 18 * (s + 1);
+                    var rowY = MarginTop + 18 + 18 * (s + 1);
                     if (s < Series.Count)
                     {
                         <rect x="@F(tipX + 10)" y="@(rowY - 9)" width="10" height="10" rx="2" fill="@Series[s].Color" />
@@ -69,10 +68,10 @@
 
 @code {
     private const int H = 230;
-    private const int ML = 40;
-    private const int MR = 12;
-    private const int MT = 10;
-    private const int MB = 26;
+    private const int MarginLeft = 40;
+    private const int MarginRight = 12;
+    private const int MarginTop = 10;
+    private const int MarginBottom = 26;
     private const double Gap = 2;
 
     [Parameter, EditorRequired] public IReadOnlyList<ChartBucket> Buckets { get; set; } = [];
@@ -84,8 +83,8 @@
     [Parameter] public string TestId { get; set; } = "column-chart";
 
     private int Count => Buckets.Count;
-    private double PlotWidth => W - ML - MR;
-    private double PlotHeight => H - MT - MB;
+    private double PlotWidth => W - MarginLeft - MarginRight;
+    private double PlotHeight => H - MarginTop - MarginBottom;
     private double Band => PlotWidth / Count;
     private double BarWidth => Math.Min(24, Band * 0.62);
 
@@ -94,6 +93,6 @@
 
     private IEnumerable<int> Ticks => Enumerable.Range(0, Scale.Max / Scale.Step + 1).Select(i => i * Scale.Step);
 
-    private double Center(int i) => ML + Band * (i + 0.5);
-    private double Y(double value) => MT + PlotHeight - value / Scale.Max * PlotHeight;
+    private double Center(int i) => MarginLeft + Band * (i + 0.5);
+    private double Y(double value) => MarginTop + PlotHeight - value / Scale.Max * PlotHeight;
 }

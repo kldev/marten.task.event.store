@@ -12,9 +12,9 @@ namespace Halcyon.Database.Migrations;
 public static class DatabaseStartup
 {
     public const string ApplyChangesKey = "Database:ApplyChangesOnStartup";
-    public const string CommandTimeoutKey = "Database:MigrationCommandTimeoutSeconds";
-    public const int DefaultCommandTimeoutSeconds = 900;
-    public const string ConnectionStringName = "Postgres";
+    private const string CommandTimeoutKey = "Database:MigrationCommandTimeoutSeconds";
+    private const int DefaultCommandTimeoutSeconds = 900;
+    private const string ConnectionStringName = "Postgres";
 
     private static readonly string[] SelfMigratingEnvironments = ["Development", "Testing"];
 

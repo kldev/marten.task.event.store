@@ -29,6 +29,8 @@ public static class ChartBuckets
     /// The buckets of a range, oldest first, the last one holding today. Whole calendar units, never "the last 168
     /// hours": a day that changes the clock is 23 or 25 hours long.
     /// </summary>
+    /// <param name="range">The period the chart covers: 7 or 30 days, or 12 weeks.</param>
+    /// <param name="today">The reader's local date; the last bucket holds it.</param>
     /// <param name="culture">The weekday's language in the long label ("wt. 03.11.2026"); Polish unless the caller
     /// shows the chart in another one.</param>
     public static IReadOnlyList<ChartBucket> For(ChartRange range, DateOnly today, CultureInfo? culture = null)

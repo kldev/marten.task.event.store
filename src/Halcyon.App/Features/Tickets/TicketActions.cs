@@ -2,7 +2,6 @@ using Halcyon.Database.Documents;
 using Halcyon.Domain;
 using Halcyon.Domain.People;
 using Halcyon.Domain.Tickets;
-using Marten;
 
 namespace Halcyon.App.Features.Tickets;
 
@@ -90,7 +89,7 @@ public sealed class UpdateTicketFields(TicketWriter writer)
 
 /// <summary>
 /// The agent the ticket is with names a person from the category's department to do the work, or takes them off
-/// (<paramref name="personId"/> null) - spec 008. Null = no change.
+/// (<c>personId</c> null) - spec 008. Null = no change.
 /// </summary>
 public sealed class AssignTicketHandler(TicketWriter writer)
 {

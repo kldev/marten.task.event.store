@@ -14,7 +14,7 @@ using Serilog;
 namespace Halcyon.App;
 
 /// <summary>
-/// Builds the one host (ADR-0001). Tests build it the same way, with their own settings (<paramref name="configure"/>).
+/// Builds the one host (ADR-0001). Tests build it the same way, with their own settings (the <c>configure</c> of <see cref="Build"/>).
 /// </summary>
 public static class HalcyonApp
 {

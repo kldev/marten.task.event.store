@@ -326,7 +326,7 @@
 
     /// <summary>The label, every part, the total.</summary>
     private static IEnumerable<IReadOnlyList<string>> BreakdownRows(IEnumerable<Breakdown> rows) =>
-        Localized(rows).Select(b => (IReadOnlyList<string>)[b.Label, .. b.Values.Select(v => N(v)), N(b.Total)]);
+        Localized(rows).Select(b => (IReadOnlyList<string>)[b.Label, .. b.Values.Select(N), N(b.Total)]);
 
     /// <summary>The rows with their labels in the UI's language: topics, categories, priorities, "Pozostali (n)".</summary>
     private static List<Breakdown> Localized(IEnumerable<Breakdown> rows) => [.. rows.Select(b => b with { Label = LabelText(b) })];
@@ -338,7 +338,7 @@
         : N(b.Label);
 
     private static IEnumerable<IReadOnlyList<string>> HeatRows(ChartData d) =>
-        Enumerable.Range(0, 7).Select(day => (IReadOnlyList<string>)[HeatDays[day], .. d.Heat[day].Select(v => N(v))]);
+        Enumerable.Range(0, 7).Select(day => (IReadOnlyList<string>)[HeatDays[day], .. d.Heat[day].Select(N)]);
 
     private ChartFilter filter = new();
     private ChartData? data;

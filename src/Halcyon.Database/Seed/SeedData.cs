@@ -116,7 +116,7 @@ public static class SeedData
         new("Karolina", "Wilk", "Rekrutacja", "karolina.wilk@company.io", "+48 600 200 240"),
     ];
 
-    public const int GeneratedCount = 200;
+    private const int GeneratedCount = 200;
 
     private static IReadOnlyList<SeedTicket> Curated { get; } =
     [

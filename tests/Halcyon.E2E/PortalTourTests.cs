@@ -25,7 +25,7 @@ public class PortalTourTests(E2EEnvironment env)
             "Od rana drukarka HP w pokoju 204 wysuwa puste kartki. Toner wymieniony w zeszłym tygodniu."
         );
 
-        var anna = await env.SignInAsync("anna.nowak@company.io");
+        var anna = await env.SignInAsync();
         await anna.SetViewportSizeAsync(1440, 900);
 
         // In the pool: anybody can take it.

@@ -14,7 +14,7 @@ public static class Language
     public const string English = "en-GB";
 
     /// <summary>GET /jezyk/{pl|en}?returnUrl=… - the switch in the top bar and on the sign-in page.</summary>
-    public const string SwitchPath = "/jezyk";
+    private const string SwitchPath = "/jezyk";
 
     private static readonly string[] Supported = [Polish, English];
 

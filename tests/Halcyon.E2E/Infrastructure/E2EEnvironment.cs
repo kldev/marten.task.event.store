@@ -45,15 +45,16 @@ public sealed class E2EEnvironment : IAsyncLifetime
         .WithPortBinding(9000, assignRandomHostPort: true)
         .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(r => r.ForPort(9000).ForPath("/health")))
         .Build();
+    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(2) };
     private AmazonS3Client? s3;
     private readonly StringBuilder appLog = new();
     private Process? app;
     private ServiceProvider? services;
 
     public string BaseUrl { get; private set; } = "";
-    public IPlaywright Playwright { get; private set; } = null!;
-    public IBrowser Browser { get; private set; } = null!;
-    public IDocumentStore Store => services!.GetRequiredService<IDocumentStore>();
+    private IPlaywright? playwright;
+    private IBrowser? browser;
+    private IDocumentStore Store => services!.GetRequiredService<IDocumentStore>();
     private string S3Url => $"http://{rustFs.Hostname}:{rustFs.GetMappedPublicPort(9000)}";
 
     public async ValueTask InitializeAsync()
@@ -83,10 +84,10 @@ public sealed class E2EEnvironment : IAsyncLifetime
         await WaitUntilHealthyAsync();
 
         // Installs the browser once (no-op when it is there already).
-        var installed = Microsoft.Playwright.Program.Main(["install", "chromium"]);
+        var installed = Program.Main(["install", "chromium"]);
         installed.ShouldBe(0, "playwright install chromium");
-        Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
-        Browser = await Playwright.Chromium.LaunchAsync(
+        playwright = await Playwright.CreateAsync();
+        browser = await playwright.Chromium.LaunchAsync(
             new() { Headless = Environment.GetEnvironmentVariable("HEADED") != "1" }
         );
     }
@@ -108,18 +109,22 @@ public sealed class E2EEnvironment : IAsyncLifetime
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
+            Environment =
+            {
+                // Development only for the static web assets of a build output (no publish); the database rules are a
+                // release's.
+                ["ASPNETCORE_ENVIRONMENT"] = "Development",
+                ["ConnectionStrings__Postgres"] = connectionString,
+                ["Auth__AgentPassword"] = Password,
+                ["Database__ApplyChangesOnStartup"] = "false",
+                ["Storage__ServiceUrl"] = S3Url,
+                ["Storage__AccessKey"] = S3Key,
+                ["Storage__SecretKey"] = S3Secret,
+                ["Storage__Bucket"] = Bucket,
+                // Every test signs in, often twice: more than the default 10 attempts a minute from one address.
+                ["Auth__SignInAttemptsPerMinute"] = "1000",
+            },
         };
-        // Development only for the static web assets of a build output (no publish); the database rules are a release's.
-        start.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
-        start.Environment["ConnectionStrings__Postgres"] = connectionString;
-        start.Environment["Auth__AgentPassword"] = Password;
-        start.Environment["Database__ApplyChangesOnStartup"] = "false";
-        start.Environment["Storage__ServiceUrl"] = S3Url;
-        start.Environment["Storage__AccessKey"] = S3Key;
-        start.Environment["Storage__SecretKey"] = S3Secret;
-        start.Environment["Storage__Bucket"] = Bucket;
-        // Every test signs in, often twice: more than the default 10 attempts a minute from one address.
-        start.Environment["Auth__SignInAttemptsPerMinute"] = "1000";
 
         app = Process.Start(start) ?? throw new InvalidOperationException("Could not start Halcyon.App.");
         app.OutputDataReceived += (_, e) => Log(e.Data);
@@ -138,7 +143,6 @@ public sealed class E2EEnvironment : IAsyncLifetime
 
     private async Task WaitUntilHealthyAsync()
     {
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
         var until = DateTime.UtcNow.AddSeconds(60);
         while (DateTime.UtcNow < until)
         {
@@ -146,7 +150,7 @@ public sealed class E2EEnvironment : IAsyncLifetime
                 break;
             try
             {
-                var response = await http.GetAsync(new Uri($"{BaseUrl}/health/ready"));
+                var response = await Http.GetAsync(new Uri($"{BaseUrl}/health/ready"));
                 if (response.IsSuccessStatusCode)
                     return;
             }
@@ -163,9 +167,9 @@ public sealed class E2EEnvironment : IAsyncLifetime
         // The app's own log next to the test output: the first place to look when a page did not render.
         lock (appLog)
             File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "halcyon-app.log"), appLog.ToString());
-        if (Browser is not null)
-            await Browser.DisposeAsync();
-        Playwright?.Dispose();
+        if (browser is not null)
+            await browser.DisposeAsync();
+        playwright?.Dispose();
         if (app is { HasExited: false })
         {
             app.Kill(entireProcessTree: true);
@@ -182,7 +186,7 @@ public sealed class E2EEnvironment : IAsyncLifetime
     /// <summary>A signed-in agent in a fresh browser context (own cookies).</summary>
     public async Task<IPage> SignInAsync(string email = "anna.nowak@company.io")
     {
-        var context = await Browser.NewContextAsync(
+        var context = await browser!.NewContextAsync(
             new()
             {
                 BaseURL = BaseUrl,
@@ -201,7 +205,7 @@ public sealed class E2EEnvironment : IAsyncLifetime
 
     public async Task<IPage> AnonymousPageAsync()
     {
-        var context = await Browser.NewContextAsync(
+        var context = await browser!.NewContextAsync(
             new()
             {
                 BaseURL = BaseUrl,

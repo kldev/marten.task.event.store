@@ -2,7 +2,6 @@ using System.Net;
 using Halcyon.App.Features.Tickets;
 using Halcyon.App.Storage;
 using Halcyon.Domain;
-using Halcyon.Domain.Tickets;
 using Halcyon.IntegrationTests.Infrastructure;
 using Marten;
 

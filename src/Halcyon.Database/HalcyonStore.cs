@@ -13,7 +13,7 @@ namespace Halcyon.Database;
 /// <summary>
 /// The one description of the Marten store (ADR-0002), used by the app and by the migrator. The connection is not set
 /// here: each process registers one <c>NpgsqlDataSource</c> and hands it to Marten with <c>UseNpgsqlDataSource()</c>.
-/// How much the store may change the schema by itself is decided by the caller (<see cref="DatabaseStartup"/>).
+/// How much the store may change the schema by itself is decided by the caller (<see cref="Migrations.DatabaseStartup"/>).
 /// </summary>
 public static class HalcyonStore
 {

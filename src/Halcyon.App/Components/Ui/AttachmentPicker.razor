@@ -1,6 +1,5 @@
 @* Drop or pick files; each is checked by the domain's rules and read at once (Blazor's picker forgets earlier files
    when the user picks again). Images get a small preview. *@
-@using Halcyon.App.Features.Tickets
 
 <div class="space-y-3" data-testid="attachments-picker">
     <label class="relative flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed px-4 py-5 text-center transition @(dragging ? "border-halcyon-500 bg-halcyon-50" : "border-ink-200 bg-ink-50/50 hover:border-halcyon-400 hover:bg-halcyon-50/50")"

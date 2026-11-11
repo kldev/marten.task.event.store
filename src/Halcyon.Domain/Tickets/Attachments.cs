@@ -8,7 +8,7 @@ public static class AttachmentRules
 {
     public const long MaxBytes = 20 * 1024 * 1024;
     public const int MaxPerTicket = 10;
-    public const int FileNameMax = 200;
+    private const int FileNameMax = 200;
 
     /// <summary>Extension → content type. SVG and HTML are missing on purpose: shown inline they can run scripts.</summary>
     private static readonly Dictionary<string, string> Types = new(StringComparer.OrdinalIgnoreCase)
@@ -35,11 +35,10 @@ public static class AttachmentRules
     /// <summary>For the file picker's <c>accept</c> attribute.</summary>
     public static string Accept { get; } = string.Join(",", Types.Keys);
 
-    public static string AllowedText { get; } =
+    private static string AllowedText { get; } =
         "obrazy (PNG, JPG, GIF, WEBP), PDF, dokumenty Office, TXT/CSV, ZIP, MP4/MOV";
 
-    public static string? ContentTypeFor(string fileName) =>
-        Types.TryGetValue(Path.GetExtension(fileName), out var type) ? type : null;
+    public static string? ContentTypeFor(string fileName) => Types.GetValueOrDefault(Path.GetExtension(fileName));
 
     public static bool IsImage(string contentType) => contentType.StartsWith("image/", StringComparison.Ordinal);
 

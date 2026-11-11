@@ -247,7 +247,7 @@
     private long logWarnings;
     private string? error;
 
-    private string RetentionText => $"{Options.Value.Retention.TotalDays:0.##} {T("dni", Options.Value.Retention.TotalDays == 1 ? "day" : "days")}";
+    private string RetentionText => $"{Options.Value.Retention.TotalDays:0.##} {T("dni", Options.Value.Retention == TimeSpan.FromDays(1) ? "day" : "days")}";
 
     private IReadOnlyList<(string Label, string Value, string Variable)> Settings =>
     [

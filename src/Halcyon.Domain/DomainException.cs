@@ -8,6 +8,7 @@ public sealed class DomainException : Exception
     public DomainException(string message)
         : base(message) { }
 
+    // ReSharper disable once UnusedMember.Global - the standard exception constructors (CA1032).
     public DomainException() { }
 
     public DomainException(string message, Exception innerException)

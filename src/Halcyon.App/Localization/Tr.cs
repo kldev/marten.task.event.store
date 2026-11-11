@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Halcyon.Domain.Categories;
 using Halcyon.Domain.Localization;
 
 namespace Halcyon.App.Localization;
@@ -7,7 +8,7 @@ namespace Halcyon.App.Localization;
 /// The UI's texts in two languages (ADR-0012), used with <c>@using static Halcyon.App.Localization.Tr</c>:
 /// <list type="bullet">
 /// <item><see cref="T"/> - a text of the UI written in both languages where it is used: <c>@T("Pula", "Pool")</c>.</item>
-/// <item><see cref="N"/> - a name that comes from the domain's catalog (categories, topics, report fields and their
+/// <item><see cref="N(string?)"/> - a name that comes from the domain's catalog (categories, topics, report fields and their
 /// choices, priorities, months): the domain keeps the Polish name, stored keys never change, English is for display.</item>
 /// <item><see cref="Err"/> - a refusal of the domain (<c>DomainException</c>), written in Polish where the rule lives.</item>
 /// </list>
@@ -24,7 +25,7 @@ public static partial class Tr
         : pl;
 
     /// <summary>"Belgia · Umowa…" for a grouped topic, in the UI's language.</summary>
-    public static string N(Halcyon.Domain.Categories.Subcategory subcategory) =>
+    public static string N(Subcategory subcategory) =>
         subcategory.Group is null ? N(subcategory.Name) : $"{N(subcategory.Group)} · {N(subcategory.Name)}";
 
     /// <summary>A refusal in the UI's language: exact messages first, then the ones with a name or a number in them.</summary>

@@ -20,7 +20,7 @@ public static class AppVersion
         Informational.Split('+') is [_, { Length: > 0 } sha, ..] && sha != "unknown" ? sha : null;
 
     /// <summary>7 characters, keeping "-dirty" when the build had uncommitted changes.</summary>
-    public static string ShortCommit =>
+    private static string ShortCommit =>
         Commit switch
         {
             null => "dev",

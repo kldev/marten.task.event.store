@@ -190,7 +190,7 @@ public class TicketWorkflowTests(PostgresContainer postgres) : TicketTestBase(po
     [Fact]
     public async Task Timeline_TellsTheWholeStory()
     {
-        var id = await ReportAsync(Priority.Medium);
+        var id = await ReportAsync();
         await App.Get<TakeTicket>().ExecuteAsync(id, Anna);
         await App.Get<HandOverTicket>().ExecuteAsync(id, Anna, Piotr.Id, "urlop");
         await App.Get<ChangeTicketPriority>().ExecuteAsync(id, Piotr, Priority.High, null);

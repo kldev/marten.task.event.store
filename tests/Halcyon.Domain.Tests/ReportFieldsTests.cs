@@ -72,11 +72,11 @@ public class ReportFieldsTests
     [InlineData("Olena <olena@company.io>", false)]
     public void AnEmail_IsAnAddress(string value, bool ok)
     {
-        var check = () => ReportFields.Check(Onboarding, NewEmployee(("email", value)));
+        IReadOnlyDictionary<string, string> Check() => ReportFields.Check(Onboarding, NewEmployee(("email", value)));
         if (ok)
-            check()["email"].ShouldBe(value);
+            Check()["email"].ShouldBe(value);
         else
-            Should.Throw<DomainException>(check);
+            Should.Throw<DomainException>(Check);
     }
 
     [Theory]

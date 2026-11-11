@@ -3,7 +3,7 @@ namespace Halcyon.Domain.Time;
 /// <summary>Times are stored in UTC and shown in Polish local time (ADR-0004).</summary>
 public static class LocalTime
 {
-    public static TimeZoneInfo Zone { get; } = TimeZoneInfo.FindSystemTimeZoneById("Europe/Warsaw");
+    private static TimeZoneInfo Zone { get; } = TimeZoneInfo.FindSystemTimeZoneById("Europe/Warsaw");
 
     public static DateTimeOffset ToLocal(DateTimeOffset utc) => TimeZoneInfo.ConvertTime(utc, Zone);
 

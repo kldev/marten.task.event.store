@@ -54,7 +54,6 @@ public sealed record ChartData(
 )
 {
     public string RangeText => $"{Buckets[0].Days.Start:dd.MM.yyyy} – {Buckets[^1].Days.End:dd.MM.yyyy}";
-    public int HeatMax => Heat.Max(row => row.Max());
 }
 
 /// <summary>
@@ -161,8 +160,8 @@ public sealed class ChartQueries(IDocumentStore store, TimeProvider time)
                 g.Key,
                 bySubcategory ? catalog.FindSubcategory(g.Key)?.Subcategory.DisplayName ?? g.Key : ShortName(g.Key),
                 [
-                    g.Count(t => t.Status == TicketStatus.Done && !t.ResolvedLate),
-                    g.Count(t => t.Status == TicketStatus.Done && t.ResolvedLate),
+                    g.Count(t => t is { Status: TicketStatus.Done, ResolvedLate: false }),
+                    g.Count(t => t is { Status: TicketStatus.Done, ResolvedLate: true }),
                     g.Count(t => t.Status != TicketStatus.Done),
                 ]
             ))
@@ -214,7 +213,7 @@ public sealed class ChartQueries(IDocumentStore store, TimeProvider time)
     }
 
     /// <summary>The category on a chart's axis: "IT" rather than "Zgłoszenie do IT".</summary>
-    public static string ShortName(string categoryKey) =>
+    private static string ShortName(string categoryKey) =>
         categoryKey switch
         {
             "it" => "IT",

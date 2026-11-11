@@ -9,7 +9,6 @@
 @inject AgentDirectory Directory
 @inject CurrentAgent CurrentAgent
 @inject TicketChanges Changes
-@inject TimeProvider Time
 
 <PageTitle>@(details?.Ticket.Number ?? T("Zgłoszenie", "Ticket")) · Halcyon</PageTitle>
 
@@ -342,7 +341,7 @@ else if (details is { } d)
 
     /// <summary>A multi-choice value ("Facebook, TikTok") with each option in the UI's language.</summary>
     private static string MultiText(string value) =>
-        string.Join(ReportFields.MultiSeparator, ReportFields.SplitMulti(value).Select(o => N(o)));
+        string.Join(ReportFields.MultiSeparator, ReportFields.SplitMulti(value).Select(N));
 
     private static string CategoryText(TicketDetails d) =>
         CategoryCatalog.Default.FindCategory(d.Ticket.CategoryKey) is { } category ? N(category.Name) : d.CategoryName;

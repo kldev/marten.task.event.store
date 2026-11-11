@@ -12,7 +12,7 @@
             <p class="text-xs text-ink-500"><a href="system/status" class="hover:underline">System</a> /</p>
             <h1>@T("Logi aplikacji", "Application logs")</h1>
             <p class="mt-1 text-sm text-ink-500">
-                @T("Wpisy logu od poziomu", "Log entries from level") @Options.Value.LogLevel, @T("z ostatnich", "from the last") @(Options.Value.Retention.TotalDays.ToString("0.##")) @T("dni", Options.Value.Retention.TotalDays == 1 ? "day" : "days").
+                @T("Wpisy logu od poziomu", "Log entries from level") @Options.Value.LogLevel, @T("z ostatnich", "from the last") @(Options.Value.Retention.TotalDays.ToString("0.##")) @T("dni", Options.Value.Retention == TimeSpan.FromDays(1) ? "day" : "days").
                 @T("Odpowiedzi HTTP są na stronie", "HTTP responses are on the") <a href="system/status" class="text-halcyon-700 hover:underline">@T("Status systemu", "System status")</a>@T("", " page").
             </p>
         </div>

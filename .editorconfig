@@ -1,0 +1,38 @@
+root = true
+
+# Formatting is CSharpier's (.csharpierrc.json). This file holds the naming conventions and the JetBrains inspection
+# settings the code follows: `jb inspectcode Halcyon.slnx` should report nothing.
+
+[*.{cs,razor}]
+# Naming: private fields are camelCase with no underscore (`app`, `agents`) - set in Halcyon.slnx.DotSettings, the
+# one place JetBrains reads it reliably.
+
+# Links to endpoints (/auth/..., /jezyk/...) are routes, not files in wwwroot.
+resharper_html_path_error_highlighting = none
+
+# Add.../Map.../Use... extensions return the builder for chaining, whether a caller chains or not.
+resharper_unused_method_return_value_global_highlighting = none
+
+# Options bound from configuration need public setters.
+[**/*Options.cs]
+resharper_auto_property_can_be_made_get_only_global_highlighting = none
+resharper_property_can_be_made_init_only_global_highlighting = none
+resharper_unused_auto_property_accessor_global_highlighting = none
+
+# Marten documents, events and the aggregate: the serializer reads and writes every property, and an event keeps
+# what happened (the ticket id, who did it) whether or not the code reads it back today.
+[src/Halcyon.Database/Documents/*.cs]
+resharper_auto_property_can_be_made_get_only_global_highlighting = none
+resharper_property_can_be_made_init_only_global_highlighting = none
+resharper_unused_auto_property_accessor_global_highlighting = none
+
+[src/Halcyon.Domain/Tickets/{Ticket,TicketEvents}.cs]
+resharper_not_accessed_positional_property_global_highlighting = none
+resharper_unused_auto_property_accessor_global_highlighting = none
+resharper_member_can_be_private_global_highlighting = none
+# On(TEvent e) overloads: the parameter type picks the overload even when the body does not read it.
+resharper_unused_parameter_local_highlighting = none
+
+# Query results keep the row as it was read (ids, the generation time, the page asked for); a page shows a subset.
+[{src/Halcyon.App/Features/Reports/ChartQueries.cs,src/Halcyon.App/Features/Tickets/TicketQueries.cs,src/Halcyon.App/Monitoring/BackgroundJobs.cs,src/Halcyon.App/Monitoring/MonitoringQueries.cs}]
+resharper_not_accessed_positional_property_global_highlighting = none

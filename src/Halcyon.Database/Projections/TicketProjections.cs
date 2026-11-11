@@ -10,7 +10,7 @@ namespace Halcyon.Database.Projections;
 /// <see cref="Ticket.Evolve"/>. Explicit code, so the domain project needs no Marten source generator (ADR-0002).
 /// Registered as a live aggregation - never stored.
 /// </summary>
-public sealed partial class TicketAggregation : SingleStreamProjection<Ticket, Guid>
+public sealed class TicketAggregation : SingleStreamProjection<Ticket, Guid>
 {
     public TicketAggregation()
     {
@@ -21,7 +21,7 @@ public sealed partial class TicketAggregation : SingleStreamProjection<Ticket, G
 }
 
 /// <summary>The read model of the lists, inline (consistent right after the click).</summary>
-public sealed partial class TicketViewProjection : SingleStreamProjection<TicketView, Guid>
+public sealed class TicketViewProjection : SingleStreamProjection<TicketView, Guid>
 {
     public TicketViewProjection()
     {

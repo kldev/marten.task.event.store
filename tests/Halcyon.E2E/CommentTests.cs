@@ -14,7 +14,7 @@ public class CommentTests(E2EEnvironment env)
             Priority.Medium,
             TimeSpan.FromMinutes(20)
         );
-        var author = await env.SignInAsync("anna.nowak@company.io");
+        var author = await env.SignInAsync();
         await author.GotoAsync($"/zgloszenia/{id}");
 
         await author.GetByTestId("comment-input").FillAsync("Sprawdzę kabel <script>alert('x')</script>");

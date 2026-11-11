@@ -121,9 +121,9 @@ public static class ReportFields
         return (10 - sum % 10) % 10 == value[10] - '0';
     }
 
-    public const decimal AmountMax = 1_000_000_000_000m;
+    private const decimal AmountMax = 1_000_000_000_000m;
 
-    public const int CountMax = 10_000;
+    private const int CountMax = 10_000;
 
     public const string MultiSeparator = ", ";
 

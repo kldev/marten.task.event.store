@@ -24,7 +24,7 @@
                     <label class="label" for="handover-to">@T("Do agenta", "To agent")</label>
                     <select id="handover-to" class="input" data-testid="handover-to" @bind="targetId">
                         <option value="">@T("- wybierz -", "- choose -")</option>
-                        @foreach (var agent in agents.Where(a => a.Id != Me))
+                        @foreach (var agent in agents.Where(a => a.Id != myId))
                         {
                             <option value="@agent.Id">@agent.FullName (@T("w realizacji", "in progress"): @agent.InProgress)</option>
                         }
@@ -68,7 +68,7 @@
     private string? reason;
     private string? targetId;
     private string? dialogError;
-    private Guid Me;
+    private Guid myId;
     private IReadOnlyList<AgentRow> agents = [];
 
     private void Open(Mode next)
@@ -81,7 +81,7 @@
 
     private async Task OpenHandOverAsync()
     {
-        Me = (await CurrentAgent.GetAsync()).Id;
+        myId = (await CurrentAgent.GetAsync()).Id;
         agents = await Directory.AgentsAsync();
         Open(Mode.HandOver);
     }

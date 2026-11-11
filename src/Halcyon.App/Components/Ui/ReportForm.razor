@@ -1,7 +1,6 @@
 @* The report form for both ways in (spec 002): an agent (with the report date picker) or the requester on the public
    page (the date is the moment of sending). The domain has the last word; its refusal is shown above the button. *@
 @using System.ComponentModel.DataAnnotations
-@using Halcyon.App.Features.Tickets
 
 <EditForm Model="model" OnValidSubmit="SubmitAsync" FormName="@FormName" class="space-y-6" data-testid="report-form">
     <DataAnnotationsValidator />

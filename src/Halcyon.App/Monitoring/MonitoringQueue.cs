@@ -71,8 +71,8 @@ public sealed class MonitoringQueue<T>
     public string Name { get; }
 
     /// <summary>In the reader's language (ADR-0012): asked for when the page renders.</summary>
-    public Func<string> Description { get; }
-    public int Capacity { get; }
+    private Func<string> Description { get; }
+    private int Capacity { get; }
 
     public void Enqueue(T item)
     {

@@ -96,14 +96,14 @@ public class ReportTests(PostgresContainer postgres) : TicketTestBase(postgres)
     }
 
     [Fact]
-    public async Task AnEventStoredBeforeFieldsExisted_StillReads()
+    public void AnEventStoredBeforeFieldsExisted_StillReads()
     {
         // A TicketReported as the previous version wrote it: no "fields" property at all.
         var id = Guid.CreateVersion7();
         var reported = Ticket.Report(id, TestDraft(), Now);
         var serializer = App.Store.Options.Serializer();
         var json = serializer.ToJson(reported);
-        json.ShouldContain("\"fields\"", Case.Insensitive);
+        json.ShouldContain("\"fields\"");
         var old = System.Text.Json.Nodes.JsonNode.Parse(json)!.AsObject();
         old.Remove(old.First(p => p.Key.Equals("fields", StringComparison.OrdinalIgnoreCase)).Key);
 

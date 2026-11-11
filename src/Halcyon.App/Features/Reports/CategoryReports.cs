@@ -164,7 +164,7 @@ public sealed class CategoryReportQueries(IDocumentStore store, TimeProvider tim
             .Subcategories.Where(s => filter.Group is null || s.Group == filter.Group)
             .Where(s => filter.SubcategoryKey is null || s.Key == filter.SubcategoryKey)
             .ToList();
-        var keys = scope.Select(s => s.Key).ToArray();
+        var keys = scope.Select(s => s.Key).ToList();
 
         await using var session = store.QuerySession();
         IQueryable<TicketView> query = session.Query<TicketView>().Where(t => t.CategoryKey == category.Key);

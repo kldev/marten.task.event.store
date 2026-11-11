@@ -60,7 +60,7 @@
     private DeadlineState State => Deadlines.Evaluate(Status, Deadline, CurrentTime);
 
     /// <summary><see cref="TimeLeftText.Format(DateTimeOffset, DateTimeOffset)"/> in the UI's language.</summary>
-    public static string Text(DateTimeOffset deadline, DateTimeOffset now)
+    private static string Text(DateTimeOffset deadline, DateTimeOffset now)
     {
         if (!Language.IsEnglish)
             return TimeLeftText.Format(deadline, now);

@@ -1,6 +1,4 @@
 @* A report on the page (spec 008): the export buttons over the same table the files have. *@
-@using Halcyon.App.Features.Reports
-@using System.Globalization
 
 <div class="space-y-3">
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -52,7 +50,7 @@
                             }
                         </tr>
                         <tr>
-                            @foreach (var (group, columns) in Runs.Where(r => r.Group is not null))
+                            @foreach (var (_, columns) in Runs.Where(r => r.Group is not null))
                             {
                                 @for (var i = 0; i < columns.Count; i++)
                                 {

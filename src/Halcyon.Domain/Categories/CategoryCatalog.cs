@@ -27,10 +27,6 @@ public sealed record Category(
 {
     public IEnumerable<Subcategory> ActiveSubcategories => Subcategories.Where(s => s.Active);
 
-    /// <summary>Every field of the category once, in catalog order: the columns of its report.</summary>
-    public IReadOnlyList<FieldDefinition> ReportFields =>
-        Subcategories.SelectMany(s => s.ReportFields).DistinctBy(f => f.Key).ToList();
-
     /// <summary>The markets, when the subcategories are grouped by one.</summary>
     public IReadOnlyList<string> Groups => Subcategories.Select(s => s.Group).OfType<string>().Distinct().ToList();
 }
@@ -104,7 +100,7 @@ public static class KnownFields
         Required: true
     );
 
-    public static readonly IReadOnlyList<string> Europe =
+    private static readonly IReadOnlyList<string> Europe =
     [
         "Albania",
         "Andora",
@@ -280,14 +276,9 @@ public static class KnownFields
 /// Categories are code (ADR-0003): stable keys stored on tickets, names only for display. Retire a subcategory with
 /// <c>Active = false</c> - never delete or rename a key, stored tickets refer to it.
 /// </summary>
-public sealed class CategoryCatalog
+public sealed class CategoryCatalog(IReadOnlyList<Category> categories)
 {
-    public CategoryCatalog(IReadOnlyList<Category> categories)
-    {
-        Categories = categories;
-    }
-
-    public IReadOnlyList<Category> Categories { get; }
+    public IReadOnlyList<Category> Categories { get; } = categories;
 
     public static CategoryCatalog Default { get; } =
         new([
