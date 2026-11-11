@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using Halcyon.App.Localization;
 using Halcyon.Domain.Categories;
+using Halcyon.Domain.Localization;
 using Halcyon.IntegrationTests.Infrastructure;
 
 namespace Halcyon.IntegrationTests;
@@ -68,7 +69,8 @@ public class LanguageTests(PostgresContainer postgres) : IAsyncLifetime
             .Distinct()
             .ToList();
 
-        var missing = names.Where(n => In(Language.English, () => Tr.N(n)) == n && n != "Feedback").ToList();
+        // In the dictionary, not "translated to something else": "Feedback" or "E-mail" read the same in both.
+        var missing = names.Where(n => !EnglishText.English.ContainsKey(n)).ToList();
 
         missing.ShouldBeEmpty();
     }
