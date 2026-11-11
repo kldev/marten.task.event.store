@@ -36,6 +36,14 @@ public sealed class E2EEnvironment : IAsyncLifetime
     private const string S3Secret = "halcyon-e2e-secret";
     private const string Bucket = "halcyon-attachments";
 
+    /// <summary>
+    /// The app runs with a Low window of 5 days instead of 1 week (spec 012, ADR-0013): every page that names an SLA
+    /// must read the configuration. The seed, made by the migrator, keeps the default windows in its events.
+    /// </summary>
+    public const int LowSlaHours = 120;
+
+    private static readonly SlaPolicy Sla = SlaPolicy.Default with { Low = TimeSpan.FromHours(LowSlaHours) };
+
     private readonly PostgreSqlContainer postgres = new PostgreSqlBuilder("postgres:18").Build();
     private readonly IContainer rustFs = new ContainerBuilder("rustfs/rustfs:1.0.0")
         .WithEnvironment("RUSTFS_ACCESS_KEY", S3Key)
@@ -123,6 +131,7 @@ public sealed class E2EEnvironment : IAsyncLifetime
                 ["Storage__Bucket"] = Bucket,
                 // Every test signs in, often twice: more than the default 10 attempts a minute from one address.
                 ["Auth__SignInAttemptsPerMinute"] = "1000",
+                ["Sla__LowHours"] = LowSlaHours.ToString(System.Globalization.CultureInfo.InvariantCulture),
             },
         };
 
@@ -231,7 +240,7 @@ public sealed class E2EEnvironment : IAsyncLifetime
         using var limiter = new PublicReportLimiter();
         var storage = new S3AttachmentStorage(s3!, Options.Create(new StorageOptions { Bucket = Bucket }));
         var files = new AttachmentFiles(storage, NullLogger<AttachmentFiles>.Instance);
-        var report = new ReportTicket(Store, TimeProvider.System, limiter, files);
+        var report = new ReportTicket(Store, TimeProvider.System, limiter, files, Sla, new TicketIds());
         var reported = await report.ByAgentAsync(
             anna,
             new ReportTicketCommand(
@@ -246,6 +255,13 @@ public sealed class E2EEnvironment : IAsyncLifetime
             )
         );
         return (reported.TicketId, Ticket.NumberOf(reported.TicketId));
+    }
+
+    /// <summary>A ticket's list row, read straight from the database.</summary>
+    public async Task<TicketView> ViewAsync(Guid ticketId)
+    {
+        await using var session = Store.QuerySession();
+        return (await session.LoadAsync<TicketView>(ticketId))!;
     }
 
     public async Task<AgentRef> AgentAsync(string email)

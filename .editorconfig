@@ -18,6 +18,8 @@ resharper_unused_method_return_value_global_highlighting = none
 resharper_auto_property_can_be_made_get_only_global_highlighting = none
 resharper_property_can_be_made_init_only_global_highlighting = none
 resharper_unused_auto_property_accessor_global_highlighting = none
+# ... and stay public even when only the options class itself reads them (SlaOptions.ToPolicy).
+resharper_member_can_be_private_global_highlighting = none
 
 # Marten documents, events and the aggregate: the serializer reads and writes every property, and an event keeps
 # what happened (the ticket id, who did it) whether or not the code reads it back today.
@@ -25,10 +27,14 @@ resharper_unused_auto_property_accessor_global_highlighting = none
 resharper_auto_property_can_be_made_get_only_global_highlighting = none
 resharper_property_can_be_made_init_only_global_highlighting = none
 resharper_unused_auto_property_accessor_global_highlighting = none
+# ... and stay public even when only the options class itself reads them (SlaOptions.ToPolicy).
+resharper_member_can_be_private_global_highlighting = none
 
 [src/Halcyon.Domain/Tickets/{Ticket,TicketEvents}.cs]
 resharper_not_accessed_positional_property_global_highlighting = none
 resharper_unused_auto_property_accessor_global_highlighting = none
+# ... and stay public even when only the options class itself reads them (SlaOptions.ToPolicy).
+resharper_member_can_be_private_global_highlighting = none
 resharper_member_can_be_private_global_highlighting = none
 # On(TEvent e) overloads: the parameter type picks the overload even when the body does not read it.
 resharper_unused_parameter_local_highlighting = none

@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Halcyon.Domain.Categories;
 using Halcyon.Domain.Localization;
+using Halcyon.Domain.Tickets;
 
 namespace Halcyon.App.Localization;
 
@@ -23,6 +24,9 @@ public static partial class Tr
         pl is null ? ""
         : Language.IsEnglish && EnglishText.English.TryGetValue(pl, out var en) ? en
         : pl;
+
+    /// <summary>A priority's SLA window in the UI's language ("3 dni" / "3 days"), from the configured policy (ADR-0013).</summary>
+    public static string SlaText(SlaPolicy policy, Priority priority) => policy.Text(priority, Language.IsEnglish);
 
     /// <summary>"Belgia · Umowa…" for a grouped topic, in the UI's language.</summary>
     public static string N(Subcategory subcategory) =>

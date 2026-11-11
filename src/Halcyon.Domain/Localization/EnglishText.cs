@@ -202,8 +202,6 @@ public static class EnglishText
         ["Wysoki"] = "High",
         ["Średni"] = "Medium",
         ["Niski"] = "Low",
-        ["3 dni"] = "3 days",
-        ["1 tydzień"] = "1 week",
         ["W puli"] = "In the pool",
         ["W realizacji"] = "In progress",
         ["Zrealizowane"] = "Resolved",

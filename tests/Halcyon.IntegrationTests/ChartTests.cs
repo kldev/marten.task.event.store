@@ -33,7 +33,7 @@ public class ChartNumbersTests
             SubcategoryKey = subcategory,
             Priority = priority,
             ReportedAt = reported,
-            Deadline = reported + (sla ?? Sla.For(priority)),
+            Deadline = reported + (sla ?? SlaPolicy.Default.For(priority)),
             Status = resolved is null ? TicketStatus.InPool : TicketStatus.Done,
             ResolvedAt = resolved,
             ResolvedLate = late,

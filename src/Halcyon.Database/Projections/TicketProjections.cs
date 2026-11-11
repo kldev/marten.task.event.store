@@ -43,7 +43,7 @@ public sealed class TicketViewProjection : SingleStreamProjection<TicketView, Gu
                 view.Priority = r.Priority;
                 view.OriginalPriority = r.Priority;
                 view.ReportedAt = r.ReportedAt;
-                view.Deadline = Sla.DeadlineFor(r.ReportedAt, r.Priority);
+                view.Deadline = Ticket.DeadlineOf(r);
                 view.Status = TicketStatus.InPool;
                 view.RequesterIncognito = r.Requester.Incognito;
                 view.RequesterId = r.Requester.Person?.Id;
@@ -87,7 +87,7 @@ public sealed class TicketViewProjection : SingleStreamProjection<TicketView, Gu
                 break;
             case TicketPriorityChanged c:
                 view.Priority = c.To;
-                view.Deadline = Sla.DeadlineFor(view.ReportedAt, c.To);
+                view.Deadline = Ticket.DeadlineOf(c, view.ReportedAt);
                 view.LastChangeAt = c.At;
                 break;
             case TicketResolved d:

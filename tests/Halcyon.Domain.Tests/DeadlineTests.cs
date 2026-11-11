@@ -14,7 +14,7 @@ public class DeadlineTests
     [InlineData(Priority.Medium, 3 * 24 * 60)]
     [InlineData(Priority.Low, 7 * 24 * 60)]
     public void Sla_PerPriority(Priority priority, int minutes) =>
-        Sla.For(priority).ShouldBe(TimeSpan.FromMinutes(minutes));
+        SlaPolicy.Default.For(priority).ShouldBe(TimeSpan.FromMinutes(minutes));
 
     [Fact]
     public void ExactlySixtyMinutesLeft_IsStillOnTime() =>
@@ -59,7 +59,7 @@ public class DeadlineTests
         var reportedAt = LocalTime.FromLocal(reportedLocal);
         reportedAt.Offset.ShouldBe(TimeSpan.FromHours(2));
 
-        var deadline = Sla.DeadlineFor(reportedAt, Priority.Critical);
+        var deadline = SlaPolicy.Default.DeadlineFor(reportedAt, Priority.Critical);
 
         (deadline - reportedAt).ShouldBe(TimeSpan.FromHours(3));
         // Three real hours later the wall clock shows 03:30 CET, not 04:30.

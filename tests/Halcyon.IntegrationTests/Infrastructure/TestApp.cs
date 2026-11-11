@@ -41,14 +41,25 @@ public sealed class TestApp : IAsyncDisposable
         PostgresContainer postgres,
         bool migrate = true,
         Dictionary<string, string?>? settings = null,
-        DateTimeOffset? now = null
+        DateTimeOffset? now = null,
+        Action<IServiceCollection>? services = null
     )
     {
         var connectionString = await postgres.CreateDatabaseAsync();
         if (migrate)
             (await Migrator.RunAsync(connectionString)).ShouldBe(0);
+        return await StartOnAsync(connectionString, settings, now, services);
+    }
 
-        var app = Build(connectionString, settings, now, out var clock);
+    /// <summary>Builds and starts the host on a database that is already there (a restart with other settings).</summary>
+    public static async Task<TestApp> StartOnAsync(
+        string connectionString,
+        Dictionary<string, string?>? settings = null,
+        DateTimeOffset? now = null,
+        Action<IServiceCollection>? services = null
+    )
+    {
+        var app = Build(connectionString, settings, now, out var clock, services);
         await app.StartAsync();
         return new TestApp(app, clock);
     }
@@ -57,7 +68,8 @@ public sealed class TestApp : IAsyncDisposable
         string connectionString,
         Dictionary<string, string?>? settings,
         DateTimeOffset? now,
-        out FakeTimeProvider clock
+        out FakeTimeProvider clock,
+        Action<IServiceCollection>? services = null
     )
     {
         var fake = new FakeTimeProvider(now ?? DateTimeOffset.UtcNow);
@@ -83,6 +95,7 @@ public sealed class TestApp : IAsyncDisposable
                     values[key] = value;
                 builder.Configuration.AddInMemoryCollection(values);
                 builder.Services.AddSingleton<TimeProvider>(fake);
+                services?.Invoke(builder.Services);
             }
         );
     }

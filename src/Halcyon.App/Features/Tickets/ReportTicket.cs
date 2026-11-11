@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using Halcyon.Database;
 using Halcyon.Database.Documents;
 using Halcyon.Domain;
 using Halcyon.Domain.People;
@@ -78,14 +79,29 @@ public sealed record ReportPrefill(
             : null;
 }
 
-/// <summary>Reports a new ticket into the pool, by an agent or by the requester themselves (spec 002).</summary>
+/// <summary>Where a new ticket's id - and so its number - comes from; a test replaces it to make two numbers meet.</summary>
+public class TicketIds
+{
+    public virtual Guid Next() => Guid.CreateVersion7();
+}
+
+/// <summary>
+/// Reports a new ticket into the pool, by an agent or by the requester themselves (spec 002). The deadline comes from
+/// the configured SLA and is stored in the event (ADR-0013); the number is unique by a unique index, and a report that
+/// meets a number already given is made again under a new id (ADR-0014).
+/// </summary>
 public sealed class ReportTicket(
     IDocumentStore store,
     TimeProvider time,
     PublicReportLimiter limiter,
-    AttachmentFiles files
+    AttachmentFiles files,
+    SlaPolicy sla,
+    TicketIds ids
 )
 {
+    /// <summary>Two 8-digit numbers meeting is rare; three times in a row means something else is wrong.</summary>
+    private const int NumberAttempts = 3;
+
     public async Task<TicketReported> ByAgentAsync(
         AgentRef agent,
         ReportTicketCommand command,
@@ -114,10 +130,28 @@ public sealed class ReportTicket(
         CancellationToken ct
     )
     {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await ReportOnceAsync(ids.Next(), command, reportedAt, channel, registeredBy, ct);
+            }
+            catch (Exception exception) when (attempt < NumberAttempts && HalcyonStore.IsNumberTaken(exception)) { }
+        }
+    }
+
+    private async Task<TicketReported> ReportOnceAsync(
+        Guid id,
+        ReportTicketCommand command,
+        DateTimeOffset reportedAt,
+        ReportChannel channel,
+        AgentRef? registeredBy,
+        CancellationToken ct
+    )
+    {
         await using var session = store.LightweightSession();
         var requester = await RequesterAsync(session, command, ct);
 
-        var id = Guid.CreateVersion7();
         var now = time.GetUtcNow();
         var reported = Ticket.Report(
             id,
@@ -133,7 +167,8 @@ public sealed class ReportTicket(
                 registeredBy,
                 command.Fields
             ),
-            now
+            now,
+            sla: sla
         );
 
         // The domain checks every file (type, size, how many) before anything is stored.

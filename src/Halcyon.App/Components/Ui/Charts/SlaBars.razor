@@ -1,6 +1,7 @@
 @* How much of the SLA resolving a ticket takes, per priority (spec 009): the light bar is the 90th percentile, the dark
    one the median, the vertical line is 100 % of the SLA - past it the ticket was late. *@
 @using static Halcyon.App.Components.Ui.Charts.ChartScale
+@inject SlaPolicy Sla
 
 @if (Rows.All(r => r.Count == 0))
 {
@@ -23,7 +24,7 @@ else
             <div class="grid grid-cols-[minmax(6rem,9rem)_1fr] items-center gap-3 text-sm" data-testid="sla-row" data-priority="@row.Priority">
                 <span class="text-ink-700">
                     @N(PriorityNames.Name(row.Priority))
-                    <span class="block text-xs text-ink-500">SLA @N(PriorityNames.SlaText(row.Priority)) · @TicketCount(row.Count)</span>
+                    <span class="block text-xs text-ink-500">SLA @SlaText(Sla, row.Priority) · @TicketCount(row.Count)</span>
                 </span>
                 <span class="relative h-6" aria-hidden="true">
                     @foreach (var tick in Ticks)

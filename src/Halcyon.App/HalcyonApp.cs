@@ -9,6 +9,7 @@ using Halcyon.App.Storage;
 using Halcyon.Database;
 using Halcyon.Database.Migrations;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 
 namespace Halcyon.App;
@@ -53,6 +54,9 @@ public static class HalcyonApp
         builder.Services.AddRazorComponents().AddInteractiveServerComponents();
         builder.Services.AddHalcyonLanguages();
 
+        builder.AddHalcyonSla();
+        // Try: a test may have put its own in (spec 012, a number met twice).
+        builder.Services.TryAddSingleton<TicketIds>();
         builder.Services.AddSingleton<TicketWriter>();
         builder.Services.AddSingleton<PublicReportLimiter>();
         builder.Services.AddSingleton<ReportTicket>();

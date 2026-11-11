@@ -46,8 +46,8 @@ public sealed class ReturnTicketToPool(TicketWriter writer)
     ) => writer.ExecuteAsync(ticketId, (ticket, now) => ticket.ReturnToPool(agent, reason, now), ct);
 }
 
-/// <summary>Change the priority; the deadline is recomputed from the report date (spec 004). Null = no change.</summary>
-public sealed class ChangeTicketPriority(TicketWriter writer)
+/// <summary>Change the priority; the deadline is recomputed from the report date with the configured SLA (spec 004, ADR-0013). Null = no change.</summary>
+public sealed class ChangeTicketPriority(TicketWriter writer, SlaPolicy sla)
 {
     public Task<TicketPriorityChanged?> ExecuteAsync(
         Guid ticketId,
@@ -55,7 +55,7 @@ public sealed class ChangeTicketPriority(TicketWriter writer)
         Priority to,
         string? reason,
         CancellationToken ct = default
-    ) => writer.ExecuteAsync(ticketId, (ticket, now) => ticket.ChangePriority(agent, to, reason, now), ct);
+    ) => writer.ExecuteAsync(ticketId, (ticket, now) => ticket.ChangePriority(agent, to, reason, now, sla), ct);
 }
 
 /// <summary>Mark the ticket resolved; only its assignee can (spec 003).</summary>

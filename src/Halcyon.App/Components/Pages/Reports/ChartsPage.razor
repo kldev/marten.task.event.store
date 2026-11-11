@@ -1,6 +1,7 @@
 @page "/wykresy"
 @using static Halcyon.App.Components.Ui.Charts.ChartScale
 @inject ChartQueries Charts
+@inject SlaPolicy Sla
 
 <PageTitle>@T("Wykresy", "Charts") · Halcyon</PageTitle>
 
@@ -305,10 +306,10 @@
             p.Resolved == 0 ? "-" : Percent(p.ResolvedOnTime / (double)p.Resolved),
         ]);
 
-    private static IEnumerable<IReadOnlyList<string>> SlaRows(ChartData d) =>
+    private IEnumerable<IReadOnlyList<string>> SlaRows(ChartData d) =>
         d.Sla.Select(s => (IReadOnlyList<string>)
         [
-            $"{N(PriorityNames.Name(s.Priority))} ({N(PriorityNames.SlaText(s.Priority))})",
+            $"{N(PriorityNames.Name(s.Priority))} ({SlaText(Sla, s.Priority)})",
             N(s.Count),
             s.MedianTime is { } t ? DurationText(t) : "-",
             s.Median is { } m ? Percent(m) : "-",

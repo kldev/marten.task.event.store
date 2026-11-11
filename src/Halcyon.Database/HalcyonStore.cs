@@ -6,6 +6,7 @@ using JasperFx.Events;
 using JasperFx.Events.Projections;
 using Marten;
 using Marten.Schema;
+using Npgsql;
 using Weasel.Core;
 
 namespace Halcyon.Database;
@@ -19,6 +20,9 @@ public static class HalcyonStore
 {
     public const string DocumentSchema = "halcyon";
     public const string EventSchema = "events";
+
+    /// <summary>The unique index that keeps a ticket's short number unique (ADR-0014).</summary>
+    private const string TicketNumberIndex = "uidx_ticket_number";
 
     public static void Configure(StoreOptions options)
     {
@@ -54,9 +58,21 @@ public static class HalcyonStore
             .Duplicate(x => x.Status)
             .Duplicate(x => x.AssigneeId!)
             .Duplicate(x => x.Deadline)
-            .Index(x => x.CategoryKey);
+            .Index(x => x.CategoryKey)
+            // A number is given once (ADR-0014): two reports that meet on one fail the slower save, which is made again.
+            .UniqueIndex(UniqueIndexType.DuplicatedField, TicketNumberIndex, x => x.Number);
 
         // HTTP answers and the application's log, with retention (ADR-0011).
         MonitoringSchema.Register(options);
     }
+
+    /// <summary>Whether a save failed because the ticket's number is already given (the unique index, ADR-0014).</summary>
+    public static bool IsNumberTaken(Exception exception) =>
+        exception switch
+        {
+            PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: TicketNumberIndex } =>
+                true,
+            { InnerException: { } inner } => IsNumberTaken(inner),
+            _ => false,
+        };
 }

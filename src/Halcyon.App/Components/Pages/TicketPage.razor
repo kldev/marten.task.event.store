@@ -2,6 +2,7 @@
 @inject TicketQueries Queries
 @inject TakeTicket Take
 @inject ChangeTicketPriority ChangePriority
+@inject SlaPolicy Sla
 @inject CommentOnTicket Comment
 @inject AddTicketAttachments Attach
 @inject UpdateTicketFields UpdateFields
@@ -261,7 +262,7 @@ else if (details is { } d)
                         <select class="input" data-testid="priority-select" @bind="newPriority">
                             @foreach (var p in Enum.GetValues<Priority>())
                             {
-                                <option value="@p">@N(PriorityNames.Name(p)) (@N(PriorityNames.SlaText(p)))</option>
+                                <option value="@p">@N(PriorityNames.Name(p)) (@SlaText(Sla, p))</option>
                             }
                         </select>
                         <p class="text-xs text-ink-600" data-testid="priority-preview">

@@ -119,7 +119,7 @@
                             </span>
                             <span>
                                 <span class="block font-semibold text-ink-900">@N(PriorityNames.Name(priority))</span>
-                                <span class="block text-xs text-ink-500">@N(PriorityNames.SlaText(priority))</span>
+                                <span class="block text-xs text-ink-500">@SlaText(Sla, priority)</span>
                             </span>
                         </label>
                     }
@@ -193,6 +193,9 @@
     /// <summary>A request prepared elsewhere (spec 008: recruitment orders a campaign from marketing).</summary>
     [Parameter]
     public ReportPrefill? Prefill { get; set; }
+
+    [Inject]
+    private SlaPolicy Sla { get; set; } = null!;
 
     [Inject]
     private TimeProvider Time { get; set; } = null!;

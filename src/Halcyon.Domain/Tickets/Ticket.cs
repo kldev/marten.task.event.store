@@ -51,8 +51,11 @@ public sealed class Ticket
 
     private readonly Dictionary<string, string> fields = [];
 
-    /// <summary>Always from the report date with the current priority (ADR-0004).</summary>
-    public DateTimeOffset Deadline => Sla.DeadlineFor(ReportedAt, Priority);
+    /// <summary>
+    /// From the report date with the current priority (ADR-0004), as the events recorded it (ADR-0013): a later change
+    /// of the SLA windows does not move it.
+    /// </summary>
+    public DateTimeOffset Deadline { get; private set; }
 
     public DeadlineState StateAt(DateTimeOffset now) => Deadlines.Evaluate(Status, Deadline, now);
 
@@ -62,7 +65,8 @@ public sealed class Ticket
         Guid ticketId,
         TicketDraft draft,
         DateTimeOffset now,
-        CategoryCatalog? catalog = null
+        CategoryCatalog? catalog = null,
+        SlaPolicy? sla = null
     )
     {
         var title = TicketLimits.Required(draft.Title, "Tytuł", TicketLimits.TitleMax);
@@ -104,7 +108,8 @@ public sealed class Ticket
             draft.Channel,
             draft.RegisteredBy,
             now.ToUniversalTime(),
-            fields.Count > 0 ? fields : null
+            fields.Count > 0 ? fields : null,
+            (sla ?? SlaPolicy.Default).DeadlineFor(draft.ReportedAt.ToUniversalTime(), priority)
         );
     }
 
@@ -193,7 +198,13 @@ public sealed class Ticket
     }
 
     /// <summary>Null when the priority is already the requested one: nothing happened, nothing is stored.</summary>
-    public TicketPriorityChanged? ChangePriority(AgentRef agent, Priority to, string? reason, DateTimeOffset now)
+    public TicketPriorityChanged? ChangePriority(
+        AgentRef agent,
+        Priority to,
+        string? reason,
+        DateTimeOffset now,
+        SlaPolicy? sla = null
+    )
     {
         if (Status == TicketStatus.Done)
             throw new DomainException("Nie można zmienić priorytetu zrealizowanego zgłoszenia.");
@@ -202,7 +213,15 @@ public sealed class Ticket
         if (to == Priority)
             return null;
         var why = TicketLimits.Optional(reason, "Powód", TicketLimits.ReasonMax);
-        return new TicketPriorityChanged(Id, Priority, to, agent, why, now.ToUniversalTime());
+        return new TicketPriorityChanged(
+            Id,
+            Priority,
+            to,
+            agent,
+            why,
+            now.ToUniversalTime(),
+            (sla ?? SlaPolicy.Default).DeadlineFor(ReportedAt, to)
+        );
     }
 
     public TicketResolved Resolve(AgentRef agent, DateTimeOffset now)
@@ -319,6 +338,7 @@ public sealed class Ticket
         OriginalPriority = e.Priority;
         ReportedAt = e.ReportedAt;
         Requester = e.Requester;
+        Deadline = DeadlineOf(e);
         Status = TicketStatus.InPool;
         foreach (var (key, value) in e.Fields ?? new Dictionary<string, string>())
             fields[key] = value;
@@ -342,7 +362,19 @@ public sealed class Ticket
         Assignee = null;
     }
 
-    private void On(TicketPriorityChanged e) => Priority = e.To;
+    private void On(TicketPriorityChanged e)
+    {
+        Priority = e.To;
+        Deadline = DeadlineOf(e, ReportedAt);
+    }
+
+    /// <summary>The deadline a report gave; for an event stored before ADR-0013, the default windows it was made under.</summary>
+    public static DateTimeOffset DeadlineOf(TicketReported e) =>
+        e.Deadline ?? SlaPolicy.Default.DeadlineFor(e.ReportedAt, e.Priority);
+
+    /// <summary>The deadline after a priority change; for an event stored before ADR-0013, the default windows.</summary>
+    public static DateTimeOffset DeadlineOf(TicketPriorityChanged e, DateTimeOffset reportedAt) =>
+        e.Deadline ?? SlaPolicy.Default.DeadlineFor(reportedAt, e.To);
 
     private void On(TicketResolved e)
     {

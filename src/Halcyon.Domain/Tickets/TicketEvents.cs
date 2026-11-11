@@ -17,7 +17,9 @@ public sealed record TicketReported(
     ReportChannel Channel,
     AgentRef? RegisteredBy,
     DateTimeOffset RecordedAt,
-    IReadOnlyDictionary<string, string>? Fields = null
+    IReadOnlyDictionary<string, string>? Fields = null,
+    // The deadline the ticket was given (ADR-0013). Null in events stored before it: those had SlaPolicy.Default.
+    DateTimeOffset? Deadline = null
 );
 
 public sealed record TicketTaken(Guid TicketId, AgentRef Agent, DateTimeOffset At);
@@ -32,7 +34,9 @@ public sealed record TicketPriorityChanged(
     Priority To,
     AgentRef Agent,
     string? Reason,
-    DateTimeOffset At
+    DateTimeOffset At,
+    // The new deadline, from the report date (ADR-0013). Null in events stored before it: SlaPolicy.Default.
+    DateTimeOffset? Deadline = null
 );
 
 public sealed record TicketResolved(Guid TicketId, AgentRef Agent, DateTimeOffset At, bool Late);
