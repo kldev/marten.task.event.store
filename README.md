@@ -10,7 +10,7 @@ Francja) and the legalisation of foreign workers (Legalizacja) go into one pool.
 back, and resolves it. Every request has a deadline set by its priority, with warnings while time runs out and alerts
 once it is over. Attachments sit in S3, and every change is an event in the ticket's stream.
 
-![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
+![.NET 11](https://img.shields.io/badge/.NET-11-512BD4?logo=dotnet&logoColor=white)
 ![Blazor Server](https://img.shields.io/badge/Blazor-Server-5C2D91?logo=blazor&logoColor=white)
 ![Marten 9](https://img.shields.io/badge/Marten-9.57%20event%20store-0B7A95)
 ![PostgreSQL 18](https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white)
@@ -320,7 +320,7 @@ flowchart LR
 
 | Area | Choice |
 |---|---|
-| Host & UI | .NET 10, ASP.NET Core, Blazor interactive server (no prerender), Tailwind CSS v4 (output committed), Lucide icons inline, custom date-time picker |
+| Host & UI | .NET 11, ASP.NET Core, Blazor interactive server (no prerender), Tailwind CSS v4 (output committed), Lucide icons inline, custom date-time picker |
 | Messaging | Wolverine 6.62 over Marten (ADR-0016): static handlers, `AutoApplyTransactions`, transactional outbox, a durable local mail queue and scheduled messages in PostgreSQL (schema `wolverine`), handler code generated in the image; MailKit over SMTP (Mailpit locally) |
 | Data | Marten 9.58 on PostgreSQL 18: event store (one stream per ticket, quick append), documents, inline `TicketView` projection, `System.Text.Json` with enums as strings |
 | Reports | ClosedXML 0.105 (XLSX, MIT), QuestPDF 2026.9 (PDF, Community licence - free below USD 1M annual revenue, ADR-0009), CSV for a Polish Excel |
@@ -347,7 +347,7 @@ docs/Portal.md               the portal in screenshots, with diagrams; docs/scre
 
 ## Run locally
 
-Needs the .NET SDK 10 and Docker.
+Needs the .NET SDK 11 and Docker.
 
 ```bash
 ./up.sh            # builds and starts postgres, rustfs (+ bucket), the migrator (schema + seed) and the app
@@ -395,7 +395,7 @@ dotnet csharpier check .
 ```
 
 Integration and e2e tests need Docker. The e2e run writes `halcyon-app.log` and `screens/**/*.jpg` next to its output
-(`tests/Halcyon.E2E/bin/Debug/net10.0/`).
+(`tests/Halcyon.E2E/bin/Debug/net11.0/`).
 
 ## Configuration
 

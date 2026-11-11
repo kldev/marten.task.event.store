@@ -10,7 +10,10 @@ public sealed class CurrentAgent(AuthenticationStateProvider authentication)
 {
     public async Task<AgentRef> GetAsync()
     {
+        // Read again on every call and never kept, so it cannot go stale: the event BL0013 asks for has nothing to refresh.
+#pragma warning disable BL0013
         var state = await authentication.GetAuthenticationStateAsync();
+#pragma warning restore BL0013
         var user = state.User;
         if (
             user.Identity?.IsAuthenticated != true

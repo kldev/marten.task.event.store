@@ -2,7 +2,7 @@
 # Two images from one build: `--target app` (the Blazor host) and `--target migrator` (schema + seed, run once before
 # the app; ADR-0002). Tailwind is not run here: wwwroot/css/app.css is committed (SkipTailwind=true).
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 COPY global.json nuget.config Directory.Build.props Directory.Packages.props ./
 COPY src/Halcyon.Domain/Halcyon.Domain.csproj src/Halcyon.Domain/
@@ -26,13 +26,13 @@ RUN dotnet publish src/Halcyon.App/Halcyon.App.csproj -c Release -o /out/app -p:
     -p:WolverineStaticCode=true -p:SourceRevisionId="${GIT_SHA}" \
  && dotnet publish src/Halcyon.DbMigrator/Halcyon.DbMigrator.csproj -c Release -o /out/migrator --no-restore
 
-FROM mcr.microsoft.com/dotnet/runtime:10.0 AS migrator
+FROM mcr.microsoft.com/dotnet/runtime:11.0 AS migrator
 WORKDIR /app
 COPY --from=build /out/migrator .
 USER $APP_UID
 ENTRYPOINT ["dotnet", "Halcyon.DbMigrator.dll"]
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS app
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS app
 WORKDIR /app
 ENV ASPNETCORE_HTTP_PORTS=8080 \
     ASPNETCORE_ENVIRONMENT=Production

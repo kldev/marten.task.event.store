@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <!-- Shown in the app with the git commit (AppVersion). 1.1: report fields, HR and agents' reports, exports. -->
     <Version>1.1.0</Version>
     <LangVersion>latest</LangVersion>
