@@ -7,6 +7,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Halcyon.Domain.Tests/Halcyon.Domain.Tests.csproj" />
+    <Project Path="tests/Halcyon.PersistenceTests/Halcyon.PersistenceTests.csproj" />
     <Project Path="tests/Halcyon.IntegrationTests/Halcyon.IntegrationTests.csproj" />
     <Project Path="tests/Halcyon.E2E/Halcyon.E2E.csproj" />
   </Folder>

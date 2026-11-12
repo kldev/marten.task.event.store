@@ -2,11 +2,17 @@
 
 - **Status:** Accepted
 - **Date:** 2026-11-03
-- **Evidence:** `tests/Halcyon.Domain.Tests`, `tests/Halcyon.IntegrationTests`, `tests/Halcyon.E2E`
+- **Evidence:** `tests/Halcyon.Domain.Tests`, `tests/Halcyon.PersistenceTests`, `tests/Halcyon.IntegrationTests`,
+  `tests/Halcyon.E2E`
 - **Specs:** all
 
 ## Decision
 - **`Halcyon.Domain.Tests`:** the aggregate, SLA, states, formatting and validation; no I/O, `FakeTimeProvider`.
+- **`Halcyon.PersistenceTests`** (added 2026-11-11): the store alone - a `DocumentStore` from `HalcyonStore.Configure`
+  on the class's own Testcontainers database, schema applied up front, no host, no Wolverine, no migrator. Covers what
+  only the database can prove: the unique indexes (ticket number, e-mails), the inline read model written in the same
+  save, the live write model never stored, the duplicated list columns and the exclusive stream lock. Each write in its
+  own session, as concurrent requests do. Runs in seconds; a failure points at the store, not at a page.
 - **`Halcyon.IntegrationTests`:** PostgreSQL 18 in **Testcontainers** (one container per test collection, a fresh
   database per test class). The schema is applied by the **migrator code** (the production path), then the host is
   started with `WebApplicationFactory` in `Testing` with `ApplyChangesOnStartup=false`. Covers handlers, concurrency,

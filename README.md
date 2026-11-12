@@ -338,6 +338,7 @@ src/Halcyon.Database/        HalcyonStore (the store described once), documents,
 src/Halcyon.App/             the host: Components/ (pages, UI), Features/<Area>/, Auth/, Storage/ (S3)
 src/Halcyon.DbMigrator/      apply / --dry-run / seed, exit code 0 or 1
 tests/Halcyon.Domain.Tests/  rules only, no I/O
+tests/Halcyon.PersistenceTests/  the store alone on PostgreSQL 18: unique indexes, projections, stream locks; no host
 tests/Halcyon.IntegrationTests/  features, host, migrator and seed on PostgreSQL 18; S3 against RustFS
 tests/Halcyon.E2E/           Playwright against the real app process (own PostgreSQL + RustFS), screenshots + portal tour
 deploy/rustfs/               the bucket init script
